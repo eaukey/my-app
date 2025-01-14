@@ -27,7 +27,7 @@ export default function RootLayout({ children }) {
   domain="dev-403isex3agfwatlk.us.auth0.com"
   clientId="TEAUBho90QHtubuZwg5qZh5juRSWBeVd"
   authorizationParams={{
-    redirect_uri: "http://localhost:3001",
+    redirect_uri: "https://my-app-zeta-blue.vercel.app/",
   }}
   cacheLocation="localstorage"
 >
