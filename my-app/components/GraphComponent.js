@@ -44,7 +44,7 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine }) => {
       if (!endpoint) throw new Error("Endpoint non défini");
 
       const response = await fetch(
-        `http://38.242.210.207:8011${endpoint}?nom_automate=${selectedMachine}`
+        `http://38.242.210.207:8011/${endpoint}?nom_automate=${selectedMachine}`
       );
 
       if (!response.ok) {
