@@ -6,7 +6,7 @@ const LogoutButton = () => {
 
   return (
     <button
-      onClick={() => logout({ returnTo: window.location.origin })}
+      onClick={() => logout({ returnTo: "https://my-app-zeta-blue.vercel.app/" })}
       style={{
         padding: "8px 16px",
         backgroundColor: "#FF5733",
