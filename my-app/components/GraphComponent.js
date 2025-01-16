@@ -44,7 +44,7 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine }) => {
       if (!endpoint) throw new Error("Endpoint non défini");
 
       const response = await fetch(
-        `https://backend-eaukey.duckdns.org/${endpoint}?nom_automate=${selectedMachine}`
+        `https://backend-eaukey.duckdns.org${endpoint}?nom_automate=${selectedMachine}`
       );
 
       if (!response.ok) {
