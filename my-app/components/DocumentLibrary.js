@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Home, BarChart2, Settings, MessageCircle, FileText, Search, Download, Video } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 
 const DocumentLibrary = () => {
   const [searchQuery, setSearchQuery] = useState('');
