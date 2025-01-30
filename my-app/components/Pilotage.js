@@ -96,34 +96,14 @@ export default function PilotageDashboard() {
      <div className="w-16 min-h-screen fixed bg-[#41AEAD] flex flex-col items-center">
        {/* Logo Eaukey */}
        <div className="py-4">
-         <svg 
-           viewBox="0 0 100 120"
-           className="w-12"
-         >
-           <path 
-             d="M50 5 L95 60 L95 90 L50 115 L5 90 L5 60 Z" 
-             fill="white"
-             stroke="none"
-           />
-           <path
-             d="M25 80 L75 80 M20 85 L80 85"
-             stroke="white"
-             strokeWidth="2"
-             fill="none"
-           />
-           <text
-             x="50"
-             y="70"
-             textAnchor="middle"
-             fill="#41AEAD"
-             style={{
-               fontSize: '16px',
-               fontFamily: 'Arial, sans-serif'
-             }}
-           >
-             Eaukey
-           </text>
-         </svg>
+       <Image 
+            src="/images/eaukey-logo.svg.png" 
+            alt="Eaukey Logo"
+            width={48}
+            height={48}
+            className="w-12"
+            priority
+          />
        </div>
 
        {/* Navigation icons */}
@@ -131,7 +111,7 @@ export default function PilotageDashboard() {
          {[
            { icon: Home, href: '/', title: 'Accueil' },
            { icon: BarChart2, href: '/stock', title: 'Stock' },
-           { icon: LineChart, href: '/pilotage', title: 'Pilotage' },
+           { icon: Settings, href: '/pilotage', title: 'Pilotage' },
            { icon: MessageCircle, href: '/chat', title: 'Chat' },
            { icon: FileText, href: '/documents', title: 'Documents' }
          ].map(({ icon: Icon, href, title }) => (
