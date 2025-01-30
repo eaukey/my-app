@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Home, BarChart2, Settings, MessageCircle, FileText, PlusCircle, MinusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 
 export default function StockDashboard() {
  const pathname = usePathname();

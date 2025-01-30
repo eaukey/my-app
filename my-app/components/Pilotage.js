@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Home, BarChart2, LineChart, MessageCircle, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 
 // Composant ToggleSwitch
 const ToggleSwitch = ({ isOn, onToggle, label }) => {
