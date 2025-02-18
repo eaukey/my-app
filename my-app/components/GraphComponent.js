@@ -59,11 +59,11 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine }) => {
       }
 
       // Formatage des données pour Recharts
-      const formattedData = result.labels.map((label, index) => ({
-        name: label,
-        value: result.data[index],
+      const formattedData = result.heure.map((hour, index) => ({
+        name: `${hour}:00`, // ✅ Utilise la colonne "heure" pour l'axe X
+        value: result.derniere_valeur[index], // ✅ Prend la bonne colonne pour la valeur
       }));
-
+      
       setData(formattedData); // Mettre à jour les données dans le state
     } catch (error) {
       console.error("Erreur lors de la récupération des données :", error);
@@ -99,7 +99,10 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine }) => {
         <ResponsiveContainer height={200}>
           <RechartsLineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
+            <XAxis 
+              dataKey="name"
+              tickFormatter={(value) => `${value}`} // ✅ Affichage propre des heures
+            />
             <YAxis />
             <Tooltip />
             <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} />
