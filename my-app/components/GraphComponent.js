@@ -58,11 +58,14 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine }) => {
         throw new Error("Format des données incorrect depuis le backend");
       }
 
+      console.log("Données reçues du backend :", result);
+
       // Formatage des données pour Recharts
       const formattedData = result.labels.map((label, index) => ({
-        name: `${heure}:00`,
+        name: label,
         value: result.data[index],
       }));
+      
       
       setData(formattedData); // Mettre à jour les données dans le state
     } catch (error) {
