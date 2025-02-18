@@ -60,7 +60,7 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine }) => {
 
       // Formatage des données pour Recharts
       const formattedData = result.labels.map((label, index) => ({
-        name: label,
+        name: `${hour}:00`,
         value: result.data[index],
       }));
       
