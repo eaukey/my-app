@@ -60,8 +60,8 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine }) => {
 
       // Formatage des données pour Recharts
       const formattedData = result.heure.map((hour, index) => ({
-        name: `${hour}:00`, // ✅ Utilise la colonne "heure" pour l'axe X
-        value: result.derniere_valeur[index], // ✅ Prend la bonne colonne pour la valeur
+        x: result.derniere_valeur[index], // ✅ Afficher la valeur sur l'axe X
+        y: hour, // ✅ Afficher l'heure sur l'axe Y
       }));
       
       setData(formattedData); // Mettre à jour les données dans le state
