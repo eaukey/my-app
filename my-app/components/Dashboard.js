@@ -90,7 +90,7 @@ export default function Dashboard() {
                 onClick={() => logout({ returnTo: window.location.origin })}
                 style={{
                   padding: "8px 16px",
-                  backgroundColor: "#f44336",
+                  backgroundColor: "#41AEAD",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
@@ -105,7 +105,7 @@ export default function Dashboard() {
               onClick={() => loginWithRedirect()}
               style={{
                 padding: "8px 16px",
-                backgroundColor: "#4CAF50",
+                backgroundColor: "#41AEAD",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",

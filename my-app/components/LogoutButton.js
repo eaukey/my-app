@@ -9,7 +9,7 @@ const LogoutButton = () => {
       onClick={() => logout({ returnTo: "https://my-app-zeta-blue.vercel.app/" })}
       style={{
         padding: "8px 16px",
-        backgroundColor: "#FF5733",
+        backgroundColor: "#41AEAD",
         color: "white",
         border: "none",
         borderRadius: "8px",
