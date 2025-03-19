@@ -8,6 +8,52 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from 'next/image';
 
+const stationMapping = {
+  "2022124.0": "bourgoin",
+  "2022128.0": "St jean de soudain",
+  "2022127.0": "Villefontaine",
+  "2022123.0": "Froges",
+  "2022121.0": "SMH1",
+  "2024405.0": "Chambéry",
+  "202202.0": "Marseille",
+  "2022071.0": "Paul Claudel",
+  "20220910.0": "Aix",
+  "2023319.0": "Cabassud",
+  "2022099.0": "Salon de provence",
+  "2022083.0": "Herblay",
+  "20221214.0": "Fontenay",
+  "2023021.0": "Enval",
+  "2022084.0": "Marnaz",
+  "2022129.0": "Pertuis",
+  "2023047.0": "Marseille",
+  "2022092.0": "Roseraie / Carrefour",
+  "2022091.0": "Louis Delage / Polygone",
+  "20230618.0": "Rognac",
+  "2022911.0": "Saint Ambroix",
+  "2023039.0": "Mions",
+  "20231106.0": "Givors",
+  "2023063.0": "Chatel-Guyon",
+  "2023096.0": "Bouc-Bel-Air",
+  "2023018.0": "Coignières",
+  "2023619.0": "Prunelli-di-Fiumorbo (Corse)",
+  "2024715.0": "Station Vito - Cervione",
+  "20240714.0": "Sorbo - Ocagnano",
+  "2023117.0": "Authon du Perche",
+  "2023322.0": "Orleans",
+  "2023510.0": "Annecy",
+  "20240710.0": "La Riche",
+  "2024081.0": "Gruissan",
+  "20231014.0": "Saint Gervais la Forêt",
+  "20241020.0": "Relais Arinella Bastia",
+  "20241022.0": "Relais Balagne Calvi",
+  "2024123.0": "Relais Moriani San Nicolas",
+  "2024119.0": "Relais de Furiani",
+  "2024121.0": "Station Algojola",
+  "2024125.0": "Ets Marcel Ferrari",
+  "2024102.0": "Relais Alistro",
+  "20241026.0": "Relais Porticcio",
+};
+
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0();
   const [selectedPeriod, setSelectedPeriod] = useState("jour");
@@ -25,21 +71,24 @@ export default function Dashboard() {
     { title: "Taux désinfection (%)", color: "#795548" },
   ];
 
-  // Récupérer les machines disponibles depuis les métadonnées utilisateur
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      const machines = user["https://app.com/machines"]; // Récupérer les métadonnées
-      if (machines && machines.length > 0) {
-        setAvailableMachines(machines); // Ajouter les machines au menu déroulant
-        setSelectedMachine(machines[0]); // Par défaut, sélectionner la première machine
-      }
+// Récupérer les stations disponibles depuis les métadonnées utilisateur
+useEffect(() => {
+  if (isAuthenticated && user) {
+    const machines = user["https://app.com/machines"] || [];
+    if (machines && machines.length > 0) {
+      const mappedStations = machines.map((id) => ({
+        id: id, // Conserver le numéro (ex. "2022124.0")
+        name: stationMapping[id] || `Station inconnue (${id})`, // Nom mappé
+      }));
+      setAvailableMachines(mappedStations); // Stocker les objets { id, name }
+      setSelectedMachine(mappedStations[0]?.id || ""); // Sélectionner le premier numéro
     }
-  }, [isAuthenticated, user]);
-
-  if (isLoading) {
-    return <div>Chargement...</div>;
   }
+}, [isAuthenticated, user]);
 
+if (isLoading) {
+  return <div>Chargement...</div>;
+}
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Barre de navigation */}
@@ -141,20 +190,20 @@ export default function Dashboard() {
 
           {/* Sélection de la machine */}
           <select
-            value={selectedMachine}
-            onChange={(e) => setSelectedMachine(e.target.value)}
-            style={{ padding: "8px", borderRadius: "8px", minWidth: "200px" }}
-          >
-            {availableMachines.length > 0 ? (
-              availableMachines.map((machine, index) => (
-                <option key={index} value={machine}>
-                  {machine}
-                </option>
-              ))
-            ) : (
-              <option value="">Aucune machine disponible</option>
-            )}
-          </select>
+          value={selectedMachine}
+          onChange={(e) => setSelectedMachine(e.target.value)}
+          style={{ padding: "8px", borderRadius: "8px", minWidth: "200px" }}
+        >
+          {availableMachines.length > 0 ? (
+            availableMachines.map((station, index) => (
+              <option key={index} value={station.id}>
+                {station.name}
+              </option>
+            ))
+          ) : (
+            <option value="">Aucune station disponible</option>
+          )}
+        </select>
         </div>
 
         {/* Affichage des graphiques */}
