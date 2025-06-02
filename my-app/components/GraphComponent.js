@@ -7,16 +7,13 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 
-// Ajout d'une prop seriesConfig pour gérer les multi-séries
-const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoint, seriesConfig }) => {
+const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoint }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fonction pour récupérer les données depuis le backend
   const fetchData = async () => {
     setLoading(true);
     setError(null);
@@ -31,33 +28,19 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
       const result = await response.json();
       console.log('RAW result', result);
 
-      // Si seriesConfig est défini, on construit un tableau d'objets pour recharts
-      if (seriesConfig && Array.isArray(seriesConfig) && result.labels) {
-        // Filtrer les séries qui existent dans la réponse
-        const filteredSeries = seriesConfig.filter(serie => result[serie.key]);
-        const formattedData = result.labels.map((label, idx) => {
-          const obj = { name: label };
-          filteredSeries.forEach((serie) => {
-            obj[serie.key] = result[serie.key] ? result[serie.key][idx] : null;
-          });
-          return obj;
-        });
-        setData(formattedData);
-        console.log('DATA POUR RECHARTS', formattedData);
-      } 
-      // Cas simple (une seule série, clé 'data')
-      else if (result.labels && result.data) {
+      // Le backend renvoie toujours { labels: [...], data: [...] }
+      if (result.labels && Array.isArray(result.data)) {
         const formattedData = result.labels.map((label, index) => ({
-          name: label,
-          value: result.data[index],
+          time: label,
+          value: result.data[index]
         }));
-        setData(formattedData);
         console.log('DATA POUR RECHARTS', formattedData);
+        setData(formattedData);
       } else {
-        setData([]);
         throw new Error("Format des données incorrect depuis le backend");
       }
     } catch (error) {
+      console.error('Erreur lors de la récupération des données:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -66,7 +49,6 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line
   }, [selectedPeriod, selectedMachine, endpoint]);
 
   return (
@@ -87,26 +69,16 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
         <ResponsiveContainer height={220}>
           <RechartsLineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
+            <XAxis dataKey="time" />
             <YAxis />
             <Tooltip />
-            {seriesConfig && Array.isArray(seriesConfig) ? (
-              <>
-                <Legend />
-                {seriesConfig.map((serie, idx) => (
-                  <Line
-                    key={serie.key}
-                    type="monotone"
-                    dataKey={serie.key}
-                    stroke={serie.color || color || `hsl(${idx * 60}, 70%, 50%)`}
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                ))}
-              </>
-            ) : (
-              <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} />
-            )}
+            <Line 
+              type="monotone" 
+              dataKey="value" 
+              stroke={color} 
+              strokeWidth={2}
+              dot={false}
+            />
           </RechartsLineChart>
         </ResponsiveContainer>
       )}
