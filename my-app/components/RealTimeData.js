@@ -41,6 +41,7 @@ const RealTimeData = ({ selectedMachine }) => {
     const fetchRealTimeData = async () => {
       if (!selectedMachine) return;
       
+      console.log("Récupération des données en temps réel pour la machine:", selectedMachine);
       setLoading(true);
       try {
         // Créer un tableau de toutes les requêtes que nous devons faire
@@ -52,29 +53,39 @@ const RealTimeData = ({ selectedMachine }) => {
           'compteur_electrique'
         ];
         
-        // Faire toutes les requêtes en parallèle
-        const results = await Promise.all(
-          endpoints.map(endpoint => 
-            fetch(`https://backend-eaukey.duckdns.org/temps_reel/${endpoint}?nom_automate=${selectedMachine}`)
-              .then(res => res.ok ? res.json() : null)
-          )
-        );
-        
-        // Mettre à jour les données avec les résultats
+        // Faire toutes les requêtes en séquentiel pour mieux déboguer
         const newData = { ...data };
-        endpoints.forEach((endpoint, index) => {
-          if (results[index]) {
-            const result = results[index];
-            newData[endpoint] = {
-              value: result.valeur,
-              lastUpdate: result.horodatage ? new Date(result.horodatage).toLocaleTimeString() : null
-            };
-          }
-        });
         
+        for (const endpoint of endpoints) {
+          try {
+            const url = `https://backend-eaukey.duckdns.org/temps_reel/${endpoint}?nom_automate=${selectedMachine}`;
+            console.log(`Requête vers ${url}`);
+            
+            const response = await fetch(url);
+            console.log(`Réponse pour ${endpoint}:`, response.status);
+            
+            if (response.ok) {
+              const result = await response.json();
+              console.log(`Données pour ${endpoint}:`, result);
+              
+              newData[endpoint] = {
+                value: result.valeur !== undefined ? result.valeur : null,
+                lastUpdate: result.horodatage ? new Date(result.horodatage).toLocaleTimeString() : null
+              };
+            } else {
+              console.error(`Erreur HTTP ${response.status} pour ${endpoint}`);
+              newData[endpoint] = { value: null, lastUpdate: null };
+            }
+          } catch (err) {
+            console.error(`Erreur lors de la récupération de ${endpoint}:`, err);
+            newData[endpoint] = { value: null, lastUpdate: null };
+          }
+        }
+        
+        console.log("Toutes les données récupérées:", newData);
         setData(newData);
       } catch (err) {
-        console.error("Erreur lors de la récupération des données en temps réel:", err);
+        console.error("Erreur générale lors de la récupération des données en temps réel:", err);
         setError("Impossible de récupérer les données en temps réel");
       } finally {
         setLoading(false);
@@ -123,14 +134,14 @@ const RealTimeData = ({ selectedMachine }) => {
         />
         <RealTimeIndicator 
           title="Volume Renvoi" 
-          value={data.volume_renvoi.value ? data.volume_renvoi.value.toFixed(2) : null} 
+          value={data.volume_renvoi.value ? parseFloat(data.volume_renvoi.value).toFixed(2) : null} 
           unit="m³" 
           color="#2196F3"
           lastUpdate={data.volume_renvoi.lastUpdate}
         />
         <RealTimeIndicator 
           title="Compteur Électrique" 
-          value={data.compteur_electrique.value ? data.compteur_electrique.value.toFixed(2) : null} 
+          value={data.compteur_electrique.value ? parseFloat(data.compteur_electrique.value).toFixed(2) : null} 
           unit="kWh" 
           color="#795548"
           lastUpdate={data.compteur_electrique.lastUpdate}
