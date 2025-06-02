@@ -133,13 +133,7 @@ const graphConfigs = [
     title: "Température (°C)",
     color: "#E91E63",
     endpoint: (period) => `/temperature/${period}`,
-    seriesConfig: (period) => {
-      if (period === 'jour') {
-        return [{ key: "temp_med_C", color: "#E91E63", label: "Température médiane" }];
-      } else {
-        return [{ key: "temp_moy_C", color: "#3F51B5", label: "Température moyenne" }];
-      }
-    },
+    seriesConfig: [{ key: "temp_med_C", color: "#E91E63", label: "Température médiane" }]
   },
   // Chlore
   {
