@@ -96,20 +96,33 @@ const graphConfigs = [
     title: "Pressions médianes (mbar)",
     color: "#41AEAD",
     endpoint: (period) => `/pression_all/${period}`,
-    seriesConfig: [
-      { key: "p1_med_mbar", color: "#2196F3", label: "P1" },
-      { key: "p2_med_mbar", color: "#4CAF50", label: "P2" },
-      { key: "p3_med_mbar", color: "#FF9800", label: "P3" },
-      { key: "p4_med_mbar", color: "#9C27B0", label: "P4" },
-      { key: "p5_med_mbar", color: "#795548", label: "P5" },
-    ],
+    seriesConfig: (period) => {
+      // Les clés changent selon la période
+      if (period === 'jour') {
+        return [
+          { key: "p1_med_mbar", color: "#2196F3", label: "P1" },
+          { key: "p2_med_mbar", color: "#4CAF50", label: "P2" },
+          { key: "p3_med_mbar", color: "#FF9800", label: "P3" },
+          { key: "p4_med_mbar", color: "#9C27B0", label: "P4" },
+          { key: "p5_med_mbar", color: "#795548", label: "P5" },
+        ];
+      } else {
+        return [
+          { key: "p1_mbar", color: "#2196F3", label: "P1" },
+          { key: "p2_mbar", color: "#4CAF50", label: "P2" },
+          { key: "p3_mbar", color: "#FF9800", label: "P3" },
+          { key: "p4_mbar", color: "#9C27B0", label: "P4" },
+          { key: "p5_mbar", color: "#795548", label: "P5" },
+        ];
+      }
+    },
   },
   // Multi-séries : Volumes ALL
   {
     title: "Volumes (renvoi, adoucie, relevage)",
     color: "#41AEAD",
     endpoint: (period) => `/volumes_all/${period}`,
-    seriesConfig: [
+    seriesConfig: (period) => [
       { key: "vol_renvoi_m3", color: "#2196F3", label: "Renvoi" },
       { key: "vol_adoucie_m3", color: "#4CAF50", label: "Adoucie" },
       { key: "vol_relevage_m3", color: "#FF9800", label: "Relevage" },
@@ -120,37 +133,46 @@ const graphConfigs = [
     title: "Température (°C)",
     color: "#E91E63",
     endpoint: (period) => `/temperature/${period}`,
-    seriesConfig: [
-      { key: "temp_med_C", color: "#E91E63", label: "Température médiane" },
-      { key: "temp_moy_C", color: "#3F51B5", label: "Température moyenne" },
-    ],
+    seriesConfig: (period) => {
+      if (period === 'jour') {
+        return [{ key: "temp_med_C", color: "#E91E63", label: "Température médiane" }];
+      } else {
+        return [{ key: "temp_moy_C", color: "#3F51B5", label: "Température moyenne" }];
+      }
+    },
   },
   // Chlore
   {
     title: "Chlore (mg/L)",
     color: "#00BCD4",
     endpoint: (period) => `/chlore/${period}`,
-    seriesConfig: [
-      { key: "chlore_med_mv", color: "#00BCD4", label: "Chlore médian" },
-      { key: "chlore_moy_mg_L", color: "#8BC34A", label: "Chlore moyen" },
-    ],
+    seriesConfig: (period) => {
+      if (period === 'jour') {
+        return [{ key: "chlore_med_mv", color: "#00BCD4", label: "Chlore médian" }];
+      } else {
+        return [{ key: "chlore_moy_mg_L", color: "#8BC34A", label: "Chlore moyen" }];
+      }
+    },
   },
   // pH
   {
     title: "pH",
     color: "#607D8B",
     endpoint: (period) => `/ph/${period}`,
-    seriesConfig: [
-      { key: "ph_mediane", color: "#607D8B", label: "pH médian" },
-      { key: "ph_moyen", color: "#FFC107", label: "pH moyen" },
-    ],
+    seriesConfig: (period) => {
+      if (period === 'jour') {
+        return [{ key: "ph_mediane", color: "#607D8B", label: "pH médian" }];
+      } else {
+        return [{ key: "ph_moyen", color: "#FFC107", label: "pH moyen" }];
+      }
+    },
   },
   // Compteur électrique
   {
     title: "Consommation électrique (kWh)",
     color: "#FF5722",
     endpoint: (period) => `/compteur_elec/${period}`,
-    seriesConfig: [
+    seriesConfig: (period) => [
       { key: "conso_kwh", color: "#FF5722", label: "Conso kWh" },
     ],
   },
@@ -310,7 +332,7 @@ if (isLoading) {
               selectedPeriod={selectedPeriod}
               selectedMachine={selectedMachine}
               endpoint={cfg.endpoint(selectedPeriod)}
-              seriesConfig={cfg.seriesConfig}
+              seriesConfig={typeof cfg.seriesConfig === 'function' ? cfg.seriesConfig(selectedPeriod) : cfg.seriesConfig}
             />
           ))}
         </div>
