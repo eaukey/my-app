@@ -33,13 +33,10 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
       if (seriesConfig && Array.isArray(seriesConfig) && result.labels) {
         // Filtrer les séries qui existent dans la réponse
         const filteredSeries = seriesConfig.filter(serie => result[serie.key]);
-        const formattedData = result.labels.map((label, idx) => {
-          const obj = { name: label };
-          filteredSeries.forEach((serie) => {
-            obj[serie.key] = result[serie.key] ? result[serie.key][idx] : null;
-          });
-          return obj;
-        });
+        const formattedData = result.labels.map((label, idx) => ({
+          name: label,
+          temp_med_C: result.temp_med_C ? result.temp_med_C[idx] : null
+        }));
         setData(formattedData);
         console.log('DATA POUR RECHARTS', formattedData);
         console.log('seriesConfig', filteredSeries);
