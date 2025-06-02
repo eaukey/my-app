@@ -31,14 +31,18 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
       const result = await response.json();
       // Si seriesConfig est défini, on construit un tableau d'objets pour recharts
       if (seriesConfig && Array.isArray(seriesConfig) && result.labels) {
+        // Filtrer les séries qui existent dans la réponse
+        const filteredSeries = seriesConfig.filter(serie => result[serie.key]);
         const formattedData = result.labels.map((label, idx) => {
           const obj = { name: label };
-          seriesConfig.forEach((serie) => {
+          filteredSeries.forEach((serie) => {
             obj[serie.key] = result[serie.key] ? result[serie.key][idx] : null;
           });
           return obj;
         });
         setData(formattedData);
+        console.log('DATA POUR RECHARTS', formattedData);
+        console.log('seriesConfig', filteredSeries);
       } else if (result.labels && result.data) {
         // Cas simple (une seule série)
         const formattedData = result.labels.map((label, index) => ({
@@ -46,6 +50,7 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
           value: result.data[index],
         }));
         setData(formattedData);
+        console.log('DATA POUR RECHARTS', formattedData);
       } else {
         setData([]);
         throw new Error("Format des données incorrect depuis le backend");
