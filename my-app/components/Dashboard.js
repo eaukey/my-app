@@ -133,42 +133,28 @@ const graphConfigs = [
     title: "Température (°C)",
     color: "#E91E63",
     endpoint: (period) => `/temperature/${period}`,
-    seriesConfig: [{ key: "temp_med_C", color: "#E91E63", label: "Température médiane" }]
+    seriesConfig: null  // Utilise le format simple labels/data
   },
   // Chlore
   {
     title: "Chlore (mg/L)",
     color: "#00BCD4",
     endpoint: (period) => `/chlore/${period}`,
-    seriesConfig: (period) => {
-      if (period === 'jour') {
-        return [{ key: "chlore_med_mv", color: "#00BCD4", label: "Chlore médian" }];
-      } else {
-        return [{ key: "chlore_moy_mg_L", color: "#8BC34A", label: "Chlore moyen" }];
-      }
-    },
+    seriesConfig: null  // Utilise le format simple labels/data
   },
   // pH
   {
     title: "pH",
     color: "#607D8B",
     endpoint: (period) => `/ph/${period}`,
-    seriesConfig: (period) => {
-      if (period === 'jour') {
-        return [{ key: "ph_mediane", color: "#607D8B", label: "pH médian" }];
-      } else {
-        return [{ key: "ph_moyen", color: "#FFC107", label: "pH moyen" }];
-      }
-    },
+    seriesConfig: null  // Utilise le format simple labels/data
   },
   // Compteur électrique
   {
     title: "Consommation électrique (kWh)",
     color: "#FF5722",
     endpoint: (period) => `/compteur_elec/${period}`,
-    seriesConfig: (period) => [
-      { key: "conso_kwh", color: "#FF5722", label: "Conso kWh" },
-    ],
+    seriesConfig: null  // Utilise le format simple labels/data
   },
 ];
 
