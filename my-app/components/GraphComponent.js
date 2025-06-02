@@ -29,6 +29,7 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
         throw new Error(`Erreur serveur: ${response.status}`);
       }
       const result = await response.json();
+      console.log('RAW result', result);
       // Si seriesConfig est défini, on construit un tableau d'objets pour recharts
       if (seriesConfig && Array.isArray(seriesConfig) && result.labels) {
         // Filtrer les séries qui existent dans la réponse
