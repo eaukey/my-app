@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Home, BarChart2, Settings, MessageCircle, FileText } from "lucide-react";
 import GraphComponent from "./GraphComponent";
 import MultiSeriesGraphComponent from "./MultiSeriesGraphComponent";
+import RealTimeData from "./RealTimeData";
 import { useAuth0 } from "@auth0/auth0-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -262,6 +263,9 @@ if (isLoading) {
             </button>
           )}
         </div>
+
+        {/* Données en temps réel */}
+        {selectedMachine && <RealTimeData selectedMachine={selectedMachine} />}
 
         {/* Sélection des filtres */}
         <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between" }}>
