@@ -7,8 +7,6 @@ import { useAuth0 } from "@auth0/auth0-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from 'next/image';
-import PeriodSelector from "./PeriodSelector";
-import MachineSelector from "./MachineSelector";
 
 const stationMapping = {
   "2022124.0": "bourgoin",
@@ -58,61 +56,112 @@ const stationMapping = {
 
 const graphConfigs = [
   {
-    title: "Pressions (mbar)",
-    endpoint: (period) => `/pression_all/${period}`,
-    seriesConfig: [
-      { key: "p1_med_mbar", label: "P1", color: "#FF5252" },
-      { key: "p2_med_mbar", label: "P2", color: "#7C4DFF" },
-      { key: "p3_med_mbar", label: "P3", color: "#448AFF" },
-      { key: "p4_med_mbar", label: "P4", color: "#64FFDA" },
-      { key: "p5_med_mbar", label: "P5", color: "#FF9800" }
-    ]
+    title: "Volume renvoi (m³)",
+    color: "#2196F3",
+    endpoint: (period) => `/renvoi/${period}`,
+    seriesConfig: null,
   },
   {
-    title: "Volumes (m³)",
-    endpoint: (period) => `/volumes_all/${period}`,
-    seriesConfig: [
-      { key: "vol_renvoi_m3", label: "Renvoi", color: "#4CAF50" },
-      { key: "vol_adoucie_m3", label: "Adoucie", color: "#2196F3" },
-      { key: "vol_relevage_m3", label: "Relevage", color: "#FF9800" }
-    ]
+    title: "Volume adoucie (m³)",
+    color: "#4CAF50",
+    endpoint: (period) => `/adoucie/${period}`,
+    seriesConfig: null,
   },
+  {
+    title: "Volume relevage (m³)",
+    color: "#FF9800",
+    endpoint: (period) => `/relevage/${period}`,
+    seriesConfig: null,
+  },
+  {
+    title: "Pression station (mbar)",
+    color: "#9C27B0",
+    endpoint: (period) => `/avg_pression5/${period}`,
+    seriesConfig: null,
+  },
+  {
+    title: "Taux recyclage (%)",
+    color: "#3F51B5",
+    endpoint: (period) => `/taux_recyclage/${period}`,
+    seriesConfig: null,
+  },
+  {
+    title: "Taux désinfection (%)",
+    color: "#795548",
+    endpoint: (period) => `/taux_desinfection/${period}`,
+    seriesConfig: null,
+  },
+  // Multi-séries : Pression ALL
+  {
+    title: "Pressions médianes (mbar)",
+    color: "#41AEAD",
+    endpoint: (period) => `/pression_all/${period}`,
+    seriesConfig: (period) => {
+      // Les clés changent selon la période
+      if (period === 'jour') {
+        return [
+          { key: "p1_med_mbar", color: "#2196F3", label: "P1" },
+          { key: "p2_med_mbar", color: "#4CAF50", label: "P2" },
+          { key: "p3_med_mbar", color: "#FF9800", label: "P3" },
+          { key: "p4_med_mbar", color: "#9C27B0", label: "P4" },
+          { key: "p5_med_mbar", color: "#795548", label: "P5" },
+        ];
+      } else {
+        return [
+          { key: "p1_mbar", color: "#2196F3", label: "P1" },
+          { key: "p2_mbar", color: "#4CAF50", label: "P2" },
+          { key: "p3_mbar", color: "#FF9800", label: "P3" },
+          { key: "p4_mbar", color: "#9C27B0", label: "P4" },
+          { key: "p5_mbar", color: "#795548", label: "P5" },
+        ];
+      }
+    },
+  },
+  // Multi-séries : Volumes ALL
+  {
+    title: "Volumes (renvoi, adoucie, relevage)",
+    color: "#41AEAD",
+    endpoint: (period) => `/volumes_all/${period}`,
+    seriesConfig: (period) => [
+      { key: "vol_renvoi_m3", color: "#2196F3", label: "Renvoi" },
+      { key: "vol_adoucie_m3", color: "#4CAF50", label: "Adoucie" },
+      { key: "vol_relevage_m3", color: "#FF9800", label: "Relevage" },
+    ],
+  },
+  // Température
   {
     title: "Température (°C)",
     color: "#E91E63",
-    endpoint: (period) => `/temperature/${period}`
+    endpoint: (period) => `/temperature/${period}`,
+    seriesConfig: null  // Utilise le format simple labels/data
   },
+  // Chlore
   {
-    title: "Chlore (mV)",
-    color: "#9C27B0",
-    endpoint: (period) => `/chlore/${period}`
+    title: "Chlore (mg/L)",
+    color: "#00BCD4",
+    endpoint: (period) => `/chlore/${period}`,
+    seriesConfig: null  // Utilise le format simple labels/data
   },
+  // pH
   {
     title: "pH",
-    color: "#673AB7",
-    endpoint: (period) => `/ph/${period}`
+    color: "#607D8B",
+    endpoint: (period) => `/ph/${period}`,
+    seriesConfig: null  // Utilise le format simple labels/data
   },
+  // Compteur électrique
   {
     title: "Consommation électrique (kWh)",
-    color: "#FF9800",
-    endpoint: (period) => `/compteur_elec/${period}`
+    color: "#FF5722",
+    endpoint: (period) => `/compteur_elec/${period}`,
+    seriesConfig: null  // Utilise le format simple labels/data
   },
-  {
-    title: "Taux de recyclage (%)",
-    color: "#4CAF50",
-    endpoint: (period) => `/taux_recyclage/${period}`
-  },
-  {
-    title: "Taux de désinfection (%)",
-    color: "#2196F3",
-    endpoint: (period) => `/taux_desinfection/${period}`
-  }
 ];
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0();
   const [selectedPeriod, setSelectedPeriod] = useState("jour");
-  const [selectedMachine, setSelectedMachine] = useState("automate1");
+  const [selectedMachine, setSelectedMachine] = useState("");
   const [availableMachines, setAvailableMachines] = useState([]);
   const pathname = usePathname();
 
@@ -236,24 +285,34 @@ if (isLoading) {
           </div>
 
           {/* Sélection de la machine */}
-          <MachineSelector
-            selectedMachine={selectedMachine}
-            onMachineChange={setSelectedMachine}
-            availableMachines={availableMachines}
-          />
+          <select
+          value={selectedMachine}
+          onChange={(e) => setSelectedMachine(e.target.value)}
+          style={{ padding: "8px", borderRadius: "8px", minWidth: "200px" }}
+        >
+          {availableMachines.length > 0 ? (
+            availableMachines.map((station, index) => (
+              <option key={index} value={station.id}>
+                {station.name}
+              </option>
+            ))
+          ) : (
+            <option value="">Aucune station disponible</option>
+          )}
+        </select>
         </div>
 
         {/* Affichage des graphiques */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(500px, 1fr))", gap: "20px" }}>
-          {graphConfigs.map((config, index) => (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
+          {graphConfigs.map((cfg) => (
             <GraphComponent
-              key={index}
-              title={config.title}
-              color={config.color}
+              key={cfg.title}
+              title={cfg.title}
+              color={cfg.color}
               selectedPeriod={selectedPeriod}
               selectedMachine={selectedMachine}
-              endpoint={config.endpoint(selectedPeriod)}
-              seriesConfig={config.seriesConfig}
+              endpoint={cfg.endpoint(selectedPeriod)}
+              seriesConfig={typeof cfg.seriesConfig === 'function' ? cfg.seriesConfig(selectedPeriod) : cfg.seriesConfig}
             />
           ))}
         </div>
