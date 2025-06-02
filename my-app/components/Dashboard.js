@@ -264,47 +264,57 @@ if (isLoading) {
           )}
         </div>
 
+        {/* Sélection de la station */}
+        <div style={{ marginBottom: "24px" }}>
+          <select
+            value={selectedMachine}
+            onChange={(e) => setSelectedMachine(e.target.value)}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "1px solid #ddd",
+              width: "100%",
+              maxWidth: "300px",
+            }}
+          >
+            <option value="">Sélectionnez une station</option>
+            {availableMachines.length > 0 ? (
+              availableMachines.map((station, index) => (
+                <option key={index} value={station.id}>
+                  {station.name}
+                </option>
+              ))
+            ) : (
+              <>
+                <option value="2022911.0">Herblay</option>
+                <option value="2023004.0">Marseille</option>
+                <option value="2022912.0">Lyon</option>
+              </>
+            )}
+          </select>
+        </div>
+
         {/* Données en temps réel */}
         {selectedMachine && <RealTimeData selectedMachine={selectedMachine} />}
 
-        {/* Sélection des filtres */}
-        <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between" }}>
-          {/* Périodes */}
-          <div style={{ display: "flex", gap: "8px" }}>
-            {periods.map((period) => (
-              <button
-                key={period}
-                onClick={() => setSelectedPeriod(period)}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: selectedPeriod === period ? "#41AEAD" : "#E5E7EB",
-                  color: selectedPeriod === period ? "white" : "black",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                }}
-              >
-                {period.charAt(0).toUpperCase() + period.slice(1)}
-              </button>
-            ))}
-          </div>
-
-          {/* Sélection de la machine */}
-          <select
-          value={selectedMachine}
-          onChange={(e) => setSelectedMachine(e.target.value)}
-          style={{ padding: "8px", borderRadius: "8px", minWidth: "200px" }}
-        >
-          {availableMachines.length > 0 ? (
-            availableMachines.map((station, index) => (
-              <option key={index} value={station.id}>
-                {station.name}
-              </option>
-            ))
-          ) : (
-            <option value="">Aucune station disponible</option>
-          )}
-        </select>
+        {/* Sélection des périodes */}
+        <div style={{ marginBottom: "24px", display: "flex", gap: "8px" }}>
+          {periods.map((period) => (
+            <button
+              key={period}
+              onClick={() => setSelectedPeriod(period)}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: selectedPeriod === period ? "#41AEAD" : "#eee",
+                color: selectedPeriod === period ? "white" : "black",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+              }}
+            >
+              {period.charAt(0).toUpperCase() + period.slice(1)}
+            </button>
+          ))}
         </div>
 
         {/* Affichage des graphiques */}
