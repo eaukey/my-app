@@ -34,18 +34,45 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
       if (seriesConfig && Array.isArray(seriesConfig) && result.labels) {
         // Filtrer les séries qui existent dans la réponse
         const filteredSeries = seriesConfig.filter(serie => result[serie.key]);
-        const formattedData = result.labels.map((label, idx) => ({
-          name: label,
-          temp_med_C: result.temp_med_C ? result.temp_med_C[idx] : null
-        }));
+        const formattedData = result.labels.map((label, idx) => {
+          const obj = { name: label };
+          filteredSeries.forEach((serie) => {
+            obj[serie.key] = result[serie.key] ? result[serie.key][idx] : null;
+          });
+          return obj;
+        });
         setData(formattedData);
         console.log('DATA POUR RECHARTS', formattedData);
         console.log('seriesConfig', filteredSeries);
       } else if (result.labels && result.data) {
-        // Cas simple (une seule série)
+        // Cas simple (une seule série, clé 'data')
         const formattedData = result.labels.map((label, index) => ({
           name: label,
           value: result.data[index],
+        }));
+        setData(formattedData);
+        console.log('DATA POUR RECHARTS', formattedData);
+      } else if (result.labels && result.temp_med_C) {
+        // Cas température (clé unique temp_med_C)
+        const formattedData = result.labels.map((label, index) => ({
+          name: label,
+          value: result.temp_med_C[index],
+        }));
+        setData(formattedData);
+        console.log('DATA POUR RECHARTS', formattedData);
+      } else if (result.labels && result.chlore_med_mv) {
+        // Cas chlore (clé unique chlore_med_mv)
+        const formattedData = result.labels.map((label, index) => ({
+          name: label,
+          value: result.chlore_med_mv[index],
+        }));
+        setData(formattedData);
+        console.log('DATA POUR RECHARTS', formattedData);
+      } else if (result.labels && result.ph_mediane) {
+        // Cas pH (clé unique ph_mediane)
+        const formattedData = result.labels.map((label, index) => ({
+          name: label,
+          value: result.ph_mediane[index],
         }));
         setData(formattedData);
         console.log('DATA POUR RECHARTS', formattedData);
