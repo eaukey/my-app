@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Home, BarChart2, Settings, MessageCircle, FileText } from "lucide-react";
 import GraphComponent from "./GraphComponent";
+import MultiSeriesGraphComponent from "./MultiSeriesGraphComponent";
 import { useAuth0 } from "@auth0/auth0-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -304,17 +305,33 @@ if (isLoading) {
 
         {/* Affichage des graphiques */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
-          {graphConfigs.map((cfg) => (
-            <GraphComponent
-              key={cfg.title}
-              title={cfg.title}
-              color={cfg.color}
-              selectedPeriod={selectedPeriod}
-              selectedMachine={selectedMachine}
-              endpoint={cfg.endpoint(selectedPeriod)}
-              seriesConfig={typeof cfg.seriesConfig === 'function' ? cfg.seriesConfig(selectedPeriod) : cfg.seriesConfig}
-            />
-          ))}
+          {graphConfigs.map((cfg) => {
+            // Si le graphique a une configuration multi-séries, utiliser MultiSeriesGraphComponent
+            if (cfg.seriesConfig) {
+              return (
+                <MultiSeriesGraphComponent
+                  key={cfg.title}
+                  title={cfg.title}
+                  color={cfg.color}
+                  selectedPeriod={selectedPeriod}
+                  selectedMachine={selectedMachine}
+                  endpoint={cfg.endpoint(selectedPeriod)}
+                  seriesConfig={typeof cfg.seriesConfig === 'function' ? cfg.seriesConfig(selectedPeriod) : cfg.seriesConfig}
+                />
+              );
+            } 
+            // Sinon, utiliser le GraphComponent standard
+            return (
+              <GraphComponent
+                key={cfg.title}
+                title={cfg.title}
+                color={cfg.color}
+                selectedPeriod={selectedPeriod}
+                selectedMachine={selectedMachine}
+                endpoint={cfg.endpoint(selectedPeriod)}
+              />
+            );
+          })}
         </div>
       </div>
     </div>
