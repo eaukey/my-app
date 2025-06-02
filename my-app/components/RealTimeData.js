@@ -59,6 +59,7 @@ const RealTimeData = ({ selectedMachine }) => {
         for (const endpoint of endpoints) {
           try {
             const url = `https://backend-eaukey.duckdns.org/temps_reel/${endpoint}?nom_automate=${selectedMachine}`;
+            // La bonne URL pourrait être différente, essayons l'URL qui correspondrait au backend
             console.log(`Requête vers ${url}`);
             
             const response = await fetch(url);

@@ -56,137 +56,127 @@ const stationMapping = {
   "20241026.0": "Relais Porticcio",
 };
 
+// Configuration des graphiques
 const graphConfigs = [
+  // Données générales de performance
   {
     title: "Volume renvoi (m³)",
     color: "#2196F3",
     endpoint: (period) => `/renvoi/${period}`,
-    seriesConfig: null,
+    category: "performance"
   },
   {
     title: "Volume adoucie (m³)",
     color: "#4CAF50",
     endpoint: (period) => `/adoucie/${period}`,
-    seriesConfig: null,
+    category: "performance"
   },
   {
     title: "Volume relevage (m³)",
     color: "#FF9800",
     endpoint: (period) => `/relevage/${period}`,
-    seriesConfig: null,
+    category: "performance"
   },
   {
-    title: "Pression station (mbar)",
-    color: "#9C27B0",
-    endpoint: (period) => `/avg_pression5/${period}`,
-    seriesConfig: null,
+    title: "Volumes (m³)",
+    color: "#4CAF50",
+    endpoint: (period) => `/volumes_all/${period}`,
+    seriesConfig: [
+      { key: "vol_renvoi_m3", label: "Renvoi", color: "#2196F3" },
+      { key: "vol_adoucie_m3", label: "Adoucie", color: "#4CAF50" },
+      { key: "vol_relevage_m3", label: "Relevage", color: "#FFC107" }
+    ],
+    category: "performance"
   },
   {
-    title: "Taux recyclage (%)",
-    color: "#3F51B5",
+    title: "Taux de recyclage (%)",
+    color: "#009688",
     endpoint: (period) => `/taux_recyclage/${period}`,
-    seriesConfig: null,
+    category: "performance"
   },
+  {
+    title: "Consommation électrique (kWh)",
+    color: "#795548",
+    endpoint: (period) => `/compteur_elec/${period}`,
+    category: "performance"
+  },
+  
+  // Données techniques
   {
     title: "Taux désinfection (%)",
-    color: "#795548",
+    color: "#673AB7",
     endpoint: (period) => `/taux_desinfection/${period}`,
-    seriesConfig: null,
+    category: "technical"
   },
-  // Multi-séries : Pression ALL
   {
-    title: "Pressions médianes (mbar)",
-    color: "#41AEAD",
+    title: "Pression (mbar)",
+    color: "#2196F3",
     endpoint: (period) => `/pression_all/${period}`,
-    seriesConfig: (period) => {
-      // Les clés changent selon la période
-      if (period === 'jour') {
-        return [
-          { key: "p1_med_mbar", color: "#2196F3", label: "P1" },
-          { key: "p2_med_mbar", color: "#4CAF50", label: "P2" },
-          { key: "p3_med_mbar", color: "#FF9800", label: "P3" },
-          { key: "p4_med_mbar", color: "#9C27B0", label: "P4" },
-          { key: "p5_med_mbar", color: "#795548", label: "P5" },
-        ];
-      } else {
-        return [
-          { key: "p1_mbar", color: "#2196F3", label: "P1" },
-          { key: "p2_mbar", color: "#4CAF50", label: "P2" },
-          { key: "p3_mbar", color: "#FF9800", label: "P3" },
-          { key: "p4_mbar", color: "#9C27B0", label: "P4" },
-          { key: "p5_mbar", color: "#795548", label: "P5" },
-        ];
-      }
-    },
-  },
-  // Multi-séries : Volumes ALL
-  {
-    title: "Volumes (renvoi, adoucie, relevage)",
-    color: "#41AEAD",
-    endpoint: (period) => `/volumes_all/${period}`,
-    seriesConfig: (period) => [
-      { key: "vol_renvoi_m3", color: "#2196F3", label: "Renvoi" },
-      { key: "vol_adoucie_m3", color: "#4CAF50", label: "Adoucie" },
-      { key: "vol_relevage_m3", color: "#FF9800", label: "Relevage" },
+    seriesConfig: [
+      { key: "p1_med_mbar", label: "P1", color: "#2196F3" },
+      { key: "p2_med_mbar", label: "P2", color: "#4CAF50" },
+      { key: "p3_med_mbar", label: "P3", color: "#FFC107" },
+      { key: "p4_med_mbar", label: "P4", color: "#FF5722" },
+      { key: "p5_med_mbar", label: "P5", color: "#9C27B0" }
     ],
+    category: "technical"
   },
-  // Température
   {
     title: "Température (°C)",
     color: "#E91E63",
     endpoint: (period) => `/temperature/${period}`,
-    seriesConfig: null  // Utilise le format simple labels/data
+    category: "technical"
   },
-  // Chlore
   {
-    title: "Chlore (mg/L)",
-    color: "#00BCD4",
+    title: "Chlore (mV)",
+    color: "#9C27B0",
     endpoint: (period) => `/chlore/${period}`,
-    seriesConfig: null  // Utilise le format simple labels/data
+    category: "technical"
   },
-  // pH
   {
     title: "pH",
-    color: "#607D8B",
+    color: "#FF9800",
     endpoint: (period) => `/ph/${period}`,
-    seriesConfig: null  // Utilise le format simple labels/data
-  },
-  // Compteur électrique
-  {
-    title: "Consommation électrique (kWh)",
-    color: "#FF5722",
-    endpoint: (period) => `/compteur_elec/${period}`,
-    seriesConfig: null  // Utilise le format simple labels/data
-  },
+    category: "technical"
+  }
 ];
 
-export default function Dashboard() {
+const Dashboard = () => {
   const { user, isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0();
   const [selectedPeriod, setSelectedPeriod] = useState("jour");
   const [selectedMachine, setSelectedMachine] = useState("");
+  const [activeDataCategory, setActiveDataCategory] = useState("performance"); // "performance" ou "technical"
   const [availableMachines, setAvailableMachines] = useState([]);
   const pathname = usePathname();
 
-  const periods = ["jour", "semaine", "mois", "annee"];
+  const periods = [
+    { label: "Jour", value: "jour" },
+    { label: "Semaine", value: "semaine" },
+    { label: "Mois", value: "mois" },
+    { label: "Année", value: "annee" }
+  ];
 
-// Récupérer les stations disponibles depuis les métadonnées utilisateur
-useEffect(() => {
-  if (isAuthenticated && user) {
-    const machines = user["https://app.com/machines"] || [];
-    if (machines && machines.length > 0) {
-      const mappedStations = machines.map((id) => ({
-        id: id, // Conserver le numéro (ex. "2022124.0")
-        name: stationMapping[id] || `Station inconnue (${id})`, // Nom mappé
-      }));
-      setAvailableMachines(mappedStations); // Stocker les objets { id, name }
-      setSelectedMachine(mappedStations[0]?.id || ""); // Sélectionner le premier numéro
+  // Récupérer les stations disponibles depuis les métadonnées utilisateur
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const machines = user["https://app.com/machines"] || [];
+      if (machines && machines.length > 0) {
+        const mappedStations = machines.map((id) => ({
+          id: id, // Conserver le numéro (ex. "2022124.0")
+          name: stationMapping[id] || `Station inconnue (${id})`, // Nom mappé
+        }));
+        setAvailableMachines(mappedStations); // Stocker les objets { id, name }
+        setSelectedMachine(mappedStations[0]?.id || ""); // Sélectionner le premier numéro
+      }
     }
-  }
-}, [isAuthenticated, user]);
+  }, [isAuthenticated, user]);
 
-if (isLoading) {
-  return <div>Chargement...</div>;
-}
+  // Filtrer les graphiques selon la catégorie active
+  const filteredGraphs = graphConfigs.filter(graph => graph.category === activeDataCategory);
+
+  if (isLoading) {
+    return <div>Chargement...</div>;
+  }
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Barre de navigation */}
@@ -297,29 +287,65 @@ if (isLoading) {
         {/* Données en temps réel */}
         {selectedMachine && <RealTimeData selectedMachine={selectedMachine} />}
 
+        {/* Sélection des catégories de données */}
+        <div style={{ marginBottom: "24px", display: "flex", gap: "16px" }}>
+          <button
+            onClick={() => setActiveDataCategory("performance")}
+            style={{
+              padding: "10px 16px",
+              backgroundColor: activeDataCategory === "performance" ? "#41AEAD" : "#eee",
+              color: activeDataCategory === "performance" ? "white" : "black",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: "bold",
+              flex: 1,
+              maxWidth: "300px"
+            }}
+          >
+            Données générales de performance
+          </button>
+          <button
+            onClick={() => setActiveDataCategory("technical")}
+            style={{
+              padding: "10px 16px",
+              backgroundColor: activeDataCategory === "technical" ? "#41AEAD" : "#eee",
+              color: activeDataCategory === "technical" ? "white" : "black",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: "bold",
+              flex: 1,
+              maxWidth: "300px"
+            }}
+          >
+            Données techniques
+          </button>
+        </div>
+
         {/* Sélection des périodes */}
         <div style={{ marginBottom: "24px", display: "flex", gap: "8px" }}>
           {periods.map((period) => (
             <button
-              key={period}
-              onClick={() => setSelectedPeriod(period)}
+              key={period.value}
+              onClick={() => setSelectedPeriod(period.value)}
               style={{
                 padding: "8px 16px",
-                backgroundColor: selectedPeriod === period ? "#41AEAD" : "#eee",
-                color: selectedPeriod === period ? "white" : "black",
+                backgroundColor: selectedPeriod === period.value ? "#41AEAD" : "#eee",
+                color: selectedPeriod === period.value ? "white" : "black",
                 border: "none",
                 borderRadius: "8px",
                 cursor: "pointer",
               }}
             >
-              {period.charAt(0).toUpperCase() + period.slice(1)}
+              {period.label}
             </button>
           ))}
         </div>
 
-        {/* Affichage des graphiques */}
+        {/* Affichage des graphiques filtrés par catégorie */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
-          {graphConfigs.map((cfg) => {
+          {filteredGraphs.map((cfg) => {
             // Si le graphique a une configuration multi-séries, utiliser MultiSeriesGraphComponent
             if (cfg.seriesConfig) {
               return (
@@ -351,3 +377,5 @@ if (isLoading) {
     </div>
   );
 }
+
+export default Dashboard;
