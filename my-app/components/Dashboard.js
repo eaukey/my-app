@@ -100,7 +100,9 @@ const graphConfigs = [
 
 const Dashboard = () => {
   const { user, isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0();
-  // Mapping dynamique <id automate> ➜ nom de la station (client/lieu)
+  // Liste complète des automates récupérés depuis l'API
+  const [allAutomates, setAllAutomates] = useState([]);
+  // Mapping <id automate> ➜ libellé d'affichage (lieu ou client)
   const [stationMapping, setStationMapping] = useState({});
   const [selectedPeriod, setSelectedPeriod] = useState("jour");
   const [selectedMachine, setSelectedMachine] = useState("");
@@ -124,7 +126,12 @@ const Dashboard = () => {
         if (!res.ok) {
           throw new Error(`Erreur serveur: ${res.status}`);
         }
-        const list = await res.json();
+        const list = await res.json(); // [{ nom_automate, client, lieu }, ...]
+
+        // Sauvegarde brute
+        setAllAutomates(list);
+
+        // Prépare un mapping id ➜ libellé (utilisé pour l'affichage)
         const map = {};
         list.forEach((item) => {
           map[item.nom_automate] = item.lieu || item.client || item.nom_automate;
@@ -140,18 +147,36 @@ const Dashboard = () => {
 
   // 2️⃣ Dès que l'utilisateur est chargé, construit la liste des machines qu'il peut voir
   useEffect(() => {
-    if (isAuthenticated && user) {
-      const machines = user["https://app.com/machines"] || [];
-      if (machines && machines.length > 0) {
-        const mappedStations = machines.map((id) => ({
-          id,
-          name: stationMapping[id] || `Station inconnue (${id})`,
-        }));
-        setAvailableMachines(mappedStations);
-        setSelectedMachine(mappedStations[0]?.id || "");
-      }
+    // ➜ Nouvelle logique : l'utilisateur possède une ou plusieurs *clients*
+    //    stockés dans l'app-metadata, ex. "https://app.com/clients": ["Lescot", "Colonna"]
+
+    let userClients = user["https://app.com/clients"] || user["https://app.com/client"] || [];
+    if (typeof userClients === "string") {
+      userClients = [userClients];
     }
-  }, [isAuthenticated, user, stationMapping]);
+
+    // Filtrer la liste des automates selon le ou les clients de l'utilisateur
+    const filtered = allAutomates.filter((auto) =>
+      userClients.includes(auto.client)
+    );
+
+    // Construire la liste pour la <select>
+    const mappedStations = filtered.map((auto) => ({
+      id: auto.nom_automate,
+      name: stationMapping[auto.nom_automate] || `Station inconnue (${auto.nom_automate})`,
+    }));
+
+    setAvailableMachines(mappedStations);
+
+    // Si la station sélectionnée actuelle n'est plus valide, on la remplace
+    if (mappedStations.length > 0) {
+      setSelectedMachine((prev) =>
+        mappedStations.some((s) => s.id === prev) ? prev : mappedStations[0].id
+      );
+    } else {
+      setSelectedMachine("");
+    }
+  }, [isAuthenticated, user, stationMapping, allAutomates]);
 
   // Filtrer les graphiques selon la catégorie active
   const filteredGraphs = graphConfigs.filter(graph => graph.category === activeDataCategory);
@@ -361,4 +386,3 @@ const Dashboard = () => {
 }
 
 export default Dashboard;
-
