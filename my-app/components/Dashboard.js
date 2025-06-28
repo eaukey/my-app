@@ -147,13 +147,19 @@ const Dashboard = () => {
 
   // 2️⃣ Dès que l'utilisateur est chargé, construit la liste des machines qu'il peut voir
   useEffect(() => {
-    // ➜ Nouvelle logique : l'utilisateur possède une ou plusieurs *clients*
+    if (!isAuthenticated || !user) {
+      return;
+    }
+
+    // ➜ Nouvelle logique : l'utilisateur possède un ou plusieurs *clients*
     //    stockés dans l'app-metadata, ex. "https://app.com/clients": ["Lescot", "Colonna"]
 
-    let userClients = user["https://app.com/clients"] || user["https://app.com/client"] || [];
+    let userClients = user["https://app.com/clients"] || user["https://app.com/client"] || user.clients || [];
     if (typeof userClients === "string") {
       userClients = [userClients];
     }
+
+    console.log("DEBUG - userClients:", userClients);
 
     // Filtrer la liste des automates selon le ou les clients de l'utilisateur
     const filtered = allAutomates.filter((auto) =>
@@ -165,6 +171,9 @@ const Dashboard = () => {
       id: auto.nom_automate,
       name: stationMapping[auto.nom_automate] || `Station inconnue (${auto.nom_automate})`,
     }));
+
+    console.log("DEBUG - filtered automates count:", filtered.length);
+    console.log("DEBUG - mappedStations:", mappedStations);
 
     setAvailableMachines(mappedStations);
 
