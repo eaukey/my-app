@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Home, BarChart2, Settings, MessageCircle, FileText } from "lucide-react";
+import { Home, BarChart2, Settings, MessageCircle, FileText, Table } from "lucide-react";
 import GraphComponent from "./GraphComponent";
 import MultiSeriesGraphComponent from "./MultiSeriesGraphComponent";
 import RealTimeData from "./RealTimeData";
@@ -215,6 +215,7 @@ const Dashboard = () => {
             { icon: Home, href: "/", title: "Accueil" },
             { icon: BarChart2, href: "/stock", title: "Stock" },
             { icon: Settings, href: "/pilotage", title: "Pilotage" },
+            { icon: Table, href: "/admin", title: "Automates" },
             { icon: MessageCircle, href: "/chat", title: "Chat" },
             { icon: FileText, href: "/documents", title: "Documents" },
           ].map(({ icon: Icon, href, title }) => (
