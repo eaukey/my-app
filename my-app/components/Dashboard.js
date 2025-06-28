@@ -163,10 +163,10 @@ const Dashboard = () => {
 
     console.log("DEBUG - userClients:", userClients);
 
-    // Filtrer la liste des automates selon le ou les clients de l'utilisateur
-    const filtered = allAutomates.filter((auto) =>
-      userClients.includes(auto.client)
-    );
+    // Pour un admin ➜ pas de filtre ; sinon on restreint aux clients autorisés
+    const filtered = isAdmin
+      ? allAutomates
+      : allAutomates.filter((auto) => userClients.includes(auto.client));
 
     // Construire la liste pour la <select>
     const mappedStations = filtered.map((auto) => ({
@@ -187,7 +187,7 @@ const Dashboard = () => {
     } else {
       setSelectedMachine("");
     }
-  }, [isAuthenticated, user, stationMapping, allAutomates]);
+  }, [isAuthenticated, user, stationMapping, allAutomates, isAdmin]);
 
   // Filtrer les graphiques selon la catégorie active
   const filteredGraphs = graphConfigs.filter(graph => graph.category === activeDataCategory);
