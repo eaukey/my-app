@@ -117,6 +117,8 @@ const Dashboard = () => {
     { label: "Année", value: "annee" }
   ];
 
+  const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
+
   // Récupérer les stations disponibles depuis les métadonnées utilisateur
   useEffect(() => {
     // 1️⃣ Récupère le mapping complet depuis l'API au premier rendu
@@ -215,7 +217,7 @@ const Dashboard = () => {
             { icon: Home, href: "/", title: "Accueil" },
             { icon: BarChart2, href: "/stock", title: "Stock" },
             { icon: Settings, href: "/pilotage", title: "Pilotage" },
-            { icon: Table, href: "/admin", title: "Automates" },
+            ...(isAdmin ? [{ icon: Table, href: "/admin", title: "Automates" }] : []),
             { icon: MessageCircle, href: "/chat", title: "Chat" },
             { icon: FileText, href: "/documents", title: "Documents" },
           ].map(({ icon: Icon, href, title }) => (
