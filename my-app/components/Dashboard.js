@@ -10,51 +10,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from 'next/image';
 
-const stationMapping = {
-  "2022124.0": "bourgoin",
-  "2022128.0": "St jean de soudain",
-  "2022127.0": "Villefontaine",
-  "2022123.0": "Froges",
-  "2022121.0": "SMH1",
-  "2024405.0": "Chambéry",
-  "202202.0": "Marseille",
-  "2022071.0": "Paul Claudel",
-  "20220910.0": "Aix",
-  "2023319.0": "Cabassud",
-  "2022099.0": "Salon de provence",
-  "2022083.0": "Herblay",
-  "20221214.0": "Fontenay",
-  "2023021.0": "Enval",
-  "2022084.0": "Marnaz",
-  "2022129.0": "Pertuis",
-  "2023047.0": "Marseille",
-  "2022092.0": "Roseraie / Carrefour",
-  "2022091.0": "Louis Delage / Polygone",
-  "20230618.0": "Rognac",
-  "2022911.0": "Saint Ambroix",
-  "2023039.0": "Mions",
-  "20231106.0": "Givors",
-  "2023063.0": "Chatel-Guyon",
-  "2023096.0": "Bouc-Bel-Air",
-  "2023018.0": "Coignières",
-  "2023619.0": "Prunelli-di-Fiumorbo (Corse)",
-  "2024715.0": "Station Vito - Cervione",
-  "20240714.0": "Sorbo - Ocagnano",
-  "2023117.0": "Authon du Perche",
-  "2023322.0": "Orleans",
-  "2023510.0": "Annecy",
-  "20240710.0": "La Riche",
-  "2024081.0": "Gruissan",
-  "20231014.0": "Saint Gervais la Forêt",
-  "20241020.0": "Relais Arinella Bastia",
-  "20241022.0": "Relais Balagne Calvi",
-  "2024123.0": "Relais Moriani San Nicolas",
-  "2024119.0": "Relais de Furiani",
-  "2024121.0": "Station Algojola",
-  "2024125.0": "Ets Marcel Ferrari",
-  "2024102.0": "Relais Alistro",
-  "20241026.0": "Relais Porticcio",
-};
+// Le mapping station <-> nom est désormais récupéré dynamiquement depuis l'API
+// via l'endpoint /recherche/automate_LCA (sans paramètre).
 
 // Configuration des graphiques
 const graphConfigs = [
@@ -143,6 +100,8 @@ const graphConfigs = [
 
 const Dashboard = () => {
   const { user, isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0();
+  // Mapping dynamique <id automate> ➜ nom de la station (client/lieu)
+  const [stationMapping, setStationMapping] = useState({});
   const [selectedPeriod, setSelectedPeriod] = useState("jour");
   const [selectedMachine, setSelectedMachine] = useState("");
   const [activeDataCategory, setActiveDataCategory] = useState("performance"); // "performance" ou "technical"
@@ -158,18 +117,41 @@ const Dashboard = () => {
 
   // Récupérer les stations disponibles depuis les métadonnées utilisateur
   useEffect(() => {
+    // 1️⃣ Récupère le mapping complet depuis l'API au premier rendu
+    const fetchStationMapping = async () => {
+      try {
+        const res = await fetch("https://backend-eaukey.duckdns.org/recherche/automate_LCA");
+        if (!res.ok) {
+          throw new Error(`Erreur serveur: ${res.status}`);
+        }
+        const list = await res.json();
+        const map = {};
+        list.forEach((item) => {
+          map[item.nom_automate] = item.lieu || item.client || item.nom_automate;
+        });
+        setStationMapping(map);
+      } catch (err) {
+        console.error("Erreur lors de la récupération du mapping des stations:", err);
+      }
+    };
+
+    fetchStationMapping();
+  }, []);
+
+  // 2️⃣ Dès que l'utilisateur est chargé, construit la liste des machines qu'il peut voir
+  useEffect(() => {
     if (isAuthenticated && user) {
       const machines = user["https://app.com/machines"] || [];
       if (machines && machines.length > 0) {
         const mappedStations = machines.map((id) => ({
-          id: id, // Conserver le numéro (ex. "2022124.0")
-          name: stationMapping[id] || `Station inconnue (${id})`, // Nom mappé
+          id,
+          name: stationMapping[id] || `Station inconnue (${id})`,
         }));
-        setAvailableMachines(mappedStations); // Stocker les objets { id, name }
-        setSelectedMachine(mappedStations[0]?.id || ""); // Sélectionner le premier numéro
+        setAvailableMachines(mappedStations);
+        setSelectedMachine(mappedStations[0]?.id || "");
       }
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, stationMapping]);
 
   // Filtrer les graphiques selon la catégorie active
   const filteredGraphs = graphConfigs.filter(graph => graph.category === activeDataCategory);
@@ -379,3 +361,4 @@ const Dashboard = () => {
 }
 
 export default Dashboard;
+
