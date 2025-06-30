@@ -32,8 +32,8 @@ const LoginLanding = () => {
   if (isLoading) return <LoadingComponent />;
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md">
+    <div className="login-gradient-bg flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center bg-white p-10 rounded-xl shadow-md bg-opacity-90 backdrop-blur">
         <Image
           src="/images/eaukey-logo.svg.png"
           alt="Eaukey Logo"
@@ -41,15 +41,21 @@ const LoginLanding = () => {
           height={120}
           priority
         />
-        <h1 className="text-2xl font-bold mt-6 mb-4 text-[#41AEAD] text-center">
-          Bienvenue sur Eaukey
+        <h1 className="text-3xl font-extrabold mt-6 mb-2 text-[#41AEAD] text-center">
+          Des données claires pour une eau mieux utilisée.
         </h1>
+        <p className="text-sm text-gray-600 mb-6 text-center max-w-xs">
+          Visualisez vos données en temps réel, identifiez les usages, mesurez le recyclage.
+        </p>
         <button
           onClick={() => loginWithRedirect()}
-          className="px-6 py-3 bg-[#41AEAD] text-white rounded-lg hover:bg-[#379c9a] transition"
+          className="neon-btn px-8 py-3 bg-[#41AEAD] text-white font-semibold rounded-lg transition relative overflow-hidden"
         >
           Se connecter
         </button>
+        <p className="text-[11px] text-gray-500 mt-4 text-center">
+          Authentification sécurisée via Auth0.
+        </p>
       </div>
     </div>
   );

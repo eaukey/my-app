@@ -1,3 +1,52 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* --- Fond sombre technique pour l'écran de connexion --- */
+.login-gradient-bg {
+  /* Superposition de deux halos et d'un dégradé diagonal */
+  background:
+    radial-gradient(800px 800px at 20% 20%, rgba(65, 174, 173, 0.35) 0%, transparent 60%),
+    radial-gradient(600px 600px at 80% 80%, rgba(0, 212, 255, 0.25) 0%, transparent 60%),
+    linear-gradient(135deg, #0a0f13 0%, #04161a 100%);
+  background-attachment: fixed;
+  background-size: cover;
+  animation: gradientShift 20s ease-in-out infinite alternate;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 0%, 0% 0%, 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%, 100% 100%, 0% 0%;
+  }
+}
+
+/* --- Bouton néon --- */
+.neon-btn {
+  position: relative;
+  overflow: hidden;
+  transition: color 0.3s;
+}
+
+.neon-btn::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, rgba(65,174,173,0) 0%, rgba(65,174,173,0.6) 50%, rgba(65,174,173,0) 100%);
+  transform: translateX(-100%) rotate(45deg);
+  transition: transform 0.5s ease;
+}
+
+.neon-btn:hover::before {
+  transform: translateX(100%) rotate(45deg);
+}
+
+.neon-btn:hover {
+  color: #fff;
+  box-shadow: 0 0 8px rgba(65,174,173,0.8), 0 0 15px rgba(65,174,173,0.6);
+}
