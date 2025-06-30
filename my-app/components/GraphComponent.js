@@ -19,6 +19,11 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
     setError(null);
     try {
       if (!endpoint) throw new Error("Endpoint non défini");
+      if (!selectedMachine) {
+        setData([]);
+        setLoading(false);
+        return;
+      }
       const response = await fetch(
         `https://backend-eaukey.duckdns.org${endpoint}?nom_automate=${selectedMachine}`
       );
