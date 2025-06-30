@@ -1,12 +1,15 @@
 "use client";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import ConversationList from "../../components/ConversationList";
+import ChatConversation from "../../../components/ChatConversation";
 
-export default function ChatPage() {
+export default function ConversationPage() {
   const { user, isAuthenticated } = useAuth0();
   const router = useRouter();
+  const params = useParams();
+  const { conversationId } = params;
 
   const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
   const clientId =
@@ -32,5 +35,11 @@ export default function ChatPage() {
   }
 
   // Client : en attente redirection
-  return <p>Chargement…</p>;
+  if (!conversationId) return <p>Client introuvable.</p>;
+
+  return (
+    <div className="h-screen p-4">
+      <ChatConversation clientId={conversationId} />
+    </div>
+  );
 } 

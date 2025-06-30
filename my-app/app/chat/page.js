@@ -1,13 +1,12 @@
 "use client";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ConversationList from "../../components/ConversationList";
 
 export default function ChatPage() {
   const { user, isAuthenticated } = useAuth0();
   const router = useRouter();
-  const [loadingConv, setLoadingConv] = useState(false);
 
   const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
   const clientId =
@@ -15,26 +14,11 @@ export default function ChatPage() {
     (Array.isArray(user?.clients) ? user.clients[0] : user?.clients);
 
   useEffect(() => {
-    // Pour les clients ➜ récupérer conv unique et rediriger
-    if (!isAuthenticated || isAdmin || loadingConv) return;
-    setLoadingConv(true);
-
-    const fetchConv = async () => {
-      try {
-        const res = await fetch(
-          `https://backend-eaukey.duckdns.org/conversations?user_id=${clientId}`
-        );
-        const convs = await res.json();
-        if (convs.length > 0) {
-          router.replace(`/chat/${convs[0].id}`);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchConv();
-  }, [isAuthenticated, isAdmin, clientId, router, loadingConv]);
+    // Pour les clients → redirection directe vers leur conversation
+    if (isAuthenticated && !isAdmin && clientId) {
+      router.replace(`/chat/${clientId}`);
+    }
+  }, [isAuthenticated, isAdmin, clientId, router]);
 
   if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
 
