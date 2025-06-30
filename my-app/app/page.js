@@ -44,7 +44,7 @@ const LoginLanding = () => {
         <h1 className="text-3xl font-extrabold mt-6 mb-2 text-[#41AEAD] text-center">
           Des données claires pour une eau mieux utilisée.
         </h1>
-        <p className="text-sm text-gray-600 mb-6 text-center max-w-xs">
+        <p className="text-sm text-gray-600 mb-6 text-center max-w-md">
           Visualisez vos données en temps réel, identifiez les usages, mesurez le recyclage.
         </p>
         <button
