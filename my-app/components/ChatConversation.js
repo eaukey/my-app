@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Send } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 
-export default function ChatConversation({ conversationId }) {
+export default function ChatConversation({ clientId }) {
   const { user, isAuthenticated } = useAuth0();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -12,13 +12,13 @@ export default function ChatConversation({ conversationId }) {
 
   // Fetch messages initially + poll every 5 s
   useEffect(() => {
-    if (!isAuthenticated || !conversationId) return;
+    if (!isAuthenticated || !clientId) return;
 
     let intervalId;
     const fetchMessages = async () => {
       try {
         const res = await fetch(
-          `https://backend-eaukey.duckdns.org/conversations/${conversationId}/messages`
+          `https://backend-eaukey.duckdns.org/messages/${clientId}`
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
@@ -34,7 +34,7 @@ export default function ChatConversation({ conversationId }) {
     intervalId = setInterval(fetchMessages, 5000);
 
     return () => clearInterval(intervalId);
-  }, [isAuthenticated, conversationId]);
+  }, [isAuthenticated, clientId]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function ChatConversation({ conversationId }) {
       ...prev,
       {
         id: Date.now(),
-        conversation_id: conversationId,
+        client_id: clientId,
         sender_id: senderId,
         content: txt,
         created_at: new Date().toISOString(),
@@ -69,7 +69,7 @@ export default function ChatConversation({ conversationId }) {
 
     try {
       await fetch(
-        `https://backend-eaukey.duckdns.org/conversations/${conversationId}/messages`,
+        `https://backend-eaukey.duckdns.org/messages/${clientId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

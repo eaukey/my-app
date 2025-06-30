@@ -1,3 +1,644 @@
+from fastapi import FastAPI, Query, HTTPException
+from typing import List, Tuple, Optional, Union
+import psycopg2
+from fastapi.middleware.cors import CORSMiddleware
+from datetime import date
+import decimal
+import os 
+
+# Création de l'instance FastAPI
+app = FastAPI()
+
+
+# Origines autorisées
+origins = ["https://my-app-zeta-blue.vercel.app",
+           "http://localhost:3000",
+           "http://127.0.0.1:3000"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Autorisez toutes les méthodes (GET, POST, etc.)
+    allow_headers=["*"],  # Autorisez tous les en-têtes
+)
+
+# Fonction de connexion PostgreSQL
+def get_connection():
+    return psycopg2.connect(
+        dbname="EaukeyCloudSQLv1",
+        user="romain",
+        password="Lzl?h<P@zxle6xuL",
+        host="35.195.185.218"
+    )
+
+def executer_requete_sql(requete_sql: str, params: tuple = None) -> List[Tuple]:
+    """
+    Exécute une requête SQL avec des paramètres optionnels.
+    """
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                # 1) Exécute la requête avec (ou sans) paramètres
+                if params:
+                    cur.execute(requete_sql, params)
+                else:
+                    cur.execute(requete_sql)
+
+                # 2) S'il s'agit d'une requête *sélective* (SELECT…) → on récupère les lignes
+                #    Pour les INSERT/UPDATE/DELETE, ⁠ cursor.description ⁠ vaut None et ⁠ fetchall() ⁠ lèverait
+                #    l'erreur  "no result to fetch".
+                if cur.description is not None:
+                    resultats = cur.fetchall()
+                else:
+                    resultats = []  # aucune donnée à renvoyer
+
+                # 3) Valide les changements pour les requêtes d'écriture
+                conn.commit()
+
+        return resultats
+    except Exception as e:
+        print(f"Erreur SQL : {e}")
+        return []
+
+# Fonction pour calculer la consommation
+def calculer_consommation_par_intervalle(resultat_sql: List[Tuple], timeframe: str = "jour") -> dict:
+    if not resultat_sql or len(resultat_sql) < 2:
+        return {"labels": [], "data": []}
+
+    labels = []
+    data = []
+    for i in range(1, len(resultat_sql)):
+        intervalle_actuel = resultat_sql[i][0]  # First column: could be hour or date
+        valeur_actuelle = resultat_sql[i][1]
+        valeur_precedente = resultat_sql[i - 1][1]
+        consommation = max(valeur_actuelle - valeur_precedente, 0)
+
+        # Format the label based on the timeframe
+        if timeframe.lower() == "jour":
+            labels.append(intervalle_actuel.strftime("%H:%M"))
+        elif timeframe.lower() == "semaine":
+            labels.append(str(intervalle_actuel).strip())  # Format as day name (e.g., "Monday")
+        elif timeframe.lower() == "mois":
+            labels.append(intervalle_actuel.strftime("%Y-%m-%d"))  # Format as "YYYY-MM-DD"
+        elif timeframe.lower() == "annee":
+            labels.append(intervalle_actuel.strftime("%B"))  # Format as full month name (e.g., "March")
+        else:
+            labels.append(str(intervalle_actuel))  # Fallback
+
+        data.append(consommation)
+
+    return {"labels": labels, "data": data}
+
+# ---------------------------------------------------------------------------
+# Nouvelle fonction : formatte les labels + valeurs pour l'API
+# ---------------------------------------------------------------------------
+from typing import List, Tuple
+import decimal
+import datetime as dt
+
+def formater_series(resultat_sql: List[Tuple], timeframe: str = "jour") -> dict:
+    """
+    Convertit la sortie d'une requête SQL en deux listes :
+      - labels  : abscisses formatées (heure, jour, date, mois)
+      - data    : valeurs numériques (float)
+
+    Hypothèse : la requête SQL renvoie déjà une ligne par intervalle
+                (heure, jour, semaine, mois…), PAS un compteur cumulatif.
+    """
+    if not resultat_sql:
+        return {"labels": [], "data": []}
+
+    labels: List[str] = []
+    data:   List[float] = []
+
+    tf = timeframe.lower()
+
+    for row in resultat_sql:
+        # 1) Récupère l'abscisse et la valeur
+        x = row[0]
+        y = row[1] if row[1] is not None else 0
+
+        # 2) Formate le label selon la période demandée
+        if tf == "jour":           # x = datetime (heure) -> "HH:MM"
+            label = x.strftime("%H:%M") if hasattr(x, "strftime") else str(x)
+        elif tf == "semaine":      # x = 'Monday' ou datetime -> nom du jour en anglais
+            label = x.strftime("%A") if hasattr(x, "strftime") else str(x).strip()
+        elif tf == "mois":         # x = date du lundi -> "YYYY-MM-DD"
+            label = x.strftime("%Y-%m-%d") if hasattr(x, "strftime") else str(x)
+        elif tf == "annee":        # x = date 1er mois -> "March"
+            label = x.strftime("%B") if hasattr(x, "strftime") else str(x)
+        else:
+            label = str(x)
+
+        # 3) Ajoute aux listes
+        labels.append(label)
+        data.append(float(y))
+
+    return {"labels": labels, "data": data}
+
+
+# Endpoints pour renvoi
+@app.get("/renvoi/jour_old")
+def volume_renvoi_jour(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+        WITH w AS (
+    SELECT
+        horodatage,
+        nom_automate,
+        compteur_eau_renvoi_m3
+    FROM   mesures
+    WHERE  nom_automate = %s
+      AND  horodatage  >= now() - INTERVAL '24 hours'
+      AND  horodatage  <  now()
+),
+deltas AS ( 
+    SELECT
+        date_trunc('hour', horodatage) AS heure,
+        GREATEST(
+            compteur_eau_renvoi_m3
+          - LAG(compteur_eau_renvoi_m3)
+              OVER (PARTITION BY nom_automate ORDER BY horodatage),
+            0
+        ) AS d_renvoi_m3
+    FROM w
+)
+SELECT
+    heure,
+    ROUND(SUM(d_renvoi_m3)::numeric, 2) AS vol_renvoi_m3
+FROM   deltas
+GROUP  BY heure
+ORDER  BY heure;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    return calculer_consommation_par_intervalle(result, timeframe="jour")
+
+@app.get("/renvoi/jour")
+def renvoi_jour_delta_m3(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+    SELECT
+      date_trunc('hour', horodatage)                    AS heure,
+      ROUND(AVG(compteur_eau_inst_renvoi_pc)::numeric, 1) AS inst_pc
+    FROM mesures
+    WHERE nom_automate = %s
+      AND horodatage   >= now() - INTERVAL '24 hours'
+      AND horodatage   <  now()
+    GROUP  BY heure
+    ORDER  BY heure;
+    """
+    rows = executer_requete_sql(query, (nom_automate,))
+    if not rows:
+        return {"labels": [], "data": []}
+
+    # labels = ["HH:MM", ...], inst_values = [inst_pc, ...]
+    labels      = [r[0].strftime("%H:%M") for r in rows]
+    inst_values = [r[1]              for r in rows]
+
+    # calcul des deltas m³ en tenant compte du rollover à 100%
+    data = []
+    for prev, curr in zip(inst_values, inst_values[1:]):
+        delta_pc = curr - prev if curr >= prev else (curr + 100) - prev
+        data.append(round(delta_pc / 100, 3))  # conversion % → m³
+
+    return {
+        "labels": labels[1:],  # on perd la première heure car pas de delta avant
+        "data":   data
+    }
+
+@app.get("/renvoi/semaine")
+def volume_renvoi_semaine(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+  WITH w AS (
+    SELECT
+        horodatage,
+        nom_automate,
+        compteur_eau_renvoi_m3
+    FROM   mesures
+    WHERE  nom_automate = %s
+      AND  horodatage  >= date_trunc('day', now()) - INTERVAL '7 days'
+      AND  horodatage  <  date_trunc('day', now()) + INTERVAL '1 day'
+),
+deltas AS (
+    SELECT
+        date_trunc('day', horodatage)::date AS jour,
+        GREATEST(
+            compteur_eau_renvoi_m3
+          - LAG(compteur_eau_renvoi_m3)
+              OVER (PARTITION BY nom_automate ORDER BY horodatage),
+            0
+        ) AS d_renvoi
+    FROM w
+),
+vols AS (
+    SELECT
+        jour,
+        ROUND(SUM(d_renvoi)::numeric, 2) AS vol_renvoi_m3
+    FROM   deltas
+    GROUP  BY jour
+),
+series AS (
+    SELECT generate_series(
+              date_trunc('day', now()) - INTERVAL '7 days',
+              date_trunc('day', now()),
+              '1 day'
+           )::date AS jour
+)
+SELECT
+    to_char(s.jour, 'FMDay')      AS day_name,
+    COALESCE(v.vol_renvoi_m3, 0)  AS vol_renvoi_m3
+FROM   series s
+LEFT   JOIN vols v USING (jour)
+ORDER  BY s.jour;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    return formater_series(result, timeframe="semaine")
+
+
+@app.get("/renvoi/mois")
+def volume_renvoi_mois(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+        SELECT DATE_TRUNC('week', rounded_timestamp)::DATE AS semaine_debut, 
+               MAX(compteur_eau_renvoi) AS derniere_valeur
+        FROM moyenne
+        WHERE nom_automate = %s 
+          AND rounded_timestamp >= NOW() - INTERVAL '1 month'
+        GROUP BY DATE_TRUNC('week', rounded_timestamp)
+        ORDER BY semaine_debut;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    return calculer_consommation_par_intervalle(result, timeframe="mois")
+
+@app.get("/renvoi/annee")
+def volume_renvoi_annee(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+        WITH month_max AS (
+    SELECT
+        date_trunc('month', rounded_timestamp)::date AS mois,
+        MAX(compteur_eau_renvoi)                  AS renvoi_max
+    FROM   moyenne
+    WHERE  nom_automate      = %s
+      AND  rounded_timestamp >= date_trunc('month', now()) - INTERVAL '12 months'
+      AND  rounded_timestamp <  date_trunc('month', now()) + INTERVAL '1 month'
+    GROUP  BY mois
+),
+
+/* 3) Volumes mensuels = Δ entre deux mois consécutifs */
+vols AS (
+    SELECT
+        mois,
+        GREATEST(
+            renvoi_max
+          - LAG(renvoi_max) OVER (ORDER BY mois),
+            0
+        ) AS vol_renvoi_m3
+    FROM month_max
+),
+
+/* 4) Grille complète des 13 mois (J−12 ➜ J) */
+grille AS (
+    SELECT generate_series(
+              date_trunc('month', now()) - INTERVAL '12 months',
+              date_trunc('month', now()),
+              '1 month'
+           )::date AS mois
+)
+
+/* 5) Assemblage final avec month_label */
+SELECT
+    TO_CHAR(grille.mois, 'FMMonth')   AS month_label,    -- May, June, July…
+    COALESCE(vols.vol_renvoi_m3, 0)    AS vol_renvoi_m3
+FROM   grille
+LEFT   JOIN vols USING (mois)
+ORDER  BY grille.mois;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    return formater_series(result, timeframe="annee")
+
+@app.get("/adoucie/jour_old")
+def volume_adoucie_jour(nom_automate: str = Query(...)):
+    query = """
+WITH w AS (
+    SELECT
+        horodatage,
+        nom_automate,
+        compteur_eau_adoucie_m3
+    FROM   mesures
+    WHERE  nom_automate = %s
+      AND  horodatage  >= now() - INTERVAL '24 hours'
+      AND  horodatage  <  now()
+),
+deltas AS (
+    SELECT
+        date_trunc('hour', horodatage) AS heure,
+        GREATEST(
+            compteur_eau_adoucie_m3
+          - LAG(compteur_eau_adoucie_m3)
+              OVER (PARTITION BY nom_automate ORDER BY horodatage),
+            0
+        ) AS d_adoucie_m3
+    FROM w
+)
+SELECT
+    heure,
+    ROUND(SUM(d_adoucie_m3)::numeric, 2) AS vol_adoucie_m3
+FROM   deltas
+GROUP  BY heure
+ORDER  BY heure;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    return formater_series(result, timeframe="jour")
+
+@app.get("/adoucie/jour")
+def adoucie_jour_delta_m3(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+    SELECT
+      date_trunc('hour', horodatage)                       AS heure,
+      ROUND(AVG(compteur_eau_inst_adoucie_pc)::numeric, 1) AS inst_pc
+    FROM mesures
+    WHERE nom_automate = %s
+      AND horodatage   >= now() - INTERVAL '24 hours'
+      AND horodatage   <  now()
+    GROUP  BY heure
+    ORDER  BY heure;
+    """
+    rows = executer_requete_sql(query, (nom_automate,))
+    if not rows:
+        return {"labels": [], "data": []}
+
+    # Extraire labels et valeurs brutes (%)
+    labels      = [r[0].strftime("%H:%M") for r in rows]
+    inst_values = [r[1]               for r in rows]
+
+    # Calculer le delta m³ en gérant le rollover à 100%
+    data = []
+    for prev, curr in zip(inst_values, inst_values[1:]):
+        delta_pc = curr - prev if curr >= prev else (curr + 100) - prev
+        data.append(round(delta_pc / 100, 3))  # conversion % → m³
+
+    return {
+        "labels": labels[1:],  # on perd la première heure (pas de delta avant)
+        "data":   data
+    }
+
+
+@app.get("/adoucie/semaine")
+def volume_adoucie_semaine(nom_automate: str = Query(...)):
+    query = """
+        WITH w AS (
+    SELECT
+        horodatage,
+        nom_automate,
+        compteur_eau_adoucie_m3
+    FROM   mesures
+    WHERE  nom_automate =%s
+      AND  horodatage  >= date_trunc('day', now()) - INTERVAL '7 days'
+      AND  horodatage  <  date_trunc('day', now()) + INTERVAL '1 day'
+),
+deltas AS (
+    SELECT
+        date_trunc('day', horodatage)::date AS jour,
+        GREATEST(
+            compteur_eau_adoucie_m3
+          - LAG(compteur_eau_adoucie_m3)
+              OVER (PARTITION BY nom_automate ORDER BY horodatage),
+            0
+        ) AS d_adoucie
+    FROM w
+),
+vols AS (
+    SELECT
+        jour,
+        ROUND(SUM(d_adoucie)::numeric, 2) AS vol_adoucie_m3
+    FROM   deltas
+    GROUP  BY jour
+),
+series AS (
+    SELECT generate_series(
+              date_trunc('day', now()) - INTERVAL '7 days',
+              date_trunc('day', now()),
+              '1 day'
+           )::date AS jour
+)
+SELECT
+    TO_CHAR(s.jour, 'FMDay')       AS day_name,
+    COALESCE(v.vol_adoucie_m3, 0)  AS vol_adoucie_m3
+FROM   series s
+LEFT   JOIN vols v USING (jour)
+ORDER  BY s.jour;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    return formater_series(result, timeframe="semaine")
+
+@app.get("/adoucie/mois")
+def volume_adoucie_mois(nom_automate: str = Query(...)):
+    query = """
+        SELECT DATE_TRUNC('week', rounded_timestamp)::DATE AS semaine_debut, 
+               MAX(compteur_eau_adoucie) AS derniere_valeur
+        FROM moyenne
+        WHERE nom_automate = %s 
+          AND rounded_timestamp >= NOW() - INTERVAL '1 month'
+        GROUP BY DATE_TRUNC('week', rounded_timestamp)
+        ORDER BY semaine_debut;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    return calculer_consommation_par_intervalle(result, timeframe="mois")
+
+@app.get("/adoucie/annee")
+def volume_adoucie_annee(nom_automate: str = Query(...)):
+    query = """
+        WITH month_max AS (
+    SELECT
+        date_trunc('month', rounded_timestamp)::date AS mois,
+        MAX(compteur_eau_adoucie)                   AS adoucie_max
+    FROM   moyenne
+    WHERE  nom_automate      = '2022911.0'
+      AND  rounded_timestamp >= date_trunc('month', now()) - INTERVAL '12 months'
+      AND  rounded_timestamp <  date_trunc('month', now()) + INTERVAL '1 month'
+    GROUP  BY mois
+),
+
+-- 3) Volumes mensuels = Δ entre deux mois consécutifs
+vols AS (
+    SELECT
+        mois,
+        GREATEST(
+            adoucie_max
+          - LAG(adoucie_max) OVER (ORDER BY mois),
+            0
+        ) AS vol_adoucie_m3
+    FROM month_max
+),
+
+-- 4) Grille complète des 13 mois (J-12 ➜ J)
+grille AS (
+    SELECT generate_series(
+              date_trunc('month', now()) - INTERVAL '12 months',
+              date_trunc('month', now()),
+              '1 month'
+           )::date AS mois
+)
+
+-- 5) Résultat final avec month_label en clair
+SELECT
+    TO_CHAR(grille.mois, 'FMMonth')   AS month_label,   -- May, June, July...
+    COALESCE(vols.vol_adoucie_m3, 0)   AS vol_adoucie_m3
+FROM   grille
+LEFT   JOIN vols USING (mois)
+ORDER  BY grille.mois;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    return formater_series(result, timeframe="annee")
+
+@app.get("/relevage/jour_old")
+def volume_relevage_jour(nom_automate: str = Query(...)):
+    query = """
+        WITH w AS (
+    SELECT
+        horodatage,
+        nom_automate,
+        compteur_eau_relevage_m3
+    FROM   mesures
+    WHERE  nom_automate = %s
+      AND  horodatage  >= now() - INTERVAL '24 hours'
+      AND  horodatage  <  now()
+),
+deltas AS (               
+    SELECT
+        date_trunc('hour', horodatage) AS heure,
+        GREATEST(
+            compteur_eau_relevage_m3
+          - LAG(compteur_eau_relevage_m3)
+              OVER (PARTITION BY nom_automate ORDER BY horodatage),
+            0
+        ) AS d_relevage_m3
+    FROM w
+)
+SELECT
+    heure,
+    ROUND(SUM(d_relevage_m3)::numeric, 2) AS vol_relevage_m3
+FROM   deltas
+GROUP  BY heure
+ORDER  BY heure;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    return calculer_consommation_par_intervalle(result, timeframe="jour")
+
+@app.get("/relevage/jour")
+def relevage_jour_delta_m3(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+    SELECT
+      date_trunc('hour', horodatage)                         AS heure,
+      ROUND(AVG(compteur_eau_inst_relevage_pc)::numeric, 1)  AS inst_pc
+    FROM mesures
+    WHERE nom_automate = %s
+      AND horodatage   >= now() - INTERVAL '24 hours'
+      AND horodatage   <  now()
+    GROUP  BY heure
+    ORDER  BY heure;
+    """
+    rows = executer_requete_sql(query, (nom_automate,))
+    if not rows:
+        return {"labels": [], "data": []}
+
+    # Extraire labels et valeurs brutes (%)
+    labels      = [r[0].strftime("%H:%M") for r in rows]
+    inst_values = [r[1]               for r in rows]
+
+    # Calculer le delta m³ en gérant le rollover à 100%
+    data = []
+    for prev, curr in zip(inst_values, inst_values[1:]):
+        delta_pc = curr - prev if curr >= prev else (curr + 100) - prev
+        data.append(round(delta_pc / 100, 3))  # conversion % → m³
+
+    return {
+        "labels": labels[1:],  # on perd la première heure (pas de delta avant)
+        "data":   data
+    }
+
+
+@app.get("/relevage/semaine")
+def volume_relevage_semaine(nom_automate: str = Query(...)):
+    query = """
+        WITH w AS (
+    SELECT
+        horodatage,
+        nom_automate,
+        compteur_eau_relevage_m3
+    FROM   mesures
+    WHERE  nom_automate = %s
+      AND  horodatage  >= date_trunc('day', now()) - INTERVAL '7 days'
+      AND  horodatage  <  date_trunc('day', now()) + INTERVAL '1 day'
+),
+deltas AS (
+    SELECT
+        date_trunc('day', horodatage)::date AS jour,
+        GREATEST(
+            compteur_eau_relevage_m3
+          - LAG(compteur_eau_relevage_m3)
+              OVER (PARTITION BY nom_automate ORDER BY horodatage),
+            0
+        ) AS d_relevage
+    FROM w
+),
+vols AS (
+    SELECT
+        jour,
+        ROUND(SUM(d_relevage)::numeric, 2) AS vol_relevage_m3
+    FROM   deltas
+    GROUP  BY jour
+),
+series AS (
+    SELECT generate_series(
+              date_trunc('day', now()) - INTERVAL '7 days',
+              date_trunc('day', now()),
+              '1 day'
+           )::date AS jour
+)
+SELECT
+    TO_CHAR(series.jour, 'FMDay') AS day_name,
+    COALESCE(vols.vol_relevage_m3, 0) AS vol_relevage_m3
+FROM   series
+LEFT   JOIN vols USING (jour)
+ORDER  BY series.jour;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    return formater_series(result, timeframe="semaine")
+
+@app.get("/relevage/mois")
+def volume_relevage_mois(nom_automate: str = Query(...)):
+    query = """
+        SELECT DATE_TRUNC('week', rounded_timestamp)::DATE AS semaine_debut, 
+               MAX(compteur_eau_relevage) AS derniere_valeur
+        FROM moyenne
+        WHERE nom_automate = %s 
+          AND rounded_timestamp >= NOW() - INTERVAL '1 month'
+        GROUP BY DATE_TRUNC('week', rounded_timestamp)
+        ORDER BY semaine_debut;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    return calculer_consommation_par_intervalle(result, timeframe="mois")
+
+@app.get("/relevage/annee")
+def volume_relevage_annee(nom_automate: str = Query(...)):
+    query = """
+        WITH month_max AS (
+    SELECT
+        date_trunc('month', rounded_timestamp)::date AS mois,
+        MAX(compteur_eau_relevage)                  AS relevage_max
+    FROM   moyenne
+    WHERE  nom_automate      = %s
+      AND  rounded_timestamp >= date_trunc('month', now()) - INTERVAL '12 months'
+      AND  rounded_timestamp <  date_trunc('month', now()) + INTERVAL '1 month'
+    GROUP  BY mois
+),
+
+-- 3) Volumes mensuels = Δ entre deux mois consécutifs
+vols AS (
+    SELECT
+        mois,
+        GREATEST(
+            relevage_max
+          - LAG(relevage_max) OVER (ORDER BY mois),
             0
         ) AS vol_relevage_m3
     FROM month_max
@@ -478,7 +1119,7 @@ def pression_all_semaine(nom_automate: str = Query(..., description="Nom de l'au
         ROUND(AVG(avg_pression5)) AS p5_mbar
     FROM   moyenne
     WHERE  nom_automate = %s
-      AND  rounded_timestamp >= date_trunc('day', now()) - INTERVAL '6 days'
+      AND  rounded_timestamp >= date_trunc('day', now()) - INTERVAL '7 days'
       AND  rounded_timestamp <  date_trunc('day', now()) + INTERVAL '1 day'
     GROUP  BY jour
     ORDER  BY jour;
@@ -532,8 +1173,8 @@ def pression_all_annee(nom_automate: str = Query(..., description="Nom de l'auto
         ROUND(AVG(avg_pression5))  AS pression5_mbar
     FROM   moyenne
     WHERE  nom_automate = %s
-      AND  rounded_timestamp >= date_trunc('year', now())
-      AND  rounded_timestamp <  date_trunc('year', now()) + INTERVAL '1 year'
+      AND  rounded_timestamp >= date_trunc('month', now()) - INTERVAL '12 months'
+      AND  rounded_timestamp <  date_trunc('month', now()) + INTERVAL '1 month'
     GROUP  BY mois
     ORDER  BY mois;
     """
@@ -554,41 +1195,45 @@ def pression_all_annee(nom_automate: str = Query(..., description="Nom de l'auto
 @app.get("/volumes_all/jour")
 def volumes_all_jour(nom_automate: str = Query(..., description="Nom de l'automate")):
     query = """
-    WITH w AS (
-        SELECT
-            horodatage,
-            nom_automate,
-            compteur_eau_renvoi_m3,
-            compteur_eau_adoucie_m3,
-            compteur_eau_relevage_m3
-        FROM   mesures
-        WHERE  nom_automate = %s
-          AND  horodatage   >= now() - INTERVAL '24 hours'
-          AND  horodatage   <  now()
-    ),
-    deltas AS (
-        SELECT
-            date_trunc('hour', horodatage) AS heure,
-            GREATEST(compteur_eau_renvoi_m3 - LAG(compteur_eau_renvoi_m3) OVER (PARTITION BY nom_automate ORDER BY horodatage), 0) AS d_renvoi_m3,
-            GREATEST(compteur_eau_adoucie_m3 - LAG(compteur_eau_adoucie_m3) OVER (PARTITION BY nom_automate ORDER BY horodatage), 0) AS d_adoucie_m3,
-            GREATEST(compteur_eau_relevage_m3 - LAG(compteur_eau_relevage_m3) OVER (PARTITION BY nom_automate ORDER BY horodatage), 0) AS d_relevage_m3
-        FROM w
-    )
     SELECT
-        heure,
-        ROUND(SUM(d_renvoi_m3)::numeric, 2) AS vol_renvoi_m3,
-        ROUND(SUM(d_adoucie_m3)::numeric, 2) AS vol_adoucie_m3,
-        ROUND(SUM(d_relevage_m3)::numeric, 2) AS vol_relevage_m3
-    FROM   deltas
+      date_trunc('hour', horodatage)                       AS heure,
+      ROUND(AVG(compteur_eau_inst_renvoi_pc)::numeric, 1)   AS renvoi_pc,
+      ROUND(AVG(compteur_eau_inst_adoucie_pc)::numeric, 1)  AS adoucie_pc,
+      ROUND(AVG(compteur_eau_inst_relevage_pc)::numeric, 1) AS relevage_pc
+    FROM mesures
+    WHERE nom_automate = %s
+      AND horodatage   >= now() - INTERVAL '24 hours'
+      AND horodatage   <  now()
     GROUP  BY heure
     ORDER  BY heure;
     """
-    result = executer_requete_sql(query, (nom_automate,))
+    rows = executer_requete_sql(query, (nom_automate,))
+
+    if not rows:
+        return {
+            "labels": [],
+            "vol_renvoi_m3": [],
+            "vol_adoucie_m3": [],
+            "vol_relevage_m3": [],
+        }
+
+    labels = [r[0].strftime("%H:%M") for r in rows]
+    renvoi_pc   = [r[1] for r in rows]
+    adoucie_pc  = [r[2] for r in rows]
+    relevage_pc = [r[3] for r in rows]
+
+    def _deltas(values: list[float]):
+        deltas = []
+        for prev, curr in zip(values, values[1:]):
+            delta_pc = curr - prev if curr >= prev else (curr + 100) - prev
+            deltas.append(round(delta_pc / 100, 3))  # 1 % = 0,01 m³
+        return deltas
+
     return {
-        "labels": [row[0].strftime("%H:%M") for row in result],
-        "vol_renvoi_m3": [row[1] for row in result],
-        "vol_adoucie_m3": [row[2] for row in result],
-        "vol_relevage_m3": [row[3] for row in result],
+        "labels": labels[1:],
+        "vol_renvoi_m3":   _deltas(renvoi_pc),
+        "vol_adoucie_m3":  _deltas(adoucie_pc),
+        "vol_relevage_m3": _deltas(relevage_pc),
     }
 
 @app.get("/volumes_all/semaine")
@@ -603,7 +1248,7 @@ def volumes_all_semaine(nom_automate: str = Query(..., description="Nom de l'aut
             compteur_eau_relevage
         FROM   moyenne
         WHERE  nom_automate = %s
-          AND  rounded_timestamp >= date_trunc('day', now()) - INTERVAL '6 days'
+          AND  rounded_timestamp >= date_trunc('day', now()) - INTERVAL '7 days'
           AND  rounded_timestamp <  date_trunc('day', now()) + INTERVAL '1 day'
     ),
     deltas AS (
@@ -683,8 +1328,8 @@ def volumes_all_annee(nom_automate: str = Query(..., description="Nom de l'autom
             compteur_eau_relevage
         FROM   moyenne
         WHERE  nom_automate = %s
-          AND  rounded_timestamp >= date_trunc('year', now())
-          AND  rounded_timestamp <  date_trunc('year', now()) + INTERVAL '1 year'
+          AND  rounded_timestamp >= date_trunc('month', now()) - INTERVAL '12 months'
+          AND  rounded_timestamp <  date_trunc('month', now()) + INTERVAL '1 month'
     ),
     deltas AS (
         SELECT
@@ -742,7 +1387,7 @@ def temperature_semaine(nom_automate: str = Query(..., description="Nom de l'aut
         ROUND(AVG(avg_temperature)::numeric, 1)   AS temp_moy_C
     FROM   moyenne
     WHERE  nom_automate = %s
-      AND  rounded_timestamp >= date_trunc('day', now()) - INTERVAL '6 days'
+      AND  rounded_timestamp >= date_trunc('day', now()) - INTERVAL '7 days'
       AND  rounded_timestamp <  date_trunc('day', now()) + INTERVAL '1 day'
     GROUP  BY jour
     ORDER  BY jour;
@@ -780,8 +1425,8 @@ def temperature_annee(nom_automate: str = Query(..., description="Nom de l'autom
         ROUND(AVG(avg_temperature)::numeric, 1)     AS temp_moy_C
     FROM   moyenne
     WHERE  nom_automate = %s
-      AND  rounded_timestamp >= date_trunc('year', now())
-      AND  rounded_timestamp <  date_trunc('year', now()) + INTERVAL '1 year'
+      AND  rounded_timestamp >= date_trunc('month', now()) - INTERVAL '12 months'
+      AND  rounded_timestamp <  date_trunc('month', now()) + INTERVAL '1 month'
     GROUP  BY mois
     ORDER  BY mois;
     """
@@ -822,7 +1467,7 @@ def chlore_semaine(nom_automate: str = Query(..., description="Nom de l'automate
         ROUND(AVG(avg_chlore)::numeric, 2)       AS chlore_moy_mg_L
     FROM   moyenne
     WHERE  nom_automate = %s
-      AND  rounded_timestamp >= date_trunc('day', now()) - INTERVAL '6 days'
+      AND  rounded_timestamp >= date_trunc('day', now()) - INTERVAL '7 days'
       AND  rounded_timestamp <  date_trunc('day', now()) + INTERVAL '1 day'
     GROUP  BY jour
     ORDER  BY jour;
@@ -860,8 +1505,8 @@ def chlore_annee(nom_automate: str = Query(..., description="Nom de l'automate")
         ROUND(AVG(avg_chlore)::numeric, 2)        AS chlore_moy_mg_L
     FROM   moyenne
     WHERE  nom_automate = %s
-      AND  rounded_timestamp >= date_trunc('year', now())
-      AND  rounded_timestamp <  date_trunc('year', now()) + INTERVAL '1 year'
+      AND  rounded_timestamp >= date_trunc('month', now()) - INTERVAL '12 months'
+      AND  rounded_timestamp <  date_trunc('month', now()) + INTERVAL '1 month'
     GROUP  BY mois
     ORDER  BY mois;
     """
@@ -902,7 +1547,7 @@ def ph_semaine(nom_automate: str = Query(..., description="Nom de l'automate")):
         ROUND(AVG(ph)::numeric, 2)         AS ph_moyen
     FROM   mesures
     WHERE  nom_automate  = %s
-      AND  horodatage   >= date_trunc('day', now()) - INTERVAL '6 days'
+      AND  horodatage   >= date_trunc('day', now()) - INTERVAL '7 days'
       AND  horodatage   <  date_trunc('day', now()) + INTERVAL '1 day'
     GROUP  BY jour
     ORDER  BY jour;
@@ -940,8 +1585,8 @@ def ph_annee(nom_automate: str = Query(..., description="Nom de l'automate")):
         ROUND(AVG(avg_ph)::numeric, 2)         AS ph_moyen
     FROM   moyenne
     WHERE  nom_automate = %s
-      AND  rounded_timestamp >= date_trunc('year', now())
-      AND  rounded_timestamp <  date_trunc('year', now()) + INTERVAL '1 year'
+      AND  rounded_timestamp >= date_trunc('month', now()) - INTERVAL '12 months'
+      AND  rounded_timestamp <  date_trunc('month', now()) + INTERVAL '1 month'
     GROUP  BY mois
     ORDER  BY mois;
     """
@@ -1002,7 +1647,7 @@ def compteur_elec_semaine(nom_automate: str = Query(..., description="Nom de l'a
             compteur_electrique
         FROM   moyenne
         WHERE  nom_automate = %s
-          AND  rounded_timestamp >= date_trunc('day', now()) - INTERVAL '6 days'
+          AND  rounded_timestamp >= date_trunc('day', now()) - INTERVAL '7 days'
           AND  rounded_timestamp <  date_trunc('day', now()) + INTERVAL '1 day'
     ),
     deltas AS (
@@ -1076,8 +1721,8 @@ def compteur_elec_annee(nom_automate: str = Query(..., description="Nom de l'aut
             compteur_electrique
         FROM   moyenne
         WHERE  nom_automate = %s
-          AND  rounded_timestamp >= date_trunc('year', now())
-          AND  rounded_timestamp <  date_trunc('year', now()) + INTERVAL '1 year'
+          AND  rounded_timestamp >= date_trunc('month', now()) - INTERVAL '12 months'
+          AND  rounded_timestamp <  date_trunc('month', now()) + INTERVAL '1 month'
     ),
     deltas AS (
         SELECT
@@ -1102,6 +1747,413 @@ def compteur_elec_annee(nom_automate: str = Query(..., description="Nom de l'aut
         "labels": [row[0].strftime("%B") for row in result],
         "data": [row[1] for row in result],
     }
+
+# -------------------
+# ENDPOINTS DONNÉES TEMPS RÉEL
+# -------------------
+
+@app.get("/temps_reel/cuve_relevage")
+def temps_reel_cuve_relevage(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+    SELECT
+      horodatage,
+      compteur_eau_inst_relevage_pc AS cuve_relevage_pct
+    FROM mesures
+    WHERE nom_automate = %s
+    ORDER BY horodatage DESC
+    LIMIT 1;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    if not result:
+        return {"horodatage": None, "valeur": 0}
+    
+    return {
+        "horodatage": result[0][0].strftime("%Y-%m-%d %H:%M:%S"),
+        "valeur": float(result[0][1]) if result[0][1] is not None else 0
+    }
+
+@app.get("/temps_reel/cuve_renvoi")
+def temps_reel_cuve_renvoi(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+    SELECT
+      horodatage,
+      compteur_eau_inst_renvoi_pc AS cuve_renvoi_pct
+    FROM mesures
+    WHERE nom_automate = %s
+    ORDER BY horodatage DESC
+    LIMIT 1;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    if not result:
+        return {"horodatage": None, "valeur": 0}
+    
+    return {
+        "horodatage": result[0][0].strftime("%Y-%m-%d %H:%M:%S"),
+        "valeur": float(result[0][1]) if result[0][1] is not None else 0
+    }
+
+@app.get("/temps_reel/cuve_adoucie")
+def temps_reel_cuve_adoucie(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+    SELECT
+      horodatage,
+      compteur_eau_inst_adoucie_pc AS cuve_adoucie_pct
+    FROM mesures
+    WHERE nom_automate = %s
+    ORDER BY horodatage DESC
+    LIMIT 1;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    if not result:
+        return {"horodatage": None, "valeur": 0}
+    
+    return {
+        "horodatage": result[0][0].strftime("%Y-%m-%d %H:%M:%S"),
+        "valeur": float(result[0][1]) if result[0][1] is not None else 0
+    }
+
+@app.get("/temps_reel/volume_renvoi")
+def temps_reel_volume_renvoi(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+    SELECT
+      horodatage,
+      compteur_eau_renvoi_m3 AS vol_renvoi_m3
+    FROM mesures
+    WHERE nom_automate = %s
+    ORDER BY horodatage DESC
+    LIMIT 1;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    if not result:
+        return {"horodatage": None, "valeur": 0}
+    
+    return {
+        "horodatage": result[0][0].strftime("%Y-%m-%d %H:%M:%S"),
+        "valeur": float(result[0][1]) if result[0][1] is not None else 0
+    }
+
+@app.get("/temps_reel/compteur_electrique")
+def temps_reel_compteur_electrique(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+    SELECT
+      horodatage,
+      compteur_electrique_kwh AS conso_kwh
+    FROM mesures
+    WHERE nom_automate = %s
+     AND compteur_electrique_kwh > 0
+    ORDER BY horodatage DESC
+    LIMIT 1;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    if not result:
+        return {"horodatage": None, "valeur": 0}
+    
+    return {
+        "horodatage": result[0][0].strftime("%Y-%m-%d %H:%M:%S"),
+        "valeur": float(result[0][1]) if result[0][1] is not None else 0
+    }
+
+@app.get("/recherche/automate_LCA")
+def recherche_automate_lca(
+    nom_automate: Optional[str] = Query(None, description="Nom de l'automate (optionnel)"),
+):
+    """Récupère les métadonnées d'un automate.
+
+    - Si nom_automate est fourni ➜ renvoie un seul enregistrement (dict).
+    - Sinon ➜ renvoie *tous* les automates (liste de dicts).
+    """
+
+    # Cas 1️⃣ : on veut un automate précis
+    if nom_automate:
+        query = (
+            "SELECT nom_automate, client, lieu "
+            "FROM automate "
+            "WHERE nom_automate = %s;"
+        )
+        rows = executer_requete_sql(query, (nom_automate,))
+        if not rows:
+            return {"nom_automate": None, "client": None, "lieu": None}
+
+        row = rows[0]
+        return {"nom_automate": row[0], "client": row[1], "lieu": row[2]}
+
+    # Cas 2️⃣ : pas de filtre ➜ on renvoie tout
+    query = "SELECT nom_automate, client, lieu FROM automate;"
+    rows = executer_requete_sql(query)
+    return [
+        {"nom_automate": r[0], "client": r[1], "lieu": r[2]} for r in rows
+    ]
+
+# ---------------------------------------------------------------------------
+# ENDPOINTS CRUD SUR LA TABLE AUTOMATE (réservés aux admins côté front)
+# ---------------------------------------------------------------------------
+
+from pydantic import BaseModel
+
+
+class AutomateIn(BaseModel):
+    nom_automate: str
+    client: str
+    lieu: str
+
+
+@app.post("/automate")
+def add_automate(auto: AutomateIn):
+    """Ajoute un automate dans la table automate."""
+    query = """
+        INSERT INTO automate (nom_automate, client, lieu)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (nom_automate) DO NOTHING;
+    """
+    try:
+        executer_requete_sql(query, (auto.nom_automate, auto.client, auto.lieu))
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+class AutomateUpdate(BaseModel):
+    client: str | None = None
+    lieu: str | None = None
+
+
+@app.put("/automate/{nom_automate}")
+def update_automate(nom_automate: str, upd: AutomateUpdate):
+    """Met à jour client et/ou lieu pour un automate."""
+    fields = []
+    values = []
+    if upd.client is not None:
+        fields.append("client = %s")
+        values.append(upd.client)
+    if upd.lieu is not None:
+        fields.append("lieu   = %s")
+        values.append(upd.lieu)
+
+    if not fields:
+        return {"status": "error", "message": "Aucune donnée à mettre à jour"}
+
+    values.append(nom_automate)
+    query = f"UPDATE automate SET {', '.join(fields)} WHERE nom_automate = %s;"
+    try:
+        executer_requete_sql(query, tuple(values))
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@app.delete("/automate/{nom_automate}")
+def delete_automate(nom_automate: str):
+    """Supprime un automate par son id."""
+    query = "DELETE FROM automate WHERE nom_automate = %s;"
+    try:
+        executer_requete_sql(query, (nom_automate,))
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# -------------------
+# ENDPOINTS MESSAGERIE
+# -------------------
+
+# Modèles Pydantic pour la messagerie
+class ConversationOut(BaseModel):
+    id: int
+    client_id: int
+    type: str
+    created_at: str
+
+
+class MessageIn(BaseModel):
+    sender_id: int
+    content: Optional[str] = None
+    file_url: Optional[str] = None
+
+
+class MessageOut(BaseModel):
+    id: int
+    conversation_id: int
+    sender_id: int
+    content: Optional[str] = None
+    file_url: Optional[str] = None
+    created_at: str
+
+
+# Helper pour récupérer une seule ligne
+def executer_requete_sql_one(query: str, params: tuple = ()):
+    rows = executer_requete_sql(query, params)
+    return rows[0] if rows else None
+
+
+@app.get("/conversations", response_model=List[ConversationOut])
+def get_conversations(user_id: Optional[str] = None, is_admin: bool = False):
+    """Renvoie toutes les conversations.
+
+    • admin ➜ assure qu'il existe au moins une conversation "support" pour *chaque* client
+      (clients récupérés via la table automate).
+    • client ➜ crée une conversation "support" pour le client courant si absente.
+    """
+
+    if is_admin:
+        # Récupère la liste des clients (colonne automate.client)
+        client_rows = executer_requete_sql("SELECT DISTINCT client FROM automate WHERE client IS NOT NULL")
+        for (cid,) in client_rows:
+            _ensure_conversation(cid)
+
+        q = "SELECT id, client_id, type, created_at FROM conversations ORDER BY created_at DESC"
+        params: tuple = ()
+    else:
+        if user_id is None:
+            raise HTTPException(status_code=400, detail="user_id query param required")
+
+        # On garantit la conversation du client
+        _ensure_conversation(user_id)
+
+        q = "SELECT id, client_id, type, created_at FROM conversations WHERE client_id = %s ORDER BY created_at DESC"
+        params = (user_id,)
+
+    rows = executer_requete_sql(q, params)
+    return [{"id": r[0], "client_id": r[1], "type": r[2], "created_at": r[3]} for r in rows]
+
+
+class ConversationIn(BaseModel):
+    client_id: Union[str, int]
+    type: str
+
+@app.post("/conversations", response_model=ConversationOut)
+def create_conversation(conv: ConversationIn):
+    q = "INSERT INTO conversations (client_id, type) VALUES (%s, %s) RETURNING id, created_at"
+    row = executer_requete_sql_one(q, (conv.client_id, conv.type))
+    if not row:
+        raise HTTPException(status_code=500, detail="Failed to create conversation")
+    return {"id": row[0], "client_id": conv.client_id, "type": conv.type, "created_at": row[1]}
+
+
+@app.get("/conversations/{conversation_id}/messages", response_model=List[MessageOut])
+def get_messages(conversation_id: int):
+    q = "SELECT id, conversation_id, sender_id, content, file_url, created_at FROM messages WHERE conversation_id = %s ORDER BY created_at"
+    rows = executer_requete_sql(q, (conversation_id,))
+    return [
+        {"id": r[0], "conversation_id": r[1], "sender_id": r[2], "content": r[3], "file_url": r[4], "created_at": r[5]} for r in rows
+    ]
+
+
+@app.post("/conversations/{conversation_id}/messages", response_model=MessageOut)
+def post_message(conversation_id: int, message: MessageIn):
+    q = "INSERT INTO messages (conversation_id, sender_id, content, file_url) VALUES (%s, %s, %s, %s) RETURNING id, created_at"
+    row = executer_requete_sql_one(q, (conversation_id, message.sender_id, message.content, message.file_url))
+    if not row:
+        raise HTTPException(status_code=500, detail="Failed to insert message")
+    return {
+        "id": row[0],
+        "conversation_id": conversation_id,
+        "sender_id": message.sender_id,
+        "content": message.content,
+        "file_url": message.file_url,
+        "created_at": row[1],
+    }
+
+# -------------------
+# FIN ENDPOINTS MESSAGERIE
+# -------------------
+
+# --------------------------------------------------
+# Helper: assure qu'une conversation "support" existe pour un client
+# --------------------------------------------------
+
+def _ensure_conversation(client_id: str | int, conv_type: str = "support") -> None:
+    """Crée une conversation (client_id, conv_type) si elle n'existe pas."""
+    existing = executer_requete_sql_one(
+        "SELECT id FROM conversations WHERE client_id = %s AND type = %s",
+        (client_id, conv_type),
+    )
+    if existing is None:
+        executer_requete_sql_one(
+            "INSERT INTO conversations (client_id, type) VALUES (%s, %s) RETURNING id",
+            (client_id, conv_type),
+        )
+
+# -------------------
+# ENDPOINTS MESSAGERIE SIMPLIFIÉS
+# -------------------
+
+class MessageIn(BaseModel):
+    sender_id: int
+    content: Optional[str] = None
+    file_url: Optional[str] = None
+
+class MessageOut(BaseModel):
+    id: int
+    client_id: str
+    sender_id: int
+    content: Optional[str] = None
+    file_url: Optional[str] = None
+    created_at: str
+
+class ClientConversation(BaseModel):
+    client_id: str
+    client_name: str
+
+@app.get("/clients", response_model=List[ClientConversation])
+def get_clients(is_admin: bool = False):
+    """
+    Renvoie la liste des clients (= conversations disponibles).
+    - Admin: tous les clients
+    - Client: juste le sien
+    """
+    if is_admin:
+        query = "SELECT DISTINCT client FROM automate WHERE client IS NOT NULL ORDER BY client"
+        rows = executer_requete_sql(query)
+        return [{"client_id": r[0], "client_name": r[0]} for r in rows]
+    else:
+        # Pour un client, on pourrait retourner juste le sien, mais pas vraiment utile
+        return []
+
+@app.get("/messages/{client_id}", response_model=List[MessageOut])
+def get_messages_for_client(client_id: str):
+    """Récupère tous les messages pour un client donné."""
+    query = """
+        SELECT id, client_id, sender_id, content, file_url, created_at 
+        FROM messages 
+        WHERE client_id = %s 
+        ORDER BY created_at
+    """
+    rows = executer_requete_sql(query, (client_id,))
+    return [
+        {
+            "id": r[0], 
+            "client_id": r[1], 
+            "sender_id": r[2], 
+            "content": r[3], 
+            "file_url": r[4], 
+            "created_at": r[5]
+        } 
+        for r in rows
+    ]
+
+@app.post("/messages/{client_id}", response_model=MessageOut)
+def post_message_for_client(client_id: str, message: MessageIn):
+    """Ajoute un message pour un client."""
+    query = """
+        INSERT INTO messages (client_id, sender_id, content, file_url) 
+        VALUES (%s, %s, %s, %s) 
+        RETURNING id, created_at
+    """
+    row = executer_requete_sql_one(query, (client_id, message.sender_id, message.content, message.file_url))
+    if not row:
+        raise HTTPException(status_code=500, detail="Failed to insert message")
+    
+    return {
+        "id": row[0],
+        "client_id": client_id,
+        "sender_id": message.sender_id,
+        "content": message.content,
+        "file_url": message.file_url,
+        "created_at": row[1],
+    }
+
+# -------------------
+# FIN ENDPOINTS MESSAGERIE SIMPLIFIÉS
+# -------------------
 
 if __name__ == "__main__":
     import uvicorn
