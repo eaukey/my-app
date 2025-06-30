@@ -14,6 +14,8 @@ export default function ChatPage() {
     (Array.isArray(user?.clients) ? user.clients[0] : user?.clients);
 
   useEffect(() => {
+    console.log("user =", user);
+    console.log("isAdmin =", isAdmin, "clientId =", clientId);
     // Pour les clients → redirection directe vers leur conversation
     if (isAuthenticated && !isAdmin && clientId) {
       router.replace(`/chat/${clientId}`);
