@@ -50,6 +50,11 @@ export default function ChatConversation({ clientId }) {
     return Number.isNaN(num) ? 0 : num;
   })();
 
+  const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
+  const displayName =
+    user?.["https://app.com/display_name"] || user?.name || (isAdmin ? "Support" : user?.["https://app.com/client"]);
+  const otherName = isAdmin ? clientId : "Support";
+
   const handleSend = async () => {
     const txt = newMessage.trim();
     if (!txt) return;
@@ -87,15 +92,23 @@ export default function ChatConversation({ clientId }) {
   return (
     <div className="flex flex-col h-full">
       {/* Zone messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col justify-end">
+        {/* Liste des messages */}
         {messages.map((msg) => {
           const isMe = msg.sender_id == senderId;
           return (
             <div
               key={msg.id}
-              className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+              className={`flex ${isMe ? "justify-end" : "justify-start"} mb-3`}
             >
-              <div className="bg-gray-100 p-3 rounded-lg max-w-[80%]">
+              <div
+                className={`p-3 rounded-xl max-w-[70%] shadow-sm ${
+                  isMe ? "bg-[#E6F7F6]" : "bg-white"
+                }`}
+              >
+                <div className="text-xs font-semibold text-gray-600 mb-1">
+                  {isMe ? displayName : otherName}
+                </div>
                 <p className="text-gray-800 whitespace-pre-wrap">{msg.content}</p>
                 <span className="text-xs text-gray-500 block mt-1">
                   {new Date(msg.created_at).toLocaleTimeString()}

@@ -1,12 +1,15 @@
 "use client";
 import React, { useState } from 'react';
-import { Home, BarChart2, Settings, MessageCircle, FileText, PlusCircle, MinusCircle } from 'lucide-react';
+import { Home, BarChart2, Settings, MessageCircle, FileText, Table, PlusCircle, MinusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
+import { useAuth0 } from '@auth0/auth0-react';
 
 export default function StockDashboard() {
  const pathname = usePathname();
+ const { user } = useAuth0();
+ const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
  
  const [stocks, setStocks] = useState([
    { id: 1, name: 'Filtre 5 microns', quantity: 15 },
@@ -60,6 +63,7 @@ export default function StockDashboard() {
            { icon: Home, href: '/', title: 'Accueil' },
            { icon: BarChart2, href: '/stock', title: 'Stock' },
            { icon: Settings, href: '/pilotage', title: 'Pilotage' },
+           ...(isAdmin ? [{ icon: Table, href: '/admin', title: 'Automates' }] : []),
            { icon: MessageCircle, href: '/chat', title: 'Chat' },
            { icon: FileText, href: '/documents', title: 'Documents' }
          ].map(({ icon: Icon, href, title }) => (

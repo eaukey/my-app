@@ -1,13 +1,16 @@
 "use client";
 import React, { useState } from 'react';
-import { Home, BarChart2, Settings, MessageCircle, FileText, Search, Download, Video } from 'lucide-react';
+import { Home, BarChart2, Settings, MessageCircle, FileText, Table, Search, Download, Video } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
+import { useAuth0 } from '@auth0/auth0-react';
 
 const DocumentLibrary = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const pathname = usePathname();
+  const { user } = useAuth0();
+  const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
   
   const documents = [
     { id: 1, name: 'Guide d\'utilisation.pdf', type: 'pdf', size: '2,5 MB', date: '15/12/2024' },
@@ -45,6 +48,7 @@ const DocumentLibrary = () => {
             { icon: Home, href: '/', title: 'Accueil' },
             { icon: BarChart2, href: '/stock', title: 'Stock' },
             { icon: Settings, href: '/pilotage', title: 'Pilotage' },
+            ...(isAdmin ? [{ icon: Table, href: '/admin', title: 'Automates' }] : []),
             { icon: MessageCircle, href: '/chat', title: 'Chat' },
             { icon: FileText, href: '/documents', title: 'Documents' }
           ].map(({ icon: Icon, href, title }) => (

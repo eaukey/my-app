@@ -1,9 +1,10 @@
 "use client";
 import React, { useState } from 'react';
-import { Home, BarChart2, Settings, MessageCircle, FileText } from 'lucide-react';
+import { Home, BarChart2, Settings, MessageCircle, FileText, Table } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
+import { useAuth0 } from '@auth0/auth0-react';
 
 // Composant ToggleSwitch
 const ToggleSwitch = ({ isOn, onToggle, label }) => {
@@ -38,6 +39,8 @@ const ToggleSwitch = ({ isOn, onToggle, label }) => {
 
 export default function PilotageDashboard() {
  const pathname = usePathname();
+ const { user } = useAuth0();
+ const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
  const [binaryControls, setBinaryControls] = useState({
    relevage: false,
    stopSwitchRelevage: false,
@@ -113,6 +116,7 @@ export default function PilotageDashboard() {
            { icon: Home, href: '/', title: 'Accueil' },
            { icon: BarChart2, href: '/stock', title: 'Stock' },
            { icon: Settings, href: '/pilotage', title: 'Pilotage' },
+           ...(isAdmin ? [{ icon: Table, href: '/admin', title: 'Automates' }] : []),
            { icon: MessageCircle, href: '/chat', title: 'Chat' },
            { icon: FileText, href: '/documents', title: 'Documents' }
          ].map(({ icon: Icon, href, title }) => (

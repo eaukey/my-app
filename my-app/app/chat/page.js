@@ -3,6 +3,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ConversationList from "../../components/ConversationList";
+import SideNav from "../../components/SideNav";
 
 export default function ChatPage() {
   const { user, isAuthenticated } = useAuth0();
@@ -26,9 +27,12 @@ export default function ChatPage() {
 
   if (isAdmin) {
     return (
-      <div className="p-8">
-        <h1 className="text-xl font-semibold mb-4">Conversations clients</h1>
-        <ConversationList />
+      <div className="flex h-screen bg-gray-50">
+        <SideNav />
+        <div className="flex-1 p-8 ml-16">
+          <h1 className="text-xl font-semibold mb-4">Conversations clients</h1>
+          <ConversationList />
+        </div>
       </div>
     );
   }

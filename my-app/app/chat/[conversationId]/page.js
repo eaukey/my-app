@@ -2,8 +2,8 @@
 import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import ConversationList from "../../components/ConversationList";
 import ChatConversation from "../../../components/ChatConversation";
+import SideNav from "../../../components/SideNav";
 
 export default function ConversationPage() {
   const { user, isAuthenticated } = useAuth0();
@@ -25,21 +25,16 @@ export default function ConversationPage() {
 
   if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
 
-  if (isAdmin) {
-    return (
-      <div className="p-8">
-        <h1 className="text-xl font-semibold mb-4">Conversations clients</h1>
-        <ConversationList />
-      </div>
-    );
-  }
+  // Pas de redirection pour admin : on montre la conversation demandée
 
-  // Client : en attente redirection
   if (!conversationId) return <p>Client introuvable.</p>;
 
   return (
-    <div className="h-screen p-4">
-      <ChatConversation clientId={conversationId} />
+    <div className="flex h-screen bg-gray-50">
+      <SideNav />
+      <div className="flex-1 ml-16">
+        <ChatConversation clientId={conversationId} />
+      </div>
     </div>
   );
 } 
