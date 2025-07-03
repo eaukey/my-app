@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Send } from "lucide-react";
+import { Send, Loader2, Check, AlertCircle } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 
 export default function ChatConversation({ clientId }) {
@@ -22,7 +22,8 @@ export default function ChatConversation({ clientId }) {
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        setMessages(data);
+        // On marque tous les messages récupérés comme déjà envoyés
+        setMessages(data.map((m) => ({ ...m, status: "sent" })));
       } catch (err) {
         console.error("Erreur fetch messages", err);
       } finally {
@@ -60,15 +61,17 @@ export default function ChatConversation({ clientId }) {
     if (!txt) return;
     setNewMessage("");
 
-    // Optimistic update
+    // Optimistic update avec statut "pending"
+    const tempId = Date.now();
     setMessages((prev) => [
       ...prev,
       {
-        id: Date.now(),
+        id: tempId,
         client_id: clientId,
         sender_id: senderId,
         content: txt,
         created_at: new Date().toISOString(),
+        status: "pending",
       },
     ]);
 
@@ -81,8 +84,20 @@ export default function ChatConversation({ clientId }) {
           body: JSON.stringify({ sender_id: senderId, content: txt }),
         }
       );
+      // Passage au statut "sent"
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId ? { ...m, status: "sent" } : m
+        )
+      );
     } catch (err) {
       console.error("Erreur envoi message", err);
+      // Passage au statut "error"
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === tempId ? { ...m, status: "error" } : m
+        )
+      );
     }
   };
 
@@ -94,27 +109,52 @@ export default function ChatConversation({ clientId }) {
       {/* Zone messages */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col justify-end">
         {/* Liste des messages */}
-        {messages.map((msg) => {
+        {messages.map((msg, idx) => {
           const isMe = msg.sender_id == senderId;
+          const prev = messages[idx - 1];
+          const showDate =
+            !prev ||
+            new Date(prev?.created_at).toDateString() !==
+              new Date(msg.created_at).toDateString();
+
           return (
-            <div
-              key={msg.id}
-              className={`flex ${isMe ? "justify-end" : "justify-start"} mb-3`}
-            >
-              <div
-                className={`p-3 rounded-xl max-w-[70%] shadow-sm ${
-                  isMe ? "bg-[#E6F7F6]" : "bg-white"
-                }`}
-              >
-                <div className="text-xs font-semibold text-gray-600 mb-1">
+            <React.Fragment key={msg.id}>
+              {showDate && (
+                <div className="text-center text-xs text-gray-500 my-2">
+                  {new Date(msg.created_at).toLocaleDateString()}
+                </div>
+              )}
+
+              <div className="flex mb-3">
+                {/* Colonne nom */}
+                <div className="w-24 text-xs text-gray-600 flex-shrink-0">
                   {isMe ? displayName : otherName}
                 </div>
-                <p className="text-gray-800 whitespace-pre-wrap">{msg.content}</p>
-                <span className="text-xs text-gray-500 block mt-1">
-                  {new Date(msg.created_at).toLocaleTimeString()}
-                </span>
+
+                {/* Bulle */}
+                <div className={`flex-1 flex ${isMe ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className="p-3 rounded-xl max-w-[70%] shadow-sm"
+                    style={{ backgroundColor: isMe ? "#E6F7F6" : "#F0F0F0" }}
+                  >
+                    <p className="text-gray-800 whitespace-pre-wrap">{msg.content}</p>
+
+                    <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                      {new Date(msg.created_at).toLocaleTimeString()}
+                      {isMe && msg.status === "pending" && (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      )}
+                      {isMe && msg.status === "sent" && (
+                        <Check className="w-3 h-3 text-green-500" />
+                      )}
+                      {isMe && msg.status === "error" && (
+                        <AlertCircle className="w-3 h-3 text-red-500" />
+                      )}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
+            </React.Fragment>
           );
         })}
         <div ref={bottomRef}></div>
