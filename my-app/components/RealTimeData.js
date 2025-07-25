@@ -1,139 +1,29 @@
 import React, { useEffect, useState } from "react";
 import { Edit, Save, X } from "lucide-react";
 
-const RealTimeIndicator = ({ title, value, unit, color, lastUpdate, onEdit, isEditing, onSave, onCancel, editValue, onEditValueChange }) => {
-  const [showEditModal, setShowEditModal] = useState(false);
-
-  const handleEdit = () => {
-    setShowEditModal(true);
-    onEdit();
-  };
-
-  const handleSave = () => {
-    onSave();
-    setShowEditModal(false);
-  };
-
-  const handleCancel = () => {
-    onCancel();
-    setShowEditModal(false);
-  };
-
+const RealTimeIndicator = ({ title, value, unit, color, lastUpdate }) => {
   return (
-    <>
-      <div 
-        style={{ 
-          backgroundColor: "white", 
-          padding: "16px", 
-          borderRadius: "8px", 
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          minWidth: "180px",
-          position: "relative"
-        }}
-      >
-        <div style={{ position: "absolute", top: "8px", right: "8px" }}>
-          <button
-            onClick={handleEdit}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "4px",
-              borderRadius: "4px",
-              color: "#666"
-            }}
-            title="Modifier la valeur"
-          >
-            <Edit size={16} />
-          </button>
-        </div>
-        
-        <h3 style={{ fontSize: "14px", marginBottom: "8px", textAlign: "center" }}>{title}</h3>
-        <div style={{ fontSize: "24px", fontWeight: "bold", color: color }}>
-          {value !== null ? value : "-"} <span style={{ fontSize: "14px" }}>{unit}</span>
-        </div>
-        <div style={{ fontSize: "10px", color: "#666", marginTop: "8px" }}>
-          {lastUpdate ? `Mis à jour: ${lastUpdate}` : "Aucune donnée"}
-        </div>
+    <div 
+      style={{ 
+        backgroundColor: "white", 
+        padding: "16px", 
+        borderRadius: "8px", 
+        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        minWidth: "180px"
+      }}
+    >
+      <h3 style={{ fontSize: "14px", marginBottom: "8px", textAlign: "center" }}>{title}</h3>
+      <div style={{ fontSize: "24px", fontWeight: "bold", color: color }}>
+        {value !== null ? value : "-"} <span style={{ fontSize: "14px" }}>{unit}</span>
       </div>
-
-      {/* Modal d'édition */}
-      {showEditModal && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: "white",
-            padding: "24px",
-            borderRadius: "8px",
-            minWidth: "300px",
-            boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
-          }}>
-            <h3 style={{ marginBottom: "16px" }}>Modifier {title}</h3>
-            <div style={{ marginBottom: "16px" }}>
-              <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>
-                Nouvelle valeur ({unit}):
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={editValue}
-                onChange={(e) => onEditValueChange(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  fontSize: "16px"
-                }}
-              />
-            </div>
-            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-              <button
-                onClick={handleCancel}
-                style={{
-                  padding: "8px 16px",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  background: "white",
-                  cursor: "pointer"
-                }}
-              >
-                <X size={16} style={{ marginRight: "4px" }} />
-                Annuler
-              </button>
-              <button
-                onClick={handleSave}
-                style={{
-                  padding: "8px 16px",
-                  border: "none",
-                  borderRadius: "4px",
-                  background: "#41AEAD",
-                  color: "white",
-                  cursor: "pointer"
-                }}
-              >
-                <Save size={16} style={{ marginRight: "4px" }} />
-                Sauvegarder
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      <div style={{ fontSize: "10px", color: "#666", marginTop: "8px" }}>
+        {lastUpdate ? `Mis à jour: ${lastUpdate}` : "Aucune donnée"}
+      </div>
+    </div>
   );
 };
 
@@ -278,12 +168,6 @@ const RealTimeData = ({ selectedMachine }) => {
           unit="m" 
           color="#FF5722"
           lastUpdate={data.hauteur_cuve_traitement.lastUpdate}
-          onEdit={() => handleEdit('hauteur_cuve_traitement')}
-          isEditing={editingField === 'hauteur_cuve_traitement'}
-          onSave={() => handleSave('hauteur_cuve_traitement')}
-          onCancel={handleCancel}
-          editValue={editValue}
-          onEditValueChange={(val) => setEditValue(val)}
         />
         <RealTimeIndicator 
           title="Hauteur Cuve Disconnection" 
@@ -291,12 +175,6 @@ const RealTimeData = ({ selectedMachine }) => {
           unit="m" 
           color="#9C27B0"
           lastUpdate={data.hauteur_cuve_disconnection.lastUpdate}
-          onEdit={() => handleEdit('hauteur_cuve_disconnection')}
-          isEditing={editingField === 'hauteur_cuve_disconnection'}
-          onSave={() => handleSave('hauteur_cuve_disconnection')}
-          onCancel={handleCancel}
-          editValue={editValue}
-          onEditValueChange={(val) => setEditValue(val)}
         />
         <RealTimeIndicator 
           title="Volume Renvoi" 
@@ -304,12 +182,6 @@ const RealTimeData = ({ selectedMachine }) => {
           unit="m³" 
           color="#2196F3"
           lastUpdate={data.volume_renvoi.lastUpdate}
-          onEdit={() => handleEdit('volume_renvoi')}
-          isEditing={editingField === 'volume_renvoi'}
-          onSave={() => handleSave('volume_renvoi')}
-          onCancel={handleCancel}
-          editValue={editValue}
-          onEditValueChange={(val) => setEditValue(val)}
         />
         <RealTimeIndicator 
           title="Compteur Électrique" 
@@ -317,12 +189,6 @@ const RealTimeData = ({ selectedMachine }) => {
           unit="kWh" 
           color="#795548"
           lastUpdate={data.compteur_electrique.lastUpdate}
-          onEdit={() => handleEdit('compteur_electrique')}
-          isEditing={editingField === 'compteur_electrique'}
-          onSave={() => handleSave('compteur_electrique')}
-          onCancel={handleCancel}
-          editValue={editValue}
-          onEditValueChange={(val) => setEditValue(val)}
         />
       </div>
     </div>
