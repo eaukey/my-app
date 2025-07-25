@@ -1,41 +1,202 @@
 import React, { useEffect, useState } from "react";
+import { Edit, Save, X } from "lucide-react";
 
-const RealTimeIndicator = ({ title, value, unit, color, lastUpdate }) => {
+const RealTimeIndicator = ({ title, value, unit, color, lastUpdate, onEdit, isEditing, onSave, onCancel, editValue, onEditValueChange }) => {
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const handleEdit = () => {
+    setShowEditModal(true);
+    onEdit();
+  };
+
+  const handleSave = () => {
+    onSave();
+    setShowEditModal(false);
+  };
+
+  const handleCancel = () => {
+    onCancel();
+    setShowEditModal(false);
+  };
+
   return (
-    <div 
-      style={{ 
-        backgroundColor: "white", 
-        padding: "16px", 
-        borderRadius: "8px", 
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        minWidth: "180px"
-      }}
-    >
-      <h3 style={{ fontSize: "14px", marginBottom: "8px", textAlign: "center" }}>{title}</h3>
-      <div style={{ fontSize: "24px", fontWeight: "bold", color: color }}>
-        {value !== null ? value : "-"} <span style={{ fontSize: "14px" }}>{unit}</span>
+    <>
+      <div 
+        style={{ 
+          backgroundColor: "white", 
+          padding: "16px", 
+          borderRadius: "8px", 
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          minWidth: "180px",
+          position: "relative"
+        }}
+      >
+        <div style={{ position: "absolute", top: "8px", right: "8px" }}>
+          <button
+            onClick={handleEdit}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "4px",
+              borderRadius: "4px",
+              color: "#666"
+            }}
+            title="Modifier la valeur"
+          >
+            <Edit size={16} />
+          </button>
+        </div>
+        
+        <h3 style={{ fontSize: "14px", marginBottom: "8px", textAlign: "center" }}>{title}</h3>
+        <div style={{ fontSize: "24px", fontWeight: "bold", color: color }}>
+          {value !== null ? value : "-"} <span style={{ fontSize: "14px" }}>{unit}</span>
+        </div>
+        <div style={{ fontSize: "10px", color: "#666", marginTop: "8px" }}>
+          {lastUpdate ? `Mis à jour: ${lastUpdate}` : "Aucune donnée"}
+        </div>
       </div>
-      <div style={{ fontSize: "10px", color: "#666", marginTop: "8px" }}>
-        {lastUpdate ? `Mis à jour: ${lastUpdate}` : "Aucune donnée"}
-      </div>
-    </div>
+
+      {/* Modal d'édition */}
+      {showEditModal && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: "white",
+            padding: "24px",
+            borderRadius: "8px",
+            minWidth: "300px",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
+          }}>
+            <h3 style={{ marginBottom: "16px" }}>Modifier {title}</h3>
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ display: "block", marginBottom: "8px", fontSize: "14px" }}>
+                Nouvelle valeur ({unit}):
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={editValue}
+                onChange={(e) => onEditValueChange(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  fontSize: "16px"
+                }}
+              />
+            </div>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button
+                onClick={handleCancel}
+                style={{
+                  padding: "8px 16px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  background: "white",
+                  cursor: "pointer"
+                }}
+              >
+                <X size={16} style={{ marginRight: "4px" }} />
+                Annuler
+              </button>
+              <button
+                onClick={handleSave}
+                style={{
+                  padding: "8px 16px",
+                  border: "none",
+                  borderRadius: "4px",
+                  background: "#41AEAD",
+                  color: "white",
+                  cursor: "pointer"
+                }}
+              >
+                <Save size={16} style={{ marginRight: "4px" }} />
+                Sauvegarder
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
 const RealTimeData = ({ selectedMachine }) => {
   const [data, setData] = useState({
-    cuve_renvoi: { value: null, lastUpdate: null },
-    cuve_adoucie: { value: null, lastUpdate: null },
-    cuve_relevage: { value: null, lastUpdate: null },
+    hauteur_cuve_traitement: { value: null, lastUpdate: null },
+    hauteur_cuve_disconnection: { value: null, lastUpdate: null },
     volume_renvoi: { value: null, lastUpdate: null },
     compteur_electrique: { value: null, lastUpdate: null }
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editingField, setEditingField] = useState(null);
+  const [editValue, setEditValue] = useState("");
+
+  const handleEdit = (field) => {
+    setEditingField(field);
+    setEditValue(data[field].value ? data[field].value.toString() : "");
+  };
+
+  const handleSave = async (field) => {
+    try {
+      const response = await fetch(`https://backend-eaukey.duckdns.org/temps_reel/${field}?nom_automate=${selectedMachine}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          valeur: parseFloat(editValue)
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Mettre à jour les données locales
+          setData(prev => ({
+            ...prev,
+            [field]: {
+              value: parseFloat(editValue),
+              lastUpdate: new Date().toLocaleTimeString()
+            }
+          }));
+          alert("Valeur mise à jour avec succès !");
+        } else {
+          alert(`Erreur: ${result.error}`);
+        }
+      } else {
+        alert("Erreur lors de la mise à jour");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde:", error);
+      alert("Erreur lors de la sauvegarde");
+    }
+    
+    setEditingField(null);
+    setEditValue("");
+  };
+
+  const handleCancel = () => {
+    setEditingField(null);
+    setEditValue("");
+  };
 
   useEffect(() => {
     const fetchRealTimeData = async () => {
@@ -46,9 +207,8 @@ const RealTimeData = ({ selectedMachine }) => {
       try {
         // Créer un tableau de toutes les requêtes que nous devons faire
         const endpoints = [
-          'cuve_renvoi',
-          'cuve_adoucie',
-          'cuve_relevage',
+          'hauteur_cuve_traitement',
+          'hauteur_cuve_disconnection',
           'volume_renvoi',
           'compteur_electrique'
         ];
@@ -100,7 +260,7 @@ const RealTimeData = ({ selectedMachine }) => {
     return () => clearInterval(interval);
   }, [selectedMachine]);
 
-  if (loading && !data.cuve_renvoi.value) {
+  if (loading && !data.hauteur_cuve_traitement.value) {
     return <div style={{ textAlign: "center", margin: "20px 0" }}>Chargement des données en temps réel...</div>;
   }
 
@@ -113,25 +273,30 @@ const RealTimeData = ({ selectedMachine }) => {
       <h2 style={{ marginBottom: "16px" }}>Données en temps réel</h2>
       <div style={{ display: "flex", gap: "16px", overflowX: "auto", padding: "4px 0" }}>
         <RealTimeIndicator 
-          title="Cuve Renvoi" 
-          value={data.cuve_renvoi.value ? Math.round(data.cuve_renvoi.value) : null} 
-          unit="%" 
-          color="#2196F3"
-          lastUpdate={data.cuve_renvoi.lastUpdate}
+          title="Hauteur Cuve Traitement" 
+          value={data.hauteur_cuve_traitement.value ? parseFloat(data.hauteur_cuve_traitement.value).toFixed(2) : null} 
+          unit="m" 
+          color="#FF5722"
+          lastUpdate={data.hauteur_cuve_traitement.lastUpdate}
+          onEdit={() => handleEdit('hauteur_cuve_traitement')}
+          isEditing={editingField === 'hauteur_cuve_traitement'}
+          onSave={() => handleSave('hauteur_cuve_traitement')}
+          onCancel={handleCancel}
+          editValue={editValue}
+          onEditValueChange={(val) => setEditValue(val)}
         />
         <RealTimeIndicator 
-          title="Cuve Adoucie" 
-          value={data.cuve_adoucie.value ? Math.round(data.cuve_adoucie.value) : null} 
-          unit="%" 
-          color="#4CAF50"
-          lastUpdate={data.cuve_adoucie.lastUpdate}
-        />
-        <RealTimeIndicator 
-          title="Cuve Relevage" 
-          value={data.cuve_relevage.value ? Math.round(data.cuve_relevage.value) : null} 
-          unit="%" 
-          color="#FF9800"
-          lastUpdate={data.cuve_relevage.lastUpdate}
+          title="Hauteur Cuve Disconnection" 
+          value={data.hauteur_cuve_disconnection.value ? parseFloat(data.hauteur_cuve_disconnection.value).toFixed(2) : null} 
+          unit="m" 
+          color="#9C27B0"
+          lastUpdate={data.hauteur_cuve_disconnection.lastUpdate}
+          onEdit={() => handleEdit('hauteur_cuve_disconnection')}
+          isEditing={editingField === 'hauteur_cuve_disconnection'}
+          onSave={() => handleSave('hauteur_cuve_disconnection')}
+          onCancel={handleCancel}
+          editValue={editValue}
+          onEditValueChange={(val) => setEditValue(val)}
         />
         <RealTimeIndicator 
           title="Volume Renvoi" 
@@ -139,6 +304,12 @@ const RealTimeData = ({ selectedMachine }) => {
           unit="m³" 
           color="#2196F3"
           lastUpdate={data.volume_renvoi.lastUpdate}
+          onEdit={() => handleEdit('volume_renvoi')}
+          isEditing={editingField === 'volume_renvoi'}
+          onSave={() => handleSave('volume_renvoi')}
+          onCancel={handleCancel}
+          editValue={editValue}
+          onEditValueChange={(val) => setEditValue(val)}
         />
         <RealTimeIndicator 
           title="Compteur Électrique" 
@@ -146,6 +317,12 @@ const RealTimeData = ({ selectedMachine }) => {
           unit="kWh" 
           color="#795548"
           lastUpdate={data.compteur_electrique.lastUpdate}
+          onEdit={() => handleEdit('compteur_electrique')}
+          isEditing={editingField === 'compteur_electrique'}
+          onSave={() => handleSave('compteur_electrique')}
+          onCancel={handleCancel}
+          editValue={editValue}
+          onEditValueChange={(val) => setEditValue(val)}
         />
       </div>
     </div>
