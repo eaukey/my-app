@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Send, Loader2, Check, AlertCircle } from "lucide-react";
+import { Send, Check } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 
 export default function ChatConversation({ clientId }) {
@@ -22,14 +22,13 @@ export default function ChatConversation({ clientId }) {
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        // Normalisation de la valeur is_read et ajout du statut "sent" ou "read"
+        // Normalisation de la valeur is_read
         setMessages(
           data.map((m) => {
             const isRead = m.is_read === true || m.is_read === "true" || m.is_read === 1;
             return {
               ...m,
               is_read: isRead,
-              status: isRead ? "read" : "sent",
             };
           })
         );
@@ -112,7 +111,7 @@ export default function ChatConversation({ clientId }) {
     if (!txt) return;
     setNewMessage("");
 
-    // Optimistic update avec statut "pending"
+    // Optimistic update (on part du principe que le message n'est pas encore lu)
     const tempId = Date.now();
     setMessages((prev) => [
       ...prev,
@@ -122,7 +121,6 @@ export default function ChatConversation({ clientId }) {
         sender_id: senderId,
         content: txt,
         created_at: new Date().toISOString(),
-        status: "pending",
         is_read: false,
       },
     ]);
@@ -136,20 +134,9 @@ export default function ChatConversation({ clientId }) {
           body: JSON.stringify({ sender_id: senderId, content: txt }),
         }
       );
-      // Passage au statut "sent"
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === tempId ? { ...m, status: "sent" } : m
-        )
-      );
+      // L'envoi a réussi : rien à faire, le polling mettra à jour is_read lorsqu'il passera à true
     } catch (err) {
       console.error("Erreur envoi message", err);
-      // Passage au statut "error"
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === tempId ? { ...m, status: "error" } : m
-        )
-      );
     }
   };
 
@@ -191,23 +178,20 @@ export default function ChatConversation({ clientId }) {
 
                     <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                       {new Date(msg.created_at).toLocaleTimeString()}
-                      {isMe && msg.status === "pending" && (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      )}
-                      {/* Message envoyé */}
-                      {isMe && msg.status === "sent" && (
-                        <Check className="w-3 h-3 text-green-500" />
+                      {/* Message non lu */}
+                      {isMe && !msg.is_read && (
+                        <div className="flex items-center gap-0.5">
+                          <Check className="w-3 h-3 text-green-500" />
+                          <span className="ml-1">Envoyé</span>
+                        </div>
                       )}
                       {/* Message lu */}
-                      {isMe && msg.status === "read" && (
+                      {isMe && msg.is_read && (
                         <div className="flex items-center gap-0.5">
                           <Check className="w-3 h-3 text-green-500" />
                           <Check className="w-3 h-3 text-blue-500" />
                           <span className="ml-1">Lu</span>
                         </div>
-                      )}
-                      {isMe && msg.status === "error" && (
-                        <AlertCircle className="w-3 h-3 text-red-500" />
                       )}
                     </span>
                   </div>
