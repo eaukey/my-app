@@ -126,17 +126,15 @@ export default function ChatConversation({ clientId }) {
               )}
 
               <div className="flex mb-3">
-                {/* Colonne nom */}
-                <div className="w-24 text-xs text-gray-600 flex-shrink-0">
-                  {isMe ? displayName : otherName}
-                </div>
-
                 {/* Bulle */}
                 <div className={`flex-1 flex ${isMe ? "justify-end" : "justify-start"}`}>
                   <div
                     className="p-3 rounded-xl max-w-[70%] shadow-sm"
                     style={{ backgroundColor: isMe ? "#E6F7F6" : "#F0F0F0" }}
                   >
+                    <div className="text-xs text-gray-600 mb-1">
+                      {isMe ? displayName : otherName}
+                    </div>
                     <p className="text-gray-800 whitespace-pre-wrap">{msg.content}</p>
 
                     <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
