@@ -22,8 +22,17 @@ export default function ChatConversation({ clientId }) {
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        // On marque tous les messages récupérés comme déjà envoyés
-        setMessages(data.map((m) => ({ ...m, status: "sent" })));
+        // Normalisation de la valeur is_read et ajout du statut "sent" ou "read"
+        setMessages(
+          data.map((m) => {
+            const isRead = m.is_read === true || m.is_read === "true" || m.is_read === 1;
+            return {
+              ...m,
+              is_read: isRead,
+              status: isRead ? "read" : "sent",
+            };
+          })
+        );
       } catch (err) {
         console.error("Erreur fetch messages", err);
       } finally {
@@ -56,6 +65,48 @@ export default function ChatConversation({ clientId }) {
     user?.["https://app.com/display_name"] || user?.name || (isAdmin ? "Support" : user?.["https://app.com/client"]);
   const otherName = isAdmin ? clientId : "Support";
 
+  // Marquer les messages de l'admin comme lus lorsqu'un client ouvre la conversation
+  useEffect(() => {
+    // Seuls les clients (non-admin) doivent déclencher cette action
+    if (!isAuthenticated || isAdmin || !clientId) return;
+
+    const markAdminMessagesAsRead = async () => {
+      try {
+        await fetch(
+          `https://backend-eaukey.duckdns.org/messages_client/${clientId}/marquer_non_lu`,
+          {
+            method: "POST",
+          }
+        );
+      } catch (err) {
+        console.error("Erreur lors du marquage des messages comme lus:", err);
+      }
+    };
+
+    markAdminMessagesAsRead();
+  }, [isAuthenticated, isAdmin, clientId]);
+
+  // Marquer les messages du client comme lus lorsqu'un admin ouvre la conversation
+  useEffect(() => {
+    // Seuls les admins déclenchent cette action
+    if (!isAuthenticated || !isAdmin || !clientId) return;
+
+    const markClientMessagesAsRead = async () => {
+      try {
+        await fetch(
+          `https://backend-eaukey.duckdns.org/messages_admin/${clientId}/marquer_non_lu`,
+          {
+            method: "POST",
+          }
+        );
+      } catch (err) {
+        console.error("Erreur lors du marquage des messages client comme lus:", err);
+      }
+    };
+
+    markClientMessagesAsRead();
+  }, [isAuthenticated, isAdmin, clientId]);
+
   const handleSend = async () => {
     const txt = newMessage.trim();
     if (!txt) return;
@@ -72,6 +123,7 @@ export default function ChatConversation({ clientId }) {
         content: txt,
         created_at: new Date().toISOString(),
         status: "pending",
+        is_read: false,
       },
     ]);
 
@@ -142,8 +194,17 @@ export default function ChatConversation({ clientId }) {
                       {isMe && msg.status === "pending" && (
                         <Loader2 className="w-3 h-3 animate-spin" />
                       )}
+                      {/* Message envoyé */}
                       {isMe && msg.status === "sent" && (
                         <Check className="w-3 h-3 text-green-500" />
+                      )}
+                      {/* Message lu */}
+                      {isMe && msg.status === "read" && (
+                        <div className="flex items-center gap-0.5">
+                          <Check className="w-3 h-3 text-green-500" />
+                          <Check className="w-3 h-3 text-blue-500" />
+                          <span className="ml-1">Lu</span>
+                        </div>
                       )}
                       {isMe && msg.status === "error" && (
                         <AlertCircle className="w-3 h-3 text-red-500" />
