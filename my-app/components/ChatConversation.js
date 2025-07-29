@@ -25,7 +25,7 @@ export default function ChatConversation({ clientId }) {
         // Normalisation de la valeur is_read
         setMessages(
           data.map((m) => {
-            const isRead = m.is_read === true || m.is_read === "true" || m.is_read === 1;
+            const isRead = ["true", true, 1, "1", "t", "T"].includes(m.is_read);
             return {
               ...m,
               is_read: isRead,

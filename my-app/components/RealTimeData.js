@@ -163,16 +163,16 @@ const RealTimeData = ({ selectedMachine }) => {
       <h2 style={{ marginBottom: "16px" }}>Données en temps réel</h2>
       <div style={{ display: "flex", gap: "16px", overflowX: "auto", padding: "4px 0" }}>
         <RealTimeIndicator 
-          title="Hauteur Cuve Traitement" 
-          value={data.hauteur_cuve_traitement.value ? parseFloat(data.hauteur_cuve_traitement.value).toFixed(2) : null} 
-          unit="m" 
+          title="Cuve de traitement" 
+          value={data.hauteur_cuve_traitement.value != null ? parseFloat(data.hauteur_cuve_traitement.value).toFixed(0) : null} 
+          unit="%" 
           color="#FF5722"
           lastUpdate={data.hauteur_cuve_traitement.lastUpdate}
         />
         <RealTimeIndicator 
-          title="Hauteur Cuve Disconnection" 
-          value={data.hauteur_cuve_disconnection.value ? parseFloat(data.hauteur_cuve_disconnection.value).toFixed(2) : null} 
-          unit="m" 
+          title="Cuve de renvoi" 
+          value={data.hauteur_cuve_disconnection.value != null ? parseFloat(data.hauteur_cuve_disconnection.value).toFixed(0) : null} 
+          unit="%" 
           color="#9C27B0"
           lastUpdate={data.hauteur_cuve_disconnection.lastUpdate}
         />
