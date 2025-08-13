@@ -50,16 +50,8 @@ export default function ChatConversation({ clientId }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const senderId = (() => {
-    // Tente d'extraire un entier de user.sub (ex: "auth0|123") ou d'autres métadonnées
-    if (!user) return 0;
-    const possible =
-      user.sub?.split("|").pop() || user["https://app.com/user_id"] || user.id;
-    const num = parseInt(possible, 10);
-    return Number.isNaN(num) ? 0 : num;
-  })();
-
   const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
+  const senderId = isAdmin ? 0 : 1;
   const displayName =
     user?.["https://app.com/display_name"] || user?.name || (isAdmin ? "Support" : user?.["https://app.com/client"]);
   const otherName = isAdmin ? clientId : "Support";
