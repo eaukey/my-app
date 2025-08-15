@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Send, Check } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { getCachedAdminSenderIds, discoverAdminSenderIds } from "./chatRoleUtils";
 
 export default function ChatConversation({ clientId }) {
   const { user, isAuthenticated } = useAuth0();
@@ -22,14 +23,28 @@ export default function ChatConversation({ clientId }) {
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        // Normalisation de la valeur is_read
+
+        // Découverte des IDs admin (asynchrone, sans bloquer l'affichage)
+        const cachedAdmins = getCachedAdminSenderIds();
+        if (cachedAdmins.size === 0) {
+          discoverAdminSenderIds().then(() => {
+            // rien, le cache sera pris en compte au prochain poll
+          });
+        }
+
+        // Normalisation sender_id et is_read
         setMessages(
           data.map((m) => {
             const isRead = ["true", true, 1, "1", "t", "T"].includes(m.is_read);
-            return {
-              ...m,
-              is_read: isRead,
-            };
+            const adminIds = getCachedAdminSenderIds();
+            let senderNorm;
+            if (m.sender_id === 677) senderNorm = 0; // admin historique connu
+            else if (m.sender_id === 6863) senderNorm = 1; // client historique connu
+            else if (m.sender_id === 0 || m.sender_id === 1) senderNorm = m.sender_id; // déjà normalisé
+            else if (adminIds.has(m.sender_id)) senderNorm = 0; // détecté comme admin multi-clients
+            else senderNorm = 1; // fallback: traite comme client
+
+            return { ...m, sender_id: senderNorm, is_read: isRead };
           })
         );
       } catch (err) {
@@ -50,7 +65,9 @@ export default function ChatConversation({ clientId }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
+  const appRole = user?.["https://app.com/role"] || user?.role;
+  const roles = user?.["https://app.com/roles"] || user?.roles;
+  const isAdmin = appRole === "admin" || (Array.isArray(roles) && roles.includes("admin"));
   const senderId = isAdmin ? 0 : 1;
   const displayName =
     user?.["https://app.com/display_name"] || user?.name || (isAdmin ? "Support" : user?.["https://app.com/client"]);
@@ -118,6 +135,8 @@ export default function ChatConversation({ clientId }) {
     ]);
 
     try {
+      // Log de vérification du payload
+      console.log("SEND payload =", { isAdmin, sender_id: senderId, content: txt });
       await fetch(
         `https://backend-eaukey.duckdns.org/messages/${clientId}`,
         {
