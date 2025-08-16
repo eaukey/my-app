@@ -1,14 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Home, BarChart2, Settings, MessageCircle, FileText, Table } from "lucide-react";
 import GraphComponent from "./GraphComponent";
 import MultiSeriesGraphComponent from "./MultiSeriesGraphComponent";
 import RealTimeData from "./RealTimeData";
 import { useAuth0 } from "@auth0/auth0-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import Image from 'next/image';
 
 // Le mapping station <-> nom est désormais récupéré dynamiquement depuis l'API
 // via l'endpoint /recherche/automate_LCA (sans paramètre).
@@ -108,7 +104,6 @@ const Dashboard = () => {
   const [selectedMachine, setSelectedMachine] = useState("");
   const [activeDataCategory, setActiveDataCategory] = useState("performance"); // "performance" ou "technical"
   const [availableMachines, setAvailableMachines] = useState([]);
-  const pathname = usePathname();
 
   const periods = [
     { label: "Jour", value: "jour" },
@@ -196,69 +191,14 @@ const Dashboard = () => {
     return <div>Chargement...</div>;
   }
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Barre de navigation */}
-      <div className="w-16 min-h-screen fixed bg-[#41AEAD] flex flex-col items-center">
-        {/* Logo */}
-        <div className="py-4">
-        <Image 
-            src="/images/eaukey-logo.svg.png" 
-            alt="Eaukey Logo"
-            width={48}
-            height={48}
-            className="w-12"
-            priority
-          />
-        </div>
-
-        {/* Icônes de navigation */}
-        <div className="flex flex-col items-center flex-grow space-y-6 mt-6">
-          {[
-            { icon: Home, href: "/", title: "Accueil" },
-            { icon: BarChart2, href: "/stock", title: "Stock" },
-            { icon: Settings, href: "/pilotage", title: "Pilotage" },
-            ...(isAdmin ? [{ icon: Table, href: "/admin", title: "Automates" }] : []),
-            { icon: MessageCircle, href: "/chat", title: "Chat" },
-            { icon: FileText, href: "/documents", title: "Documents" },
-          ].map(({ icon: Icon, href, title }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`w-12 h-12 flex items-center justify-center ${
-                pathname === href ? "bg-white rounded-lg" : "hover:bg-white hover:bg-opacity-10 rounded-lg"
-              }`}
-              title={title}
-            >
-              <Icon size={24} className={pathname === href ? "text-[#41AEAD]" : "text-white"} />
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Contenu principal */}
-      <div className="flex-1 p-8 ml-16">
-        {/* En-tête avec bouton Connexion/Déconnexion */}
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
-          {isAuthenticated ? (
-            <>
-              <h1>Bienvenue, {user?.name || "Utilisateur"}</h1>
-              <button
-                onClick={() => logout({ returnTo: window.location.origin })}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#41AEAD",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                }}
-              >
-                Déconnexion
-              </button>
-            </>
-          ) : (
+    <div className="p-8">
+      {/* En-tête avec bouton Connexion/Déconnexion */}
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
+        {isAuthenticated ? (
+          <>
+            <h1>Bienvenue, {user?.name || "Utilisateur"}</h1>
             <button
-              onClick={() => loginWithRedirect()}
+              onClick={() => logout({ returnTo: window.location.origin })}
               style={{
                 padding: "8px 16px",
                 backgroundColor: "#41AEAD",
@@ -268,130 +208,144 @@ const Dashboard = () => {
                 cursor: "pointer",
               }}
             >
-              Connexion
+              Déconnexion
             </button>
-          )}
-        </div>
-
-        {/* Sélection de la station */}
-        <div style={{ marginBottom: "24px" }}>
-          <select
-            value={selectedMachine}
-            onChange={(e) => setSelectedMachine(e.target.value)}
+          </>
+        ) : (
+          <button
+            onClick={() => loginWithRedirect()}
             style={{
               padding: "8px 16px",
-              borderRadius: "8px",
-              border: "1px solid #ddd",
-              width: "100%",
-              maxWidth: "300px",
-            }}
-          >
-            <option value="">Sélectionnez une station</option>
-            {availableMachines.length > 0 ? (
-              availableMachines.map((station, index) => (
-                <option key={index} value={station.id}>
-                  {station.name}
-                </option>
-              ))
-            ) : (
-              <>
-                <option value="2022911.0">Herblay</option>
-                <option value="2023004.0">Marseille</option>
-                <option value="2022912.0">Lyon</option>
-              </>
-            )}
-          </select>
-        </div>
-
-        {/* Données en temps réel */}
-        {selectedMachine && <RealTimeData selectedMachine={selectedMachine} />}
-
-        {/* Sélection des catégories de données */}
-        <div style={{ marginBottom: "24px", display: "flex", gap: "16px" }}>
-          <button
-            onClick={() => setActiveDataCategory("performance")}
-            style={{
-              padding: "10px 16px",
-              backgroundColor: activeDataCategory === "performance" ? "#41AEAD" : "#eee",
-              color: activeDataCategory === "performance" ? "white" : "black",
+              backgroundColor: "#41AEAD",
+              color: "white",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
-              fontWeight: "bold",
-              flex: 1,
-              maxWidth: "300px"
             }}
           >
-            Données générales de performance
+            Connexion
           </button>
+        )}
+      </div>
+
+      {/* Sélection de la station */}
+      <div style={{ marginBottom: "24px" }}>
+        <select
+          value={selectedMachine}
+          onChange={(e) => setSelectedMachine(e.target.value)}
+          style={{
+            padding: "8px 16px",
+            borderRadius: "8px",
+            border: "1px solid #ddd",
+            width: "100%",
+            maxWidth: "300px",
+          }}
+        >
+          <option value="">Sélectionnez une station</option>
+          {availableMachines.length > 0 ? (
+            availableMachines.map((station, index) => (
+              <option key={index} value={station.id}>
+                {station.name}
+              </option>
+            ))
+          ) : (
+            <>
+              <option value="2022911.0">Herblay</option>
+              <option value="2023004.0">Marseille</option>
+              <option value="2022912.0">Lyon</option>
+            </>
+          )}
+        </select>
+      </div>
+
+      {/* Données en temps réel */}
+      {selectedMachine && <RealTimeData selectedMachine={selectedMachine} />}
+
+      {/* Sélection des catégories de données */}
+      <div style={{ marginBottom: "24px", display: "flex", gap: "16px" }}>
+        <button
+          onClick={() => setActiveDataCategory("performance")}
+          style={{
+            padding: "10px 16px",
+            backgroundColor: activeDataCategory === "performance" ? "#41AEAD" : "#eee",
+            color: activeDataCategory === "performance" ? "white" : "black",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: "bold",
+            flex: 1,
+            maxWidth: "300px"
+          }}
+        >
+          Données générales de performance
+        </button>
+        <button
+          onClick={() => setActiveDataCategory("technical")}
+          style={{
+            padding: "10px 16px",
+            backgroundColor: activeDataCategory === "technical" ? "#41AEAD" : "#eee",
+            color: activeDataCategory === "technical" ? "white" : "black",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: "bold",
+            flex: 1,
+            maxWidth: "300px"
+          }}
+        >
+          Données techniques
+        </button>
+      </div>
+
+      {/* Sélection des périodes */}
+      <div style={{ marginBottom: "24px", display: "flex", gap: "8px" }}>
+        {periods.map((period) => (
           <button
-            onClick={() => setActiveDataCategory("technical")}
+            key={period.value}
+            onClick={() => setSelectedPeriod(period.value)}
             style={{
-              padding: "10px 16px",
-              backgroundColor: activeDataCategory === "technical" ? "#41AEAD" : "#eee",
-              color: activeDataCategory === "technical" ? "white" : "black",
+              padding: "8px 16px",
+              backgroundColor: selectedPeriod === period.value ? "#41AEAD" : "#eee",
+              color: selectedPeriod === period.value ? "white" : "black",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
-              fontWeight: "bold",
-              flex: 1,
-              maxWidth: "300px"
             }}
           >
-            Données techniques
+            {period.label}
           </button>
-        </div>
+        ))}
+      </div>
 
-        {/* Sélection des périodes */}
-        <div style={{ marginBottom: "24px", display: "flex", gap: "8px" }}>
-          {periods.map((period) => (
-            <button
-              key={period.value}
-              onClick={() => setSelectedPeriod(period.value)}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: selectedPeriod === period.value ? "#41AEAD" : "#eee",
-                color: selectedPeriod === period.value ? "white" : "black",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-              }}
-            >
-              {period.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Affichage des graphiques filtrés par catégorie */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
-          {filteredGraphs.map((cfg) => {
-            // Si le graphique a une configuration multi-séries, utiliser MultiSeriesGraphComponent
-            if (cfg.seriesConfig) {
-              return (
-                <MultiSeriesGraphComponent
-                  key={cfg.title}
-                  title={cfg.title}
-                  color={cfg.color}
-                  selectedPeriod={selectedPeriod}
-                  selectedMachine={selectedMachine}
-                  endpoint={cfg.endpoint(selectedPeriod)}
-                  seriesConfig={typeof cfg.seriesConfig === 'function' ? cfg.seriesConfig(selectedPeriod) : cfg.seriesConfig}
-                />
-              );
-            } 
-            // Sinon, utiliser le GraphComponent standard
+      {/* Affichage des graphiques filtrés par catégorie */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
+        {filteredGraphs.map((cfg) => {
+          // Si le graphique a une configuration multi-séries, utiliser MultiSeriesGraphComponent
+          if (cfg.seriesConfig) {
             return (
-              <GraphComponent
+              <MultiSeriesGraphComponent
                 key={cfg.title}
                 title={cfg.title}
                 color={cfg.color}
                 selectedPeriod={selectedPeriod}
                 selectedMachine={selectedMachine}
                 endpoint={cfg.endpoint(selectedPeriod)}
+                seriesConfig={typeof cfg.seriesConfig === 'function' ? cfg.seriesConfig(selectedPeriod) : cfg.seriesConfig}
               />
             );
-          })}
-        </div>
+          } 
+          // Sinon, utiliser le GraphComponent standard
+          return (
+            <GraphComponent
+              key={cfg.title}
+              title={cfg.title}
+              color={cfg.color}
+              selectedPeriod={selectedPeriod}
+              selectedMachine={selectedMachine}
+              endpoint={cfg.endpoint(selectedPeriod)}
+            />
+          );
+        })}
       </div>
     </div>
   );

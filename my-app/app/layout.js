@@ -3,6 +3,7 @@ import React from "react";
 import { Auth0Provider } from "@auth0/auth0-react";
 import localFont from "next/font/local";
 import "./globals.css";
+import SideNav from "../components/SideNav";
 
 // Import des polices
 const geistSans = localFont({
@@ -16,7 +17,6 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
@@ -24,15 +24,20 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Auth0Provider
-  domain="dev-403isex3agfwatlk.us.auth0.com"
-  clientId="TEAUBho90QHtubuZwg5qZh5juRSWBeVd"
-  authorizationParams={{
-    redirect_uri: "https://my-app-zeta-blue.vercel.app/",
-  }}
-  cacheLocation="localstorage"
->
-  {children}
-</Auth0Provider>
+          domain="dev-403isex3agfwatlk.us.auth0.com"
+          clientId="TEAUBho90QHtubuZwg5qZh5juRSWBeVd"
+          authorizationParams={{
+            redirect_uri: "https://my-app-zeta-blue.vercel.app/",
+          }}
+          cacheLocation="localstorage"
+        >
+          <div className="flex bg-gray-50">
+            <SideNav />
+            <div className="flex-1 ml-16">
+              {children}
+            </div>
+          </div>
+        </Auth0Provider>
       </body>
     </html>
   );

@@ -14,6 +14,11 @@ export default function SideNav() {
     user?.["https://app.com/client"] ||
     (Array.isArray(user?.clients) ? user.clients[0] : user?.clients);
 
+  const routeClientId = !isAdmin && typeof pathname === "string" && pathname.startsWith("/chat/")
+    ? pathname.split("/").pop()
+    : null;
+  const effectiveClientId = clientId || routeClientId;
+
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -23,45 +28,48 @@ export default function SideNav() {
     const backendBase = "https://backend-eaukey.duckdns.org";
 
     const fetchUnreadForClient = async () => {
-      if (!clientId) return setChatUnreadCount(0);
+      if (!effectiveClientId) return;
       try {
+        const ts = Date.now();
         const res = await fetch(
-          `${backendBase}/notifications/client/${encodeURIComponent(clientId)}`
+          `${backendBase}/notifications/client/${encodeURIComponent(effectiveClientId)}?t=${ts}`
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        setChatUnreadCount(Number(data?.count || 0));
-      } catch {
-        setChatUnreadCount(0);
+        const next = Number(data?.count || 0);
+        setChatUnreadCount(Number.isFinite(next) ? next : 0);
+      } catch (e) {
+        console.debug("Notif client: erreur fetch", e);
       }
     };
 
     const fetchUnreadForAdmin = async () => {
       try {
-        // Récupération des clients puis agrégation des counts
-        const resClients = await fetch(`${backendBase}/clients?is_admin=true`);
+        const ts = Date.now();
+        const resClients = await fetch(`${backendBase}/clients?is_admin=true&t=${ts}`);
         if (!resClients.ok) throw new Error(`HTTP ${resClients.status}`);
         const clients = await resClients.json();
-        if (!Array.isArray(clients)) return setChatUnreadCount(0);
+        if (!Array.isArray(clients)) return;
 
         const counts = await Promise.all(
           clients.map(async (c) => {
             try {
               const r = await fetch(
-                `${backendBase}/notifications/admin/${encodeURIComponent(c.client_id)}`
+                `${backendBase}/notifications/admin/${encodeURIComponent(c.client_id)}?t=${ts}`
               );
               if (!r.ok) return 0;
               const d = await r.json();
               return Number(d?.count || 0);
-            } catch {
+            } catch (e) {
+              console.debug("Notif admin: erreur fetch client", c?.client_id, e);
               return 0;
             }
           })
         );
         const total = counts.reduce((sum, n) => sum + (Number.isFinite(n) ? n : 0), 0);
         setChatUnreadCount(total);
-      } catch {
-        setChatUnreadCount(0);
+      } catch (e) {
+        console.debug("Notif admin: erreur fetch liste clients", e);
       }
     };
 
@@ -71,9 +79,37 @@ export default function SideNav() {
     };
 
     tick();
-    intervalId = setInterval(tick, 10000);
+    intervalId = setInterval(tick, 2000);
     return () => clearInterval(intervalId);
-  }, [isAuthenticated, isAdmin, clientId]);
+  }, [isAuthenticated, isAdmin, effectiveClientId, pathname]);
+
+  // Reset optimiste du badge côté client quand la conversation s'ouvre
+  useEffect(() => {
+    if (!isAuthenticated || isAdmin) return;
+    const handler = () => setChatUnreadCount(0);
+    window.addEventListener("chat:conversation-opened", handler);
+    return () => window.removeEventListener("chat:conversation-opened", handler);
+  }, [isAuthenticated, isAdmin]);
+
+  // Décrémentation optimiste pour admin quand il ouvre une conversation
+  useEffect(() => {
+    if (!isAuthenticated || !isAdmin) return;
+    const handler = async (e) => {
+      const openedClientId = e?.detail?.clientId;
+      if (!openedClientId) return;
+      try {
+        const backendBase = "https://backend-eaukey.duckdns.org";
+        const ts = Date.now();
+        const r = await fetch(`${backendBase}/notifications/admin/${encodeURIComponent(openedClientId)}?t=${ts}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        const delta = Number(d?.count || 0);
+        if (delta > 0) setChatUnreadCount((prev) => Math.max(0, (prev || 0) - delta));
+      } catch {}
+    };
+    window.addEventListener("chat:admin-opened-conversation", handler);
+    return () => window.removeEventListener("chat:admin-opened-conversation", handler);
+  }, [isAuthenticated, isAdmin]);
 
   const links = [
     { icon: Home, href: "/", title: "Accueil" },

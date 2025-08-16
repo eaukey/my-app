@@ -26,7 +26,8 @@ export default function ConversationList({ onSelect }) {
 
     const fetchClients = async () => {
       try {
-        const res = await fetch("https://backend-eaukey.duckdns.org/clients?is_admin=true");
+        const ts = Date.now();
+        const res = await fetch(`https://backend-eaukey.duckdns.org/clients?is_admin=true&t=${ts}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setClients(data);
@@ -49,16 +50,18 @@ export default function ConversationList({ onSelect }) {
 
     const tick = async () => {
       try {
+        const ts = Date.now();
         const entries = await Promise.all(
           clients.map(async (c) => {
             try {
               const r = await fetch(
-                `${backendBase}/notifications/admin/${encodeURIComponent(c.client_id)}`
+                `${backendBase}/notifications/admin/${encodeURIComponent(c.client_id)}?t=${ts}`
               );
               if (!r.ok) return [c.client_id, 0];
               const d = await r.json();
               return [c.client_id, Number(d?.count || 0)];
-            } catch {
+            } catch (e) {
+              console.debug("Notif admin (list): erreur fetch client", c?.client_id, e);
               return [c.client_id, 0];
             }
           })
@@ -69,9 +72,16 @@ export default function ConversationList({ onSelect }) {
     };
 
     tick();
-    intervalId = setInterval(tick, 10000);
+    intervalId = setInterval(tick, 2000);
     return () => clearInterval(intervalId);
   }, [isAuthenticated, isAdmin, JSON.stringify(clients)]);
+
+  const handleAdminOpenConversation = (clickedClientId) => {
+    setUnreadByClient((prev) => ({ ...prev, [clickedClientId]: 0 }));
+    try {
+      window.dispatchEvent(new CustomEvent("chat:admin-opened-conversation", { detail: { clientId: String(clickedClientId) } }));
+    } catch {}
+  };
 
   if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
   if (loading) return <p>Chargement des clients…</p>;
@@ -83,7 +93,10 @@ export default function ConversationList({ onSelect }) {
       <li key={client.client_id} className="border-b last:border-none">
         {onSelect ? (
           <button
-            onClick={() => onSelect(client.client_id)}
+            onClick={() => {
+              handleAdminOpenConversation(client.client_id);
+              onSelect(client.client_id);
+            }}
             className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center justify-between"
           >
             <span>{client.client_name}</span>
@@ -96,6 +109,7 @@ export default function ConversationList({ onSelect }) {
         ) : (
           <Link
             href={`/chat/${client.client_id}`}
+            onClick={() => handleAdminOpenConversation(client.client_id)}
             className={`block px-4 py-3 hover:bg-gray-100 ${
               pathname === `/chat/${client.client_id}` ? "bg-gray-100" : ""
             } flex items-center justify-between`}

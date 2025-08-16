@@ -3,7 +3,6 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import ChatConversation from "../../../components/ChatConversation";
-import SideNav from "../../../components/SideNav";
 
 export default function ConversationPage() {
   const { user, isAuthenticated } = useAuth0();
@@ -30,11 +29,8 @@ export default function ConversationPage() {
   if (!conversationId) return <p>Client introuvable.</p>;
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <SideNav />
-      <div className="flex-1 ml-16">
-        <ChatConversation clientId={conversationId} />
-      </div>
+    <div className="p-0">
+      <ChatConversation clientId={conversationId} />
     </div>
   );
 } 

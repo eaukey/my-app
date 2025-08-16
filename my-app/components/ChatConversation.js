@@ -73,6 +73,14 @@ export default function ChatConversation({ clientId }) {
     user?.["https://app.com/display_name"] || user?.name || (isAdmin ? "Support" : user?.["https://app.com/client"]);
   const otherName = isAdmin ? clientId : "Support";
 
+  // Événement: conversation ouverte → mise à jour optimiste des badges
+  useEffect(() => {
+    if (!isAuthenticated || !clientId) return;
+    try {
+      window.dispatchEvent(new CustomEvent("chat:conversation-opened", { detail: { clientId: String(clientId) } }));
+    } catch {}
+  }, [isAuthenticated, clientId]);
+
   // Marquer les messages de l'admin comme lus lorsqu'un client ouvre la conversation
   useEffect(() => {
     // Seuls les clients (non-admin) doivent déclencher cette action
