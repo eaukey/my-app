@@ -55,7 +55,7 @@ export default function ChatConversation({ clientId }) {
     };
 
     fetchMessages();
-    intervalId = setInterval(fetchMessages, 5000);
+    intervalId = setInterval(fetchMessages, 30000);
 
     return () => clearInterval(intervalId);
   }, [isAuthenticated, clientId]);

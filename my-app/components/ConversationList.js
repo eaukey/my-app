@@ -72,7 +72,7 @@ export default function ConversationList({ onSelect }) {
     };
 
     tick();
-    intervalId = setInterval(tick, 2000);
+    intervalId = setInterval(tick, 30000);
     return () => clearInterval(intervalId);
   }, [isAuthenticated, isAdmin, JSON.stringify(clients)]);
 

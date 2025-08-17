@@ -79,7 +79,7 @@ export default function SideNav() {
     };
 
     tick();
-    intervalId = setInterval(tick, 2000);
+    intervalId = setInterval(tick, 30000);
     return () => clearInterval(intervalId);
   }, [isAuthenticated, isAdmin, effectiveClientId, pathname]);
 

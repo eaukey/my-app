@@ -1,10 +1,5 @@
 "use client";
 import React, { useState } from 'react';
-import { Home, BarChart2, Settings, MessageCircle, FileText, Table } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import Image from 'next/image';
-import { useAuth0 } from '@auth0/auth0-react';
 
 // Composant ToggleSwitch
 const ToggleSwitch = ({ isOn, onToggle, label }) => {
@@ -38,9 +33,6 @@ const ToggleSwitch = ({ isOn, onToggle, label }) => {
 };
 
 export default function PilotageDashboard() {
- const pathname = usePathname();
- const { user } = useAuth0();
- const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
  const [binaryControls, setBinaryControls] = useState({
    relevage: false,
    stopSwitchRelevage: false,
@@ -95,114 +87,70 @@ export default function PilotageDashboard() {
  };
 
  return (
-   <div className="flex h-screen bg-gray-50">
-     {/* Barre latérale */}
-     <div className="w-16 min-h-screen fixed bg-[#41AEAD] flex flex-col items-center">
-       {/* Logo Eaukey */}
-       <div className="py-4">
-       <Image 
-            src="/images/eaukey-logo.svg.png" 
-            alt="Eaukey Logo"
-            width={48}
-            height={48}
-            className="w-12"
-            priority
-          />
-       </div>
-
-       {/* Navigation icons */}
-       <div className="flex flex-col items-center flex-grow space-y-6 mt-6">
-         {[
-           { icon: Home, href: '/', title: 'Accueil' },
-           { icon: BarChart2, href: '/stock', title: 'Stock' },
-           { icon: Settings, href: '/pilotage', title: 'Pilotage' },
-           ...(isAdmin ? [{ icon: Table, href: '/admin', title: 'Automates' }] : []),
-           { icon: MessageCircle, href: '/chat', title: 'Chat' },
-           { icon: FileText, href: '/documents', title: 'Documents' }
-         ].map(({ icon: Icon, href, title }) => (
-           <Link 
-             key={href}
-             href={href}
-             className={`w-12 h-12 flex items-center justify-center ${
-               pathname === href ? 'bg-white rounded-lg' : 'hover:bg-white hover:bg-opacity-10 rounded-lg'
-             }`}
-           >
-             <Icon 
-               size={24} 
-               className={pathname === href ? 'text-[#41AEAD]' : 'text-white'} 
-             />
-           </Link>
-         ))}
-       </div>
-     </div>
-
-     {/* Contenu principal */}
-     <div className="flex-1 p-8 ml-16">
-       <main className="w-full">
-         <h1 className="text-2xl font-bold mb-6">Page Pilotage</h1>
-         
-         {/* État des variables */}
-         <div className="bg-white p-6 rounded-lg shadow mb-6">
-           <div className="grid gap-6">
-             {/* Section variables binaires */}
-             <div>
-               <h2 className="text-lg font-semibold mb-4">Variables Binaires</h2>
-               <div className="grid grid-cols-4 gap-4">
-                 {Object.entries(variables)
-                   .filter(([key, value]) => typeof value === 'boolean')
-                   .map(([key, value]) => (
-                     <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                       <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
-                       <div className={`w-4 h-4 rounded-full ${value ? 'bg-green-500' : 'bg-red-500'}`} />
-                     </div>
-                   ))}
-               </div>
+   <div className="p-8 bg-gray-50 min-h-screen">
+     <main className="w-full">
+       <h1 className="text-2xl font-bold mb-6">Page Pilotage</h1>
+       {/* État des variables */}
+       <div className="bg-white p-6 rounded-lg shadow mb-6">
+         <div className="grid gap-6">
+           {/* Section variables binaires */}
+           <div>
+             <h2 className="text-lg font-semibold mb-4">Variables Binaires</h2>
+             <div className="grid grid-cols-4 gap-4">
+               {Object.entries(variables)
+                 .filter(([key, value]) => typeof value === 'boolean')
+                 .map(([key, value]) => (
+                   <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                     <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
+                     <div className={`w-4 h-4 rounded-full ${value ? 'bg-green-500' : 'bg-red-500'}`} />
+                   </div>
+                 ))}
              </div>
+           </div>
 
-             {/* Section variables réelles */}
-             <div>
-               <h2 className="text-lg font-semibold mb-4">Variables Réelles</h2>
-               <div className="grid grid-cols-4 gap-4">
-                 {Object.entries(variables)
-                   .filter(([key, value]) => typeof value === 'number')
-                   .map(([key, value]) => (
-                     <div key={key} className="p-3 bg-gray-50 rounded-lg">
-                       <span className="block text-sm capitalize">
-                         {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+           {/* Section variables réelles */}
+           <div>
+             <h2 className="text-lg font-semibold mb-4">Variables Réelles</h2>
+             <div className="grid grid-cols-4 gap-4">
+               {Object.entries(variables)
+                 .filter(([key, value]) => typeof value === 'number')
+                 .map(([key, value]) => (
+                   <div key={key} className="p-3 bg-gray-50 rounded-lg">
+                     <span className="block text-sm capitalize">
+                       {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                     </span>
+                     <div className="flex justify-between items-center mt-2">
+                       <span className="font-bold">{value.toFixed(1)}</span>
+                       <span className="text-sm text-gray-600">
+                         {key.includes('volume') ? 'm³' :
+                          key.includes('Pression') ? 'mbar' :
+                          key.includes('temperature') ? '°C' :
+                          key.includes('redox') ? 'mV' :
+                          key.includes('conductivite') ? 'µS/cm' : ''}
                        </span>
-                       <div className="flex justify-between items-center mt-2">
-                         <span className="font-bold">{value.toFixed(1)}</span>
-                         <span className="text-sm text-gray-600">
-                           {key.includes('volume') ? 'm³' :
-                            key.includes('Pression') ? 'mbar' :
-                            key.includes('temperature') ? '°C' :
-                            key.includes('redox') ? 'mV' :
-                            key.includes('conductivite') ? 'µS/cm' : ''}
-                         </span>
-                       </div>
                      </div>
-                   ))}
-               </div>
+                   </div>
+                 ))}
              </div>
            </div>
          </div>
+       </div>
 
-         {/* Boutons de contrôle */}
-         <div className="bg-white p-6 rounded-lg shadow">
-           <h2 className="text-lg font-semibold mb-4">Contrôles</h2>
-           <div className="grid grid-cols-4 gap-4">
-             {Object.entries(binaryControls).map(([key, value]) => (
-               <ToggleSwitch
-                 key={key}
-                 isOn={value}
-                 onToggle={() => toggleControl(key)}
-                 label={key}
-               />
-             ))}
-           </div>
+       {/* Boutons de contrôle */}
+       <div className="bg-white p-6 rounded-lg shadow">
+         <h2 className="text-lg font-semibold mb-4">Contrôles</h2>
+         <div className="grid grid-cols-4 gap-4">
+           {Object.entries(binaryControls).map(([key, value]) => (
+             <ToggleSwitch
+               key={key}
+               isOn={value}
+               onToggle={() => toggleControl(key)}
+               label={key}
+             />
+           ))}
          </div>
-       </main>
-     </div>
+       </div>
+     </main>
    </div>
  );
 }
