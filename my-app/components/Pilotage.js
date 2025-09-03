@@ -5,36 +5,37 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth0 } from '@auth0/auth0-react';
+import styles from './Pilotage.module.css';
 
 // Composant ToggleSwitch
 const ToggleSwitch = ({ isOn, onToggle, label }) => {
- return (
-   <div className="flex items-center justify-between p-4 bg-white rounded-lg">
-     <span className="capitalize text-gray-700">{label.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
-     <label className="relative inline-block w-16 h-8 cursor-pointer">
-       <input
-         type="checkbox"
-         className="hidden"
-         checked={isOn}
-         onChange={onToggle}
-       />
-       <div 
-         className={`absolute top-0 left-0 right-0 bottom-0 
-           ${isOn ? 'bg-green-500' : 'bg-gray-300'}
-           rounded-full transition-all duration-300`
-         }
-       >
-         <div 
-           className={`absolute top-1 left-1 
-             bg-white w-6 h-6 rounded-full shadow-md 
-             transition-transform duration-300
-             ${isOn ? 'transform translate-x-8' : 'transform translate-x-0'}`
-           }
-         />
-       </div>
-     </label>
-   </div>
- );
+  return (
+    <div className={`flex items-center justify-between p-4 bg-white rounded-lg ${styles.itemRow || ''}`}>
+      <span className={`capitalize text-gray-700 ${styles.label || ''}`}>{label.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
+      <label className="relative inline-block w-16 h-8 cursor-pointer">
+        <input
+          type="checkbox"
+          className="hidden"
+          checked={isOn}
+          onChange={onToggle}
+        />
+        <div 
+          className={`absolute top-0 left-0 right-0 bottom-0 
+            ${isOn ? 'bg-green-500' : 'bg-gray-300'}
+            rounded-full transition-all duration-300`
+          }
+        >
+          <div 
+            className={`absolute top-1 left-1 
+              bg-white w-6 h-6 rounded-full shadow-md 
+              transition-transform duration-300
+              ${isOn ? 'transform translate-x-8' : 'transform translate-x-0'}`
+            }
+          />
+        </div>
+      </label>
+    </div>
+  );
 };
 
 export default function PilotageDashboard() {
@@ -95,65 +96,27 @@ export default function PilotageDashboard() {
  };
 
  return (
-   <div className="flex h-screen bg-gray-50">
-     {/* Barre latérale */}
-     <div className="w-16 min-h-screen fixed bg-[#41AEAD] flex flex-col items-center">
-       {/* Logo Eaukey */}
-       <div className="py-4">
-       <Image 
-            src="/images/eaukey-logo.svg.png" 
-            alt="Eaukey Logo"
-            width={48}
-            height={48}
-            className="w-12"
-            priority
-          />
-       </div>
+       <div className="flex h-screen bg-gray-50">
+      {/* Barre latérale interne supprimée: on utilise la side nav globale du layout */}
 
-       {/* Navigation icons */}
-       <div className="flex flex-col items-center flex-grow space-y-6 mt-6">
-         {[
-           { icon: Home, href: '/', title: 'Accueil' },
-           { icon: BarChart2, href: '/stock', title: 'Stock' },
-           { icon: Settings, href: '/pilotage', title: 'Pilotage' },
-           ...(isAdmin ? [{ icon: Table, href: '/admin', title: 'Automates' }] : []),
-           { icon: MessageCircle, href: '/chat', title: 'Chat' },
-           { icon: FileText, href: '/documents', title: 'Documents' }
-         ].map(({ icon: Icon, href, title }) => (
-           <Link 
-             key={href}
-             href={href}
-             className={`w-12 h-12 flex items-center justify-center ${
-               pathname === href ? 'bg-white rounded-lg' : 'hover:bg-white hover:bg-opacity-10 rounded-lg'
-             }`}
-           >
-             <Icon 
-               size={24} 
-               className={pathname === href ? 'text-[#41AEAD]' : 'text-white'} 
-             />
-           </Link>
-         ))}
-       </div>
-     </div>
-
-     {/* Contenu principal */}
-     <div className="flex-1 p-8 ml-16">
-       <main className="w-full">
+      {/* Contenu principal */}
+      <div className={`flex-1 p-8 ${styles.mainMobileFull || ''}`}>
+        <main className={`w-full ${styles.container || ''}`}>
          <h1 className="text-2xl font-bold mb-6">Page Pilotage</h1>
          
          {/* État des variables */}
-         <div className="bg-white p-6 rounded-lg shadow mb-6">
+         <div className={`bg-white p-6 rounded-lg shadow mb-6 ${styles.sectionCard || ''}`}>
            <div className="grid gap-6">
              {/* Section variables binaires */}
              <div>
-               <h2 className="text-lg font-semibold mb-4">Variables Binaires</h2>
-               <div className="grid grid-cols-4 gap-4">
+               <h2 className={`text-lg font-semibold mb-4 ${styles.title || ''}`}>Variables Binaires</h2>
+               <div className={`grid grid-cols-4 gap-4 ${styles.gridMobileOneCol || ''}`}>
                  {Object.entries(variables)
                    .filter(([key, value]) => typeof value === 'boolean')
                    .map(([key, value]) => (
-                     <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                       <span className="capitalize">{key.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
-                       <div className={`w-4 h-4 rounded-full ${value ? 'bg-green-500' : 'bg-red-500'}`} />
+                     <div key={key} className={`flex items-center justify-between p-3 bg-gray-50 rounded-lg ${styles.itemRow || ''}`}>
+                       <span className={`capitalize ${styles.label || ''}`}>{key.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
+                       <div className={`w-4 h-4 rounded-full ${value ? 'bg-green-500' : 'bg-red-500'} ${styles.valuePill || ''}`} />
                      </div>
                    ))}
                </div>
@@ -161,13 +124,13 @@ export default function PilotageDashboard() {
 
              {/* Section variables réelles */}
              <div>
-               <h2 className="text-lg font-semibold mb-4">Variables Réelles</h2>
-               <div className="grid grid-cols-4 gap-4">
+               <h2 className={`text-lg font-semibold mb-4 ${styles.title || ''}`}>Variables Réelles</h2>
+               <div className={`grid grid-cols-4 gap-4 ${styles.gridMobileOneCol || ''}`}>
                  {Object.entries(variables)
                    .filter(([key, value]) => typeof value === 'number')
                    .map(([key, value]) => (
-                     <div key={key} className="p-3 bg-gray-50 rounded-lg">
-                       <span className="block text-sm capitalize">
+                     <div key={key} className={`p-3 bg-gray-50 rounded-lg ${styles.itemRow || ''}`}>
+                       <span className={`block text-sm capitalize ${styles.label || ''}`}>
                          {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
                        </span>
                        <div className="flex justify-between items-center mt-2">
@@ -188,9 +151,9 @@ export default function PilotageDashboard() {
          </div>
 
          {/* Boutons de contrôle */}
-         <div className="bg-white p-6 rounded-lg shadow">
-           <h2 className="text-lg font-semibold mb-4">Contrôles</h2>
-           <div className="grid grid-cols-4 gap-4">
+         <div className={`bg-white p-6 rounded-lg shadow ${styles.sectionCard || ''}`}>
+           <h2 className={`text-lg font-semibold mb-4 ${styles.title || ''}`}>Contrôles</h2>
+           <div className={`grid grid-cols-4 gap-4 ${styles.gridMobileOneCol || ''}`}>
              {Object.entries(binaryControls).map(([key, value]) => (
                <ToggleSwitch
                  key={key}

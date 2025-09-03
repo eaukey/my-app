@@ -1,0 +1,26 @@
+/* Conteneur global de l'application */
+.shell {
+  display: flex;
+  background-color: #f9fafb; /*  e9quiv. bg-gray-50 */
+}
+
+/* Zone de contenu principale */
+/* En desktop, on laisse un d e9calage  e0 gauche pour la barre lat 1arale fixe */
+.content {
+  flex: 1;
+  margin-left: 4rem; /*  e9quiv. ml-16 */
+}
+
+/* --- Responsive --- */
+/* Sur mobile, la barre lat 1arale devient une barre du bas :
+   - on retire le d e9calage gauche
+   - on ajoute un padding bas pour ne pas cacher le contenu sous la nav */
+@media screen and (max-width: 768px) {
+  .shell {
+    display: block; /* flux vertical naturel */
+  }
+  .content {
+    margin-left: 0;
+    padding-bottom: 56px; /* espace pour la nav du bas */
+  }
+} 

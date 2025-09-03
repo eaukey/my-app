@@ -1,26 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Edit, Save, X } from "lucide-react";
 
+import styles from "./RealTimeData.module.css";
+
 const RealTimeIndicator = ({ title, value, unit, color, lastUpdate }) => {
   return (
-    <div 
-      style={{ 
-        backgroundColor: "white", 
-        padding: "16px", 
-        borderRadius: "8px", 
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        minWidth: "180px"
-      }}
-    >
-      <h3 style={{ fontSize: "14px", marginBottom: "8px", textAlign: "center" }}>{title}</h3>
-      <div style={{ fontSize: "24px", fontWeight: "bold", color: color }}>
-        {value !== null ? value : "-"} <span style={{ fontSize: "14px" }}>{unit}</span>
+    <div className={styles.card}>
+      <h3 className={styles.cardTitle}>{title}</h3>
+      <div className={styles.value} style={{ color }}>
+        {value !== null ? value : "-"} <span className={styles.valueUnit}>{unit}</span>
       </div>
-      <div style={{ fontSize: "10px", color: "#666", marginTop: "8px" }}>
+      <div className={styles.timestamp}>
         {lastUpdate ? `Mis à jour: ${lastUpdate}` : "Aucune donnée"}
       </div>
     </div>
@@ -159,9 +149,9 @@ const RealTimeData = ({ selectedMachine }) => {
   }
 
   return (
-    <div style={{ marginBottom: "24px" }}>
-      <h2 style={{ marginBottom: "16px" }}>Données en temps réel</h2>
-      <div style={{ display: "flex", gap: "16px", overflowX: "auto", padding: "4px 0" }}>
+    <div className={styles.container}>
+      <h2 className={styles.title}>Données en temps réel</h2>
+      <div className={styles.row}>
         <RealTimeIndicator 
           title="Cuve de traitement" 
           value={data.hauteur_cuve_traitement.value != null ? parseFloat(data.hauteur_cuve_traitement.value).toFixed(0) : null} 

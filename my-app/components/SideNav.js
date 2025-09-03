@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Home, BarChart2, Settings, MessageCircle, FileText, Table } from "lucide-react";
 import Image from "next/image";
 import { useAuth0 } from "@auth0/auth0-react";
+import styles from "./SideNav.module.css";
 
 export default function SideNav() {
   const pathname = usePathname();
@@ -121,30 +122,27 @@ export default function SideNav() {
   ];
 
   return (
-    <div className="w-16 min-h-screen fixed bg-[#41AEAD] flex flex-col items-center">
-      <div className="py-4">
+    <div className={styles.root}>
+      <div className={styles.logo}>
         <Image
           src="/images/eaukey-logo.svg.png"
           alt="Eaukey Logo"
           width={48}
           height={48}
-          className="w-12"
           priority
         />
       </div>
-      <div className="flex flex-col items-center flex-grow space-y-6 mt-6">
+      <div className={styles.links}>
         {links.map(({ icon: Icon, href, title }) => (
           <Link
             key={href}
             href={href}
-            className={`relative w-12 h-12 flex items-center justify-center ${
-              pathname === href ? "bg-white rounded-lg" : "hover:bg-white hover:bg-opacity-10 rounded-lg"
-            }`}
+            className={`${styles.link} ${pathname === href ? styles.active : ""}`}
             title={title}
           >
-            <Icon size={24} className={pathname === href ? "text-[#41AEAD]" : "text-white"} />
+            <Icon size={24} className={styles.icon} />
             {href === "/chat" && chatUnreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center">
+              <span className={styles.badge}>
                 {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
               </span>
             )}

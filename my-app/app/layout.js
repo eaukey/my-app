@@ -4,6 +4,7 @@ import { Auth0Provider } from "@auth0/auth0-react";
 import localFont from "next/font/local";
 import "./globals.css";
 import SideNav from "../components/SideNav";
+import styles from "./Layout.module.css";
 
 // Import des polices
 const geistSans = localFont({
@@ -31,9 +32,9 @@ export default function RootLayout({ children }) {
           }}
           cacheLocation="localstorage"
         >
-          <div className="flex bg-gray-50">
+          <div className={styles.shell}>
             <SideNav />
-            <div className="flex-1 ml-16">
+            <div className={styles.content}>
               {children}
             </div>
           </div>

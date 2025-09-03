@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Send, Check } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { getCachedAdminSenderIds, discoverAdminSenderIds } from "./chatRoleUtils";
+import styles from "./ChatConversation.module.css";
 
 export default function ChatConversation({ clientId }) {
   const { user, isAuthenticated } = useAuth0();
@@ -163,9 +164,9 @@ export default function ChatConversation({ clientId }) {
   if (loading) return <p>Chargement…</p>;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className={`flex flex-col h-full ${styles.container || ''}`}>
       {/* Zone messages */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col justify-end">
+      <div className={`flex-1 overflow-y-auto p-4 flex flex-col justify-end ${styles.messages || ''}`}>
         {/* Liste des messages */}
         {messages.map((msg, idx) => {
           const isMe = msg.sender_id == senderId;
@@ -187,7 +188,7 @@ export default function ChatConversation({ clientId }) {
                 {/* Bulle */}
                 <div className={`flex-1 flex ${isMe ? "justify-end" : "justify-start"}`}>
                   <div
-                    className="p-3 rounded-xl max-w-[70%] shadow-sm"
+                    className={`p-3 rounded-xl max-w-[70%] shadow-sm ${styles.bubble || ''}`}
                     style={{ backgroundColor: isMe ? "#E6F7F6" : "#F0F0F0" }}
                   >
                     <div className="text-xs text-gray-600 mb-1">
@@ -195,7 +196,7 @@ export default function ChatConversation({ clientId }) {
                     </div>
                     <p className="text-gray-800 whitespace-pre-wrap">{msg.content}</p>
 
-                    <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                    <span className={`text-xs text-gray-500 flex items-center gap-1 mt-1 ${styles.meta || ''}`}>
                       {new Date(msg.created_at).toLocaleTimeString()}
                       {/* Message non lu */}
                       {isMe && !msg.is_read && (
@@ -223,14 +224,14 @@ export default function ChatConversation({ clientId }) {
       </div>
 
       {/* Input */}
-      <div className="border-t px-4 py-3 flex items-center gap-3">
+      <div className={`border-t px-4 py-3 flex items-center gap-3 ${styles.inputBar || ''}`}>
         <input
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder="Écrivez votre message…"
-          className="flex-1 focus:outline-none"
+          className={`flex-1 focus:outline-none ${styles.inputField || ''}`}
         />
         <button
           onClick={handleSend}

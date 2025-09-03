@@ -5,6 +5,7 @@ import GraphComponent from "./GraphComponent";
 import MultiSeriesGraphComponent from "./MultiSeriesGraphComponent";
 import RealTimeData from "./RealTimeData";
 import { useAuth0 } from "@auth0/auth0-react";
+import styles from "./Dashboard.module.css";
 
 // Le mapping station <-> nom est désormais récupéré dynamiquement depuis l'API
 // via l'endpoint /recherche/automate_LCA (sans paramètre).
@@ -191,21 +192,22 @@ const Dashboard = () => {
     return <div>Chargement...</div>;
   }
   return (
-    <div className="p-8">
+    <div className={styles.container}>
       {/* En-tête avec bouton Connexion/Déconnexion */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px" }}>
+      <div className={styles.headerRow}>
         {isAuthenticated ? (
           <>
             <h1>Bienvenue, {user?.name || "Utilisateur"}</h1>
             <button
               onClick={() => logout({ returnTo: window.location.origin })}
               style={{
-                padding: "8px 16px",
+                padding: "0.375rem 0.75rem",
                 backgroundColor: "#41AEAD",
                 color: "white",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "0.5rem",
                 cursor: "pointer",
+                fontSize: "0.875rem",
               }}
             >
               Déconnexion
@@ -215,12 +217,13 @@ const Dashboard = () => {
           <button
             onClick={() => loginWithRedirect()}
             style={{
-              padding: "8px 16px",
+              padding: "0.375rem 0.75rem",
               backgroundColor: "#41AEAD",
               color: "white",
               border: "none",
-              borderRadius: "8px",
+              borderRadius: "0.5rem",
               cursor: "pointer",
+              fontSize: "0.875rem",
             }}
           >
             Connexion
@@ -229,16 +232,17 @@ const Dashboard = () => {
       </div>
 
       {/* Sélection de la station */}
-      <div style={{ marginBottom: "24px" }}>
+      <div className={styles.block}>
         <select
           value={selectedMachine}
           onChange={(e) => setSelectedMachine(e.target.value)}
           style={{
-            padding: "8px 16px",
-            borderRadius: "8px",
+            padding: "0.375rem 0.75rem",
+            borderRadius: "0.5rem",
             border: "1px solid #ddd",
             width: "100%",
-            maxWidth: "300px",
+            maxWidth: "20rem",
+            fontSize: "0.875rem",
           }}
         >
           <option value="">Sélectionnez une station</option>
@@ -262,55 +266,28 @@ const Dashboard = () => {
       {selectedMachine && <RealTimeData selectedMachine={selectedMachine} />}
 
       {/* Sélection des catégories de données */}
-      <div style={{ marginBottom: "24px", display: "flex", gap: "16px" }}>
+      <div className={styles.segmented}>
         <button
           onClick={() => setActiveDataCategory("performance")}
-          style={{
-            padding: "10px 16px",
-            backgroundColor: activeDataCategory === "performance" ? "#41AEAD" : "#eee",
-            color: activeDataCategory === "performance" ? "white" : "black",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "bold",
-            flex: 1,
-            maxWidth: "300px"
-          }}
+          className={`${styles.segBtn} ${activeDataCategory === "performance" ? styles.selectedButtonStyle : ""}`}
         >
           Données générales de performance
         </button>
         <button
           onClick={() => setActiveDataCategory("technical")}
-          style={{
-            padding: "10px 16px",
-            backgroundColor: activeDataCategory === "technical" ? "#41AEAD" : "#eee",
-            color: activeDataCategory === "technical" ? "white" : "black",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "bold",
-            flex: 1,
-            maxWidth: "300px"
-          }}
+          className={`${styles.segBtn} ${activeDataCategory === "technical" ? styles.selectedButtonStyle : ""}`}
         >
           Données techniques
         </button>
       </div>
 
       {/* Sélection des périodes */}
-      <div style={{ marginBottom: "24px", display: "flex", gap: "8px" }}>
+      <div className={styles.periodRow}>
         {periods.map((period) => (
           <button
             key={period.value}
             onClick={() => setSelectedPeriod(period.value)}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: selectedPeriod === period.value ? "#41AEAD" : "#eee",
-              color: selectedPeriod === period.value ? "white" : "black",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
+            className={`${styles.periodBtn} ${selectedPeriod === period.value ? styles.periodBtnActive : ""}`}
           >
             {period.label}
           </button>
@@ -318,7 +295,7 @@ const Dashboard = () => {
       </div>
 
       {/* Affichage des graphiques filtrés par catégorie */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
+      <div className={styles.chartsGrid}>
         {filteredGraphs.map((cfg) => {
           // Si le graphique a une configuration multi-séries, utiliser MultiSeriesGraphComponent
           if (cfg.seriesConfig) {
