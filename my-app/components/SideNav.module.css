@@ -1,0 +1,123 @@
+/* Barre latérale à gauche en desktop, barre du bas en mobile */
+.root {
+  /* Layout desktop */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 4rem; /* équiv. w-16 */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #41AEAD;
+  z-index: 50; /* s'assure d'être au-dessus du contenu */
+}
+
+/* Zone logo (masquée en mobile pour gagner de l'espace) */
+.logo {
+  padding-top: 1rem;
+  padding-bottom: 1rem; /* équiv. py-4 */
+}
+
+/* Liste des liens (pile verticale en desktop) */
+.links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-grow: 1;
+  row-gap: 1.5rem; /* équiv. space-y-6 */
+  margin-top: 1.5rem; /* équiv. mt-6 */
+}
+
+/* Bouton de lien */
+.link {
+  position: relative;
+  width: 3rem; /* équiv. w-12 */
+  height: 3rem; /* équiv. h-12 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem; /* équiv. rounded-lg */
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+/* Effet hover en desktop */
+.link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Lien actif */
+.active {
+  background-color: #ffffff;
+}
+
+/* Couleur de l'icône (monochrome par défaut, couleur marque si actif) */
+.icon {
+  color: #ffffff;
+}
+.active .icon {
+  color: #41AEAD;
+}
+
+/* Badge de notification */
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding-left: 4px;
+  padding-right: 4px; /* équiv. px-1 */
+  border-radius: 9999px;
+  background-color: #ef4444; /* rouge */
+  color: #ffffff;
+  font-size: 10px;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* --- Responsive --- */
+/* Sur mobile (écrans ≤ 768px),
+   - la barre devient une barre de navigation fixe en bas
+   - les liens passent en ligne
+   - le logo est caché */
+@media screen and (max-width: 768px) {
+  .root {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    height: 52px; /* légèrement plus bas */
+    min-height: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    background-color: #41AEAD; /* fond opaque en mobile */
+    z-index: 999; /* au-dessus des graphes et clics capturés */
+    border-top: 1px solid rgba(0,0,0,0.05); /* séparation douce */
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.06); /* ombre douce */
+  }
+
+  .logo {
+    display: none; /* Sur mobile, on cache le logo pour libérer de la place */
+  }
+
+  .links {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    margin-top: 0;
+    width: 100%;
+  }
+
+  .link {
+    width: 36px;
+    height: 36px; /* boutons plus compacts */
+  }
+
+  .badge {
+    top: -2px;
+    right: -6px; /* léger ajustement pour le format compact */
+  }
+} 

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth0 } from "@auth0/auth0-react";
 import { usePathname } from "next/navigation";
+import styles from "./ConversationList.module.css";
 
 /**
  * Affiche la liste des conversations disponibles pour l'utilisateur.
@@ -97,11 +98,11 @@ export default function ConversationList({ onSelect }) {
               handleAdminOpenConversation(client.client_id);
               onSelect(client.client_id);
             }}
-            className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center justify-between"
+            className={`w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center justify-between ${styles.item || ''}`}
           >
-            <span>{client.client_name}</span>
+            <span className={styles.name || ''}>{client.client_name}</span>
             {count > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px]">
+              <span className={`ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] ${styles.badge || ''}`}>
                 {count > 99 ? "99+" : count}
               </span>
             )}
@@ -112,11 +113,11 @@ export default function ConversationList({ onSelect }) {
             onClick={() => handleAdminOpenConversation(client.client_id)}
             className={`block px-4 py-3 hover:bg-gray-100 ${
               pathname === `/chat/${client.client_id}` ? "bg-gray-100" : ""
-            } flex items-center justify-between`}
+            } flex items-center justify-between ${styles.item || ''}`}
           >
-            <span>{client.client_name}</span>
+            <span className={styles.name || ''}>{client.client_name}</span>
             {count > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px]">
+              <span className={`ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] ${styles.badge || ''}`}>
                 {count > 99 ? "99+" : count}
               </span>
             )}
@@ -126,5 +127,5 @@ export default function ConversationList({ onSelect }) {
     );
   });
 
-  return <ul className="divide-y rounded-lg border w-full max-w-md bg-white">{list}</ul>;
+  return <ul className={`divide-y rounded-lg border w-full max-w-md bg-white ${styles.container || ''}`}>{list}</ul>;
 } 

@@ -1,0 +1,153 @@
+/* Conteneur principal du Dashboard */
+.container {
+  padding: 2rem; /* espace confortable en desktop */
+}
+
+/* Sur mobile, on réduit les marges/paddings et titres */
+@media screen and (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+}
+
+/* Header et blocs génériques avec marge verticale contrôlée */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem; /* 16px desktop */
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.block {
+  margin-bottom: 1rem;
+}
+
+@media screen and (max-width: 768px) {
+  .headerRow { margin-bottom: 0.75rem; }
+  .block { margin-bottom: 0.75rem; } /* 12px sur mobile */
+}
+
+/* Segmented control pour catégories (style sobre) */
+.segmented {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.segBtn {
+  flex: 1;
+  padding: 0.375rem 0.5rem; /* 6px 8px */
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem; /* moins arrondi */
+  font-weight: 500;
+  font-size: 0.875rem; /* 14px desktop par défaut, rehaussé plus bas en ≥1024px */
+  background-color: #fafafa; /* fond neutre */
+  color: #111111;
+  cursor: pointer;
+}
+
+@media screen and (max-width: 768px) {
+  .segBtn { font-size: 0.8125rem; /* ~13px */ padding: 0.3125rem 0.5rem; }
+}
+
+/* Desktop-only: augmenter lisibilité des boutons de catégories */
+@media screen and (min-width: 1024px) {
+  .segBtn { font-size: 1rem; /* 16px */ padding: 0.5rem 0.75rem; }
+}
+
+/* Style commun pour un bouton sélectionné (même style que "Jour" actif) */
+.selectedButtonStyle {
+  background-color: #e0f7f7; /* même fond que Jour actif */
+  color: #0f5a5a;           /* même couleur de texte */
+  border: 1px solid #41AEAD; /* contour fin turquoise, comme l'état actif */
+  border-radius: 0.5rem;     /* même arrondi que les périodes */
+  font-weight: 700;          /* même emphase */
+  padding: 0.25rem 0.5rem;   /* 4px 8px, identique aux périodes */
+  font-size: 0.75rem;        /* 12px, identique aux périodes */
+}
+
+/* Desktop-only: même taille que .segBtn en état non sélectionné */
+@media screen and (min-width: 1024px) {
+  .selectedButtonStyle { font-size: 1rem; padding: 0.5rem 0.75rem; }
+}
+
+/* Style actif spécifique aux boutons de catégories (équivalent à selectedButtonStyle) */
+.segBtnActive {
+  background-color: #e0f7f7;
+  color: #0f5a5a;
+  border: 1px solid #41AEAD;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* Rangée des boutons de période (jour/semaine/mois/année) */
+.periodRow {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap; /* Autoriser le retour à la ligne sur petits écrans */
+}
+
+/* Boutons de période outline et compacts */
+.periodBtn {
+  padding: 0.25rem 0.5rem; /* 4px 8px */
+  border-radius: 0.5rem;
+  border: 1px solid #cccccc; /* contour fin */
+  background-color: transparent; /* style plat */
+  color: #111111;
+  cursor: pointer;
+  font-size: 0.75rem; /* 12px mobile/tablette, rehaussé sur desktop ci-dessous */
+  line-height: 1.2;
+}
+
+/* Desktop-only: augmenter lisibilité des filtres de période */
+@media screen and (min-width: 1024px) {
+  .periodBtn { font-size: 1rem; /* 16px */ padding: 0.375rem 0.75rem; }
+}
+
+.periodBtnActive {
+  background-color: #e0f7f7; /* subtil */
+  border-color: #41AEAD;
+  color: #0f5a5a;
+  font-weight: 700;
+}
+
+/* Grille des graphiques : 2 colonnes en desktop */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+/* Sur tablettes/mobiles, on passe à une colonne pour la lisibilité */
+@media screen and (max-width: 1024px) {
+  .chartsGrid {
+    grid-template-columns: 1fr; /* 1 colonne */
+  }
+} 
+
+/* Desktop-only: uniformiser la taille en état normal, focus ou active */
+@media screen and (min-width: 1024px) {
+  .segBtn,
+  .segBtn:focus,
+  .segBtn:active,
+  .selectedButtonStyle,
+  .selectedButtonStyle:focus,
+  .selectedButtonStyle:active {
+    font-size: 1rem; /* 16px */
+    line-height: 1.2;
+  }
+
+  .periodBtn,
+  .periodBtn:focus,
+  .periodBtn:active,
+  .periodBtnActive,
+  .periodBtnActive:focus,
+  .periodBtnActive:active {
+    font-size: 1rem; /* 16px */
+    line-height: 1.2;
+  }
+} 

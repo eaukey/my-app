@@ -1,8 +1,17 @@
 "use client";
 import React, { useState } from 'react';
-import { PlusCircle, MinusCircle } from 'lucide-react';
+import { Home, BarChart2, Settings, MessageCircle, FileText, Table, PlusCircle, MinusCircle } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import Image from 'next/image';
+import { useAuth0 } from '@auth0/auth0-react';
+import styles from './StockDashboard.module.css';
 
 export default function StockDashboard() {
+ const pathname = usePathname();
+ const { user } = useAuth0();
+ const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
+ 
  const [stocks, setStocks] = useState([
    { id: 1, name: 'Filtre 5 microns', quantity: 15 },
    { id: 2, name: 'Filtre 20 microns', quantity: 12 },
@@ -34,40 +43,43 @@ export default function StockDashboard() {
  };
 
  return (
-   <div className="p-8 bg-gray-50 min-h-screen">
-     <div className="grid grid-cols-3 gap-8">
-       {stocks.map((item) => (
-         <div key={item.id} className="bg-white shadow-sm h-[120px] rounded-lg">
-           <div className="p-4">
-             <div className="flex items-center justify-between mb-2">
-               <div className="font-medium">{item.name}</div>
-               <div className="flex items-center space-x-4">
-                 <div className="text-2xl font-bold text-gray-900">
-                   {item.quantity}
-                 </div>
-                 <div className="flex space-x-2">
-                   <button 
-                     onClick={() => handleDecrease(item.id)}
-                     className="p-1.5 rounded-full text-white hover:opacity-80"
-                     style={{ backgroundColor: '#41AEAD' }}
-                     aria-label="Retirer du stock"
-                   >
-                     <MinusCircle className="h-5 w-5" />
-                   </button>
-                   <button 
-                     onClick={() => handleIncrease(item.id)}
-                     className="p-1.5 rounded-full text-white hover:opacity-80"
-                     style={{ backgroundColor: '#41AEAD' }}
-                     aria-label="Ajouter au stock"
-                   >
-                     <PlusCircle className="h-5 w-5" />
-                   </button>
-                 </div>
-               </div>
+   <div className="flex h-screen bg-gray-50">
+     {/* Barre latérale - déjà gérée globalement via SideNav dans le layout */}
+
+     {/* Contenu principal */}
+     <div className={styles.container}>
+       <div className={styles.grid}>
+         {stocks.map((item) => (
+           <div key={item.id} className={styles.card}>
+             <div className={styles.cardInner}>
+                               <div className={styles.cardHeader}>
+                  <div className={styles.label}><span>{item.name}</span></div>
+                  <div className={styles.valueRow}>
+                    <div className={styles.value}>
+                      {item.quantity}
+                    </div>
+                    <div className={styles.actions}>
+                      <button 
+                        onClick={() => handleDecrease(item.id)}
+                        className={styles.actionBtn}
+                        aria-label="Retirer du stock"
+                      >
+                        <MinusCircle className="h-5 w-5" />
+                      </button>
+                      <button 
+                        onClick={() => handleIncrease(item.id)}
+                        className={styles.actionBtn}
+                        aria-label="Ajouter au stock"
+                      >
+                        <PlusCircle className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
              </div>
            </div>
-         </div>
-       ))}
+         ))}
+       </div>
      </div>
    </div>
  );

@@ -1,0 +1,7 @@
+/* Mobile-only styles for ConversationList */
+@media screen and (max-width: 768px) {
+  .container { width: 100%; max-width: none; border-radius: 0; }
+  .item { padding: 0.5rem 0.75rem; }
+  .name { font-size: 0.95rem; }
+  .badge { min-width: 18px; height: 18px; font-size: 10px; }
+} 
