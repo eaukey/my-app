@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useState } from "react";
 import {
   LineChart as RechartsLineChart,
@@ -20,6 +22,11 @@ const MultiSeriesGraphComponent = ({ title, color, selectedPeriod, selectedMachi
     setError(null);
     try {
       if (!endpoint) throw new Error("Endpoint non défini");
+      if (!selectedMachine) {
+        setData([]);
+        setLoading(false);
+        return;
+      }
       const response = await fetch(
         `https://backend-eaukey.duckdns.org${endpoint}?nom_automate=${selectedMachine}`
       );
@@ -56,7 +63,7 @@ const MultiSeriesGraphComponent = ({ title, color, selectedPeriod, selectedMachi
 
   useEffect(() => {
     fetchData();
-  }, [selectedPeriod, selectedMachine, endpoint]);
+  }, [selectedPeriod, selectedMachine, endpoint, JSON.stringify(seriesConfig)]);
 
   return (
     <div

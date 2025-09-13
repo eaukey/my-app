@@ -102,9 +102,52 @@ const Dashboard = () => {
   // Mapping <id automate> ➜ libellé d'affichage (lieu ou client)
   const [stationMapping, setStationMapping] = useState({});
   const [selectedPeriod, setSelectedPeriod] = useState("jour");
-  const [selectedMachine, setSelectedMachine] = useState("");
+  const [selectedMachine, setSelectedMachine] = useState(() => {
+    try {
+      if (typeof window !== "undefined") {
+        return window.localStorage.getItem("station") || "";
+      }
+    } catch (_) {}
+    return "";
+  });
   const [activeDataCategory, setActiveDataCategory] = useState("performance"); // "performance" ou "technical"
   const [availableMachines, setAvailableMachines] = useState([]);
+
+  // Fonction utilitaire pour comparer des IDs (gère "2023004" vs "2023004.0")
+  const idsEqual = (a, b) => {
+    const sa = a != null ? String(a) : "";
+    const sb = b != null ? String(b) : "";
+    if (sa === sb) return true;
+    const na = Number(sa);
+    const nb = Number(sb);
+    return !Number.isNaN(na) && !Number.isNaN(nb) && na === nb;
+  };
+
+  // Clé de stockage local pour mémoriser la station sélectionnée
+  const LOCAL_STORAGE_KEY_SELECTED_MACHINE = "station";
+
+  // Lecture de la sélection mémorisée au montage du composant
+  useEffect(() => {
+    try {
+      const saved = typeof window !== "undefined" ? window.localStorage.getItem(LOCAL_STORAGE_KEY_SELECTED_MACHINE) : null;
+      if (saved) {
+        setSelectedMachine(saved);
+      }
+    } catch (err) {
+      console.warn("localStorage inaccessible pour lecture:", err);
+    }
+  }, []);
+
+  // Sauvegarde de la sélection à chaque changement (utilisateur ou programme)
+  useEffect(() => {
+    try {
+      if (selectedMachine) {
+        typeof window !== "undefined" && window.localStorage.setItem(LOCAL_STORAGE_KEY_SELECTED_MACHINE, selectedMachine);
+      }
+    } catch (err) {
+      console.warn("localStorage inaccessible pour écriture:", err);
+    }
+  }, [selectedMachine]);
 
   const periods = [
     { label: "Jour", value: "jour" },
@@ -166,7 +209,7 @@ const Dashboard = () => {
 
     // Construire la liste pour la <select>
     const mappedStations = filtered.map((auto) => ({
-      id: auto.nom_automate,
+      id: String(auto.nom_automate),
       name: stationMapping[auto.nom_automate] || `Station inconnue (${auto.nom_automate})`,
     }));
 
@@ -175,13 +218,21 @@ const Dashboard = () => {
 
     setAvailableMachines(mappedStations);
 
-    // Si la station sélectionnée actuelle n'est plus valide, on la remplace
+    // Si des stations sont disponibles, déterminer la sélection sans écraser une valeur restaurée
     if (mappedStations.length > 0) {
-      setSelectedMachine((prev) =>
-        mappedStations.some((s) => s.id === prev) ? prev : mappedStations[0].id
-      );
-    } else {
-      setSelectedMachine("");
+      setSelectedMachine((prev) => {
+        const saved = typeof window !== "undefined" ? window.localStorage.getItem(LOCAL_STORAGE_KEY_SELECTED_MACHINE) : null;
+        // 1) Si la valeur courante est valide, on la garde
+        if (prev && mappedStations.some((s) => idsEqual(s.id, prev))) {
+          return String(prev);
+        }
+        // 2) Sinon, si une valeur sauvegardée est valide, on l'applique
+        if (saved && mappedStations.some((s) => idsEqual(s.id, saved))) {
+          return String(saved);
+        }
+        // 3) Sinon, fallback seulement si aucune valeur disponible
+        return mappedStations[0].id;
+      });
     }
   }, [isAuthenticated, user, stationMapping, allAutomates, isAdmin]);
 
@@ -235,7 +286,15 @@ const Dashboard = () => {
       <div className={styles.block}>
         <select
           value={selectedMachine}
-          onChange={(e) => setSelectedMachine(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSelectedMachine(value);
+            try {
+              typeof window !== "undefined" && window.localStorage.setItem(LOCAL_STORAGE_KEY_SELECTED_MACHINE, value);
+            } catch (err) {
+              console.warn("localStorage inaccessible pour écriture (onChange):", err);
+            }
+          }}
           style={{
             padding: "0.375rem 0.75rem",
             borderRadius: "0.5rem",
