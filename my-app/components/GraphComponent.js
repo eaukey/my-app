@@ -16,6 +16,44 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Mapping anglais -> français pour les jours de la semaine
+  const dayNameMap = {
+    Saturday: 'Samedi',
+    Sunday: 'Dimanche',
+    Monday: 'Lundi',
+    Tuesday: 'Mardi',
+    Wednesday: 'Mercredi',
+    Thursday: 'Jeudi',
+    Friday: 'Vendredi'
+  };
+  // Mapping anglais -> français pour les mois (formes longues et abréviations courantes)
+  const monthNameMap = {
+    January: 'Janvier', February: 'Février', March: 'Mars', April: 'Avril', May: 'Mai', June: 'Juin', July: 'Juillet', August: 'Août', September: 'Septembre', October: 'Octobre', November: 'Novembre', December: 'Décembre',
+    Jan: 'Janvier', Feb: 'Février', Mar: 'Mars', Apr: 'Avril', Jun: 'Juin', Jul: 'Juillet', Aug: 'Août', Sep: 'Septembre', Sept: 'Septembre', Oct: 'Octobre', Nov: 'Novembre', Dec: 'Décembre'
+  };
+  const formatTick = (tick) => {
+    const s = String(tick).trim();
+    if (selectedPeriod === 'semaine') {
+      if (dayNameMap[s]) return dayNameMap[s];
+      const d = new Date(s);
+      if (!Number.isNaN(d.getTime())) {
+        const name = new Intl.DateTimeFormat('fr-FR', { weekday: 'long' }).format(d);
+        return name.charAt(0).toUpperCase() + name.slice(1);
+      }
+      return tick;
+    }
+    if (selectedPeriod === 'annee') {
+      if (monthNameMap[s]) return monthNameMap[s];
+      const d = new Date(s);
+      if (!Number.isNaN(d.getTime())) {
+        const name = new Intl.DateTimeFormat('fr-FR', { month: 'long' }).format(d);
+        return name.charAt(0).toUpperCase() + name.slice(1);
+      }
+      return tick;
+    }
+    return tick;
+  };
+
   const fetchData = async () => {
     setLoading(true);
     setError(null);
@@ -76,7 +114,7 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
         <ResponsiveContainer height={220}>
           <RechartsLineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" />
+            <XAxis dataKey="time" tickFormatter={formatTick} />
             <YAxis />
             <Tooltip />
             <Line 
