@@ -12,4 +12,13 @@
   .tableWrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .table { min-width: 520px; font-size: 0.85rem; }
   .th, .td { padding: 4px; }
+}
+
+/* Desktop and general spacing */
+.tableWrapper {
+  margin-top: 12px;
+}
+
+.spacingTop {
+  margin-top: 12px;
 } 

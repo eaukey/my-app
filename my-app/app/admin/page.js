@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { Home, BarChart2, Settings, MessageCircle, FileText, Table } from "lucide-react";
+import { Home, BarChart2, Settings, MessageCircle, FileText, Table, Edit, Save, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -17,6 +17,10 @@ export default function AdminPage() {
   const [form, setForm] = useState({ nom_automate: "", client: "", lieu: "" });
   const [error, setError] = useState("");
   const pathname = usePathname();
+
+  // État d'édition inline
+  const [editingId, setEditingId] = useState(null);
+  const [editValues, setEditValues] = useState({ client: "", lieu: "" });
 
   const isAdmin = user && (user["https://app.com/role"] || user.role) === "admin";
 
@@ -73,6 +77,37 @@ export default function AdminPage() {
     }
   };
 
+  const startEdit = (a) => {
+    setEditingId(a.nom_automate);
+    setEditValues({ client: a.client || "", lieu: a.lieu || "" });
+    setError("");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditValues({ client: "", lieu: "" });
+  };
+
+  const saveEdit = async (nom) => {
+    try {
+      setError("");
+      const res = await fetch(`${BACKEND_URL}/automates/${encodeURIComponent(nom)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client: editValues.client, lieu: editValues.lieu })
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`Erreur ${res.status}: ${txt || 'échec de la mise à jour'}`);
+      }
+      // Mise à jour locale de la ligne sans refetch global
+      setAutomates((prev) => prev.map((it) => it.nom_automate === nom ? { ...it, client: editValues.client, lieu: editValues.lieu } : it));
+      cancelEdit();
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Barre de navigation interne supprimée: s'appuie sur la side nav globale du layout */}
@@ -113,7 +148,7 @@ export default function AdminPage() {
         </form>
 
         {/* Tableau */}
-        <div className={styles.tableWrapper}>
+        <div className={styles.tableWrapper} style={{ marginTop: 16 }}>
           <table className={styles.table} style={{ borderCollapse: "collapse", width: "100%" }}>
             <thead>
               <tr>
@@ -127,10 +162,40 @@ export default function AdminPage() {
               {automates.map((a) => (
                 <tr key={a.nom_automate}>
                   <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4 }}>{a.nom_automate}</td>
-                  <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4 }}>{a.client}</td>
-                  <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4 }}>{a.lieu}</td>
                   <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4 }}>
-                    <button onClick={() => handleDelete(a.nom_automate)} className={styles.button}>Supprimer</button>
+                    {editingId === a.nom_automate ? (
+                      <input
+                        value={editValues.client}
+                        onChange={(e) => setEditValues((v) => ({ ...v, client: e.target.value }))}
+                        className={styles.input}
+                      />
+                    ) : (
+                      a.client
+                    )}
+                  </td>
+                  <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4 }}>
+                    {editingId === a.nom_automate ? (
+                      <input
+                        value={editValues.lieu}
+                        onChange={(e) => setEditValues((v) => ({ ...v, lieu: e.target.value }))}
+                        className={styles.input}
+                      />
+                    ) : (
+                      a.lieu
+                    )}
+                  </td>
+                  <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4, display: 'flex', gap: 8 }}>
+                    {editingId === a.nom_automate ? (
+                      <>
+                        <button onClick={() => saveEdit(a.nom_automate)} className={styles.button} title="Enregistrer"><Save size={16} /></button>
+                        <button onClick={cancelEdit} className={styles.button} title="Annuler"><X size={16} /></button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => startEdit(a)} className={styles.button} title="Modifier"><Edit size={16} /></button>
+                        <button onClick={() => handleDelete(a.nom_automate)} className={styles.button} title="Supprimer" aria-label="Supprimer"><X size={16} color="#dc2626" /></button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
