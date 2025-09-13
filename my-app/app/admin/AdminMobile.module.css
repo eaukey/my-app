@@ -21,4 +21,23 @@
 
 .spacingTop {
   margin-top: 12px;
+}
+
+/* Titre avec marge inférieure */
+.pageTitle {
+  margin-bottom: 12px;
+}
+
+/* Bouton "Ajouter" stylisé et légèrement décalé */
+.addButton {
+  margin-left: 8px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db; /* gris clair */
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151; /* gris foncé */
+  cursor: pointer;
+}
+.addButton:hover {
+  background: #f9fafb;
 } 

@@ -114,7 +114,7 @@ export default function AdminPage() {
 
       {/* Contenu principal */}
       <div className={`flex-1 p-8 overflow-y-auto ${styles.mainFull || ''}`}>
-        <h1>Gestion des automates</h1>
+        <h1 className={styles.pageTitle}>Gestion des automates</h1>
 
         {error && <p style={{ color: "red" }}>{error}</p>}
 
@@ -144,11 +144,11 @@ export default function AdminPage() {
             required
             className={styles.input}
           />
-          <button type="submit" className={styles.button}>Ajouter</button>
+          <button type="submit" className={`${styles.button} ${styles.addButton}`}>Ajouter</button>
         </form>
 
         {/* Tableau */}
-        <div className={styles.tableWrapper} style={{ marginTop: 16 }}>
+        <div className={styles.tableWrapper} style={{ marginTop: 22 }}>
           <table className={styles.table} style={{ borderCollapse: "collapse", width: "100%" }}>
             <thead>
               <tr>
