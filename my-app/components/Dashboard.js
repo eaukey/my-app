@@ -210,7 +210,7 @@ const Dashboard = () => {
     // Construire la liste pour la <select>
     const mappedStations = filtered.map((auto) => ({
       id: String(auto.nom_automate),
-      name: stationMapping[auto.nom_automate] || `Station inconnue (${auto.nom_automate})`,
+      name: `${auto.client || "Inconnu"} – ${auto.lieu || auto.nom_automate}`,
     }));
 
     console.log("DEBUG - filtered automates count:", filtered.length);
