@@ -114,8 +114,8 @@ export default function SideNav() {
 
   const links = [
     { icon: Home, href: "/", title: "Accueil" },
-    { icon: BarChart2, href: "/stock", title: "Stock" },
-    { icon: Settings, href: "/pilotage", title: "Pilotage" },
+    // { icon: BarChart2, href: "/stock", title: "Stock" }, // Masqué du menu (conservé côté routes)
+    // { icon: Settings, href: "/pilotage", title: "Pilotage" }, // Masqué du menu (conservé côté routes)
     ...(isAdmin ? [{ icon: Table, href: "/admin", title: "Automates" }] : []),
     { icon: MessageCircle, href: "/chat", title: "Chat" },
     { icon: FileText, href: "/documents", title: "Documents" },
