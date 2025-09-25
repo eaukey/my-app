@@ -16,6 +16,8 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const isRecyclingRate = endpoint && endpoint.includes('/taux_recyclage/');
+
   // Mapping anglais -> français pour les jours de la semaine
   const dayNameMap = {
     Saturday: 'Samedi',
@@ -77,7 +79,9 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
       if (result.labels && Array.isArray(result.data)) {
         const formattedData = result.labels.map((label, index) => ({
           time: label,
-          value: result.data[index]
+          value: isRecyclingRate && typeof result.data[index] === 'number' && Number.isFinite(result.data[index])
+            ? Math.round(result.data[index] * 100)
+            : result.data[index]
         }));
         console.log('DATA POUR RECHARTS', formattedData);
         setData(formattedData);
@@ -115,8 +119,8 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
           <RechartsLineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="time" tickFormatter={formatTick} />
-            <YAxis />
-            <Tooltip />
+            <YAxis tickFormatter={(val) => (isRecyclingRate ? `${val}%` : val)} />
+            <Tooltip formatter={(val, name) => (isRecyclingRate ? [`${val}%`, name] : [val, name])} />
             <Line 
               type="monotone" 
               dataKey="value" 

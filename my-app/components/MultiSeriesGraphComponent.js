@@ -53,6 +53,9 @@ const MultiSeriesGraphComponent = ({ title, color, selectedPeriod, selectedMachi
     return tick;
   };
 
+  const isRecyclingRate = (endpoint && endpoint.includes('/taux_recyclage/')) ||
+    (Array.isArray(seriesConfig) && seriesConfig.some(s => (s.key || s.label || '').toString().toLowerCase().includes('recycl')));
+
   const fetchData = async () => {
     setLoading(true);
     setError(null);
@@ -81,7 +84,10 @@ const MultiSeriesGraphComponent = ({ title, color, selectedPeriod, selectedMachi
         const dataPoint = { time: label };
         seriesConfig.forEach(serie => {
           if (result[serie.key]) {
-            dataPoint[serie.key] = result[serie.key][index];
+            const rawVal = result[serie.key][index];
+            dataPoint[serie.key] = isRecyclingRate && typeof rawVal === 'number' && Number.isFinite(rawVal)
+              ? Math.round(rawVal * 100)
+              : rawVal;
           }
         });
         return dataPoint;
@@ -120,8 +126,8 @@ const MultiSeriesGraphComponent = ({ title, color, selectedPeriod, selectedMachi
           <RechartsLineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="time" tickFormatter={formatTick} />
-            <YAxis />
-            <Tooltip />
+            <YAxis tickFormatter={(val) => (isRecyclingRate ? `${val}%` : val)} />
+            <Tooltip formatter={(val, name) => (isRecyclingRate ? [`${val}%`, name] : [val, name])} />
             <Legend />
             {seriesConfig.map((serie) => (
               <Line

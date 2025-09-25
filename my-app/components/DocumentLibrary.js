@@ -26,10 +26,52 @@ const DocumentLibrary = () => {
 
   return (
     <div className="flex h-screen">
-      {/* Barre latérale supprimée: le layout global fournit déjà la SideNav */}
+      {/* Barre latérale */}
+      <div 
+        className={`w-16 min-h-screen fixed flex flex-col items-center ${styles.sideNavHidden || ''}`}
+        style={{ backgroundColor: '#41AEAD' }}
+      >
+        {/* Logo Eaukey */}
+        <div className="py-4">
+        <Image 
+            src="/images/eaukey-logo.svg.png" 
+            alt="Eaukey Logo"
+            width={48}
+            height={48}
+            className="w-12"
+            priority
+          />
+        </div>
+
+        {/* Navigation icons */}
+        <div className="flex flex-col items-center flex-grow space-y-6 mt-6">
+          {[
+            { icon: Home, href: '/', title: 'Accueil' },
+            { icon: BarChart2, href: '/stock', title: 'Stock' },
+            { icon: Settings, href: '/pilotage', title: 'Pilotage' },
+            ...(isAdmin ? [{ icon: Table, href: '/admin', title: 'Automates' }] : []),
+            { icon: MessageCircle, href: '/chat', title: 'Chat' },
+            { icon: FileText, href: '/documents', title: 'Documents' }
+          ].map(({ icon: Icon, href, title }) => (
+            <Link 
+              key={href}
+              href={href}
+              className={`w-12 h-12 flex items-center justify-center ${
+                pathname === href ? 'bg-white rounded-lg' : 'hover:bg-white hover:bg-opacity-10 rounded-lg'
+              }`}
+            >
+              <Icon 
+                size={24} 
+                style={{ color: pathname === href ? '#41AEAD' : 'white' }}
+                strokeWidth={pathname === href ? 2 : 1.5}
+              />
+            </Link>
+          ))}
+        </div>
+      </div>
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col bg-white ${styles.mainFull || ''}`}>
+      <div className={`flex-1 flex flex-col bg-white ml-16 ${styles.mainFull || ''}`}>
         {/* Header */}
         <div className={`py-4 px-6 border-b ${styles.header || ''}`}>
           <h1 className="font-semibold text-gray-800">Documents</h1>
