@@ -85,9 +85,13 @@ const MultiSeriesGraphComponent = ({ title, color, selectedPeriod, selectedMachi
         seriesConfig.forEach(serie => {
           if (result[serie.key]) {
             const rawVal = result[serie.key][index];
-            dataPoint[serie.key] = isRecyclingRate && typeof rawVal === 'number' && Number.isFinite(rawVal)
-              ? Math.round(rawVal * 100)
-              : rawVal;
+            if (isRecyclingRate && typeof rawVal === 'number' && Number.isFinite(rawVal)) {
+              const needsScaling = selectedPeriod === 'jour' || selectedPeriod === 'semaine';
+              const scaled = needsScaling ? rawVal * 100 : rawVal;
+              dataPoint[serie.key] = Math.min(100, Math.round(scaled));
+            } else {
+              dataPoint[serie.key] = rawVal;
+            }
           }
         });
         return dataPoint;
@@ -126,8 +130,13 @@ const MultiSeriesGraphComponent = ({ title, color, selectedPeriod, selectedMachi
           <RechartsLineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="time" tickFormatter={formatTick} />
-            <YAxis tickFormatter={(val) => (isRecyclingRate ? `${val}%` : val)} />
-            <Tooltip formatter={(val, name) => (isRecyclingRate ? [`${val}%`, name] : [val, name])} />
+            <YAxis
+              tickFormatter={(val) => (isRecyclingRate ? `${Math.min(100, Math.round(val))}%` : val)}
+              {...(isRecyclingRate ? { domain: [0, 100] } : {})}
+            />
+            <Tooltip
+              formatter={(val, name) => (isRecyclingRate ? [`${Math.min(100, Math.round(val))}%`, name] : [val, name])}
+            />
             <Legend />
             {seriesConfig.map((serie) => (
               <Line

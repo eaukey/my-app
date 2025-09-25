@@ -77,12 +77,16 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
 
       // Le backend renvoie toujours { labels: [...], data: [...] }
       if (result.labels && Array.isArray(result.data)) {
-        const formattedData = result.labels.map((label, index) => ({
-          time: label,
-          value: isRecyclingRate && typeof result.data[index] === 'number' && Number.isFinite(result.data[index])
-            ? Math.round(result.data[index] * 100)
-            : result.data[index]
-        }));
+        const formattedData = result.labels.map((label, index) => {
+          const raw = result.data[index];
+          let value = raw;
+          if (isRecyclingRate && typeof raw === 'number' && Number.isFinite(raw)) {
+            const needsScaling = selectedPeriod === 'jour' || selectedPeriod === 'semaine';
+            const scaled = needsScaling ? raw * 100 : raw;
+            value = Math.min(100, Math.round(scaled));
+          }
+          return { time: label, value };
+        });
         console.log('DATA POUR RECHARTS', formattedData);
         setData(formattedData);
       } else {
@@ -119,8 +123,13 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
           <RechartsLineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="time" tickFormatter={formatTick} />
-            <YAxis tickFormatter={(val) => (isRecyclingRate ? `${val}%` : val)} />
-            <Tooltip formatter={(val, name) => (isRecyclingRate ? [`${val}%`, name] : [val, name])} />
+            <YAxis
+              tickFormatter={(val) => (isRecyclingRate ? `${Math.min(100, Math.round(val))}%` : val)}
+              {...(isRecyclingRate ? { domain: [0, 100] } : {})}
+            />
+            <Tooltip
+              formatter={(val, name) => (isRecyclingRate ? [`${Math.min(100, Math.round(val))}%`, name] : [val, name])}
+            />
             <Line 
               type="monotone" 
               dataKey="value" 
