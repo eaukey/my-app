@@ -21,6 +21,7 @@ const RealTimeIndicator = ({ title, value, unit, color, lastUpdate }) => {
 
 const RealTimeData = ({ selectedMachine }) => {
   const [data, setData] = useState({
+    taux_recyclage: { value: null, lastUpdate: null },
     hauteur_cuve_traitement: { value: null, lastUpdate: null },
     hauteur_cuve_disconnection: { value: null, lastUpdate: null },
     volume_renvoi: { value: null, lastUpdate: null },
@@ -89,6 +90,7 @@ const RealTimeData = ({ selectedMachine }) => {
       try {
         // Créer un tableau de toutes les requêtes que nous devons faire
         const endpoints = [
+          'taux_recyclage',
           'hauteur_cuve_traitement',
           'hauteur_cuve_disconnection',
           'volume_renvoi',
@@ -100,24 +102,69 @@ const RealTimeData = ({ selectedMachine }) => {
         
         for (const endpoint of endpoints) {
           try {
-            const url = `https://backend-eaukey.duckdns.org/temps_reel/${endpoint}?nom_automate=${selectedMachine}`;
-            // La bonne URL pourrait être différente, essayons l'URL qui correspondrait au backend
-            console.log(`Requête vers ${url}`);
-            
-            const response = await fetch(url);
-            console.log(`Réponse pour ${endpoint}:`, response.status);
-            
-            if (response.ok) {
-              const result = await response.json();
-              console.log(`Données pour ${endpoint}:`, result);
-              
-              newData[endpoint] = {
-                value: result.valeur !== undefined ? result.valeur : null,
-                lastUpdate: result.horodatage ? new Date(result.horodatage).toLocaleTimeString() : null
-              };
+            if (endpoint === 'taux_recyclage') {
+              let value = null;
+              let lastUpdate = null;
+              const url1 = `https://backend-eaukey.duckdns.org/temps_reel/taux_recyclage?nom_automate=${selectedMachine}`;
+              console.log(`Requête vers ${url1}`);
+              const res1 = await fetch(url1);
+              console.log(`Réponse pour taux_recyclage:`, res1.status);
+              if (res1.ok) {
+                const json1 = await res1.json();
+                console.log(`Données pour taux_recyclage:`, json1);
+                const raw = (json1.valeur !== undefined ? json1.valeur : json1.value);
+                if (raw !== undefined && raw !== null && !isNaN(parseFloat(raw))) {
+                  let v = parseFloat(raw);
+                  if (v >= 0 && v <= 1) v = v * 100;
+                  value = v;
+                }
+                lastUpdate = json1.horodatage ? new Date(json1.horodatage).toLocaleTimeString() : null;
+              } else {
+                const url2 = `https://backend-eaukey.duckdns.org/taux_recyclage/jour?nom_automate=${selectedMachine}`;
+                console.log(`Requête vers ${url2}`);
+                const res2 = await fetch(url2);
+                console.log(`Réponse pour taux_recyclage fallback:`, res2.status);
+                if (res2.ok) {
+                  const json2 = await res2.json();
+                  const arr = Array.isArray(json2) ? json2 : (json2.data || json2.valeurs || json2.values || []);
+                  for (let i = arr.length - 1; i >= 0; i--) {
+                    const item = arr[i];
+                    const rawItem = typeof item === 'number' ? item : (item && typeof item === 'object' ? (item.valeur ?? item.value ?? item.v) : null);
+                    if (rawItem !== undefined && rawItem !== null && !isNaN(parseFloat(rawItem))) {
+                      let v = parseFloat(rawItem);
+                      if (v >= 0 && v <= 1) v = v * 100;
+                      value = v;
+                      if (item && typeof item === 'object') {
+                        const ts = item.horodatage ?? item.timestamp ?? item.date;
+                        if (ts) lastUpdate = new Date(ts).toLocaleTimeString();
+                      }
+                      break;
+                    }
+                  }
+                } else {
+                  console.error(`Erreur HTTP ${res2.status} pour taux_recyclage fallback`);
+                }
+              }
+              newData[endpoint] = { value: value, lastUpdate: lastUpdate };
             } else {
-              console.error(`Erreur HTTP ${response.status} pour ${endpoint}`);
-              newData[endpoint] = { value: null, lastUpdate: null };
+              const url = `https://backend-eaukey.duckdns.org/temps_reel/${endpoint}?nom_automate=${selectedMachine}`;
+              console.log(`Requête vers ${url}`);
+              
+              const response = await fetch(url);
+              console.log(`Réponse pour ${endpoint}:`, response.status);
+              
+              if (response.ok) {
+                const result = await response.json();
+                console.log(`Données pour ${endpoint}:`, result);
+                
+                newData[endpoint] = {
+                  value: result.valeur !== undefined ? result.valeur : null,
+                  lastUpdate: result.horodatage ? new Date(result.horodatage).toLocaleTimeString() : null
+                };
+              } else {
+                console.error(`Erreur HTTP ${response.status} pour ${endpoint}`);
+                newData[endpoint] = { value: null, lastUpdate: null };
+              }
             }
           } catch (err) {
             console.error(`Erreur lors de la récupération de ${endpoint}:`, err);
@@ -154,6 +201,13 @@ const RealTimeData = ({ selectedMachine }) => {
     <div className={styles.container}>
       <h2 className={styles.title}>Données en temps réel</h2>
       <div className={styles.row}>
+        <RealTimeIndicator 
+          title="Taux de recyclage" 
+          value={data.taux_recyclage.value != null ? parseFloat(data.taux_recyclage.value).toFixed(0) : null} 
+          unit="%" 
+          color="#4CAF50"
+          lastUpdate={data.taux_recyclage.lastUpdate}
+        />
         <RealTimeIndicator 
           title="Cuve de traitement" 
           value={data.hauteur_cuve_traitement.value != null ? parseFloat(data.hauteur_cuve_traitement.value).toFixed(0) : null} 
