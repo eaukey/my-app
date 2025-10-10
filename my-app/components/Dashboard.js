@@ -192,20 +192,11 @@ const Dashboard = () => {
       return;
     }
 
-    // ➜ Nouvelle logique : l'utilisateur possède un ou plusieurs *clients*
-    //    stockés dans l'app-metadata, ex. "https://app.com/clients": ["Lescot", "Colonna"]
-
-    let userClients = user["https://app.com/clients"] || user["https://app.com/client"] || user.clients || [];
-    if (typeof userClients === "string") {
-      userClients = [userClients];
-    }
-
-    console.log("DEBUG - userClients:", userClients);
-
-    // Pour un admin ➜ pas de filtre ; sinon on restreint aux clients autorisés
+    // Filtrage non-admin par email utilisateur (correspondance exacte)
+    const userEmail = (user?.email || "").toLowerCase();
     const filtered = isAdmin
       ? allAutomates
-      : allAutomates.filter((auto) => userClients.includes(auto.client));
+      : allAutomates.filter((auto) => (auto.email || "").toLowerCase() === userEmail);
 
     // Construire la liste pour la <select>
     const mappedStations = filtered.map((auto) => ({
