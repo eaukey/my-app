@@ -14,13 +14,13 @@ const BACKEND_URL = "https://backend-eaukey.duckdns.org";
 export default function AdminPage() {
   const { user, isAuthenticated, isLoading } = useAuth0();
   const [automates, setAutomates] = useState([]);
-  const [form, setForm] = useState({ nom_automate: "", client: "", lieu: "" });
+  const [form, setForm] = useState({ nom_automate: "", client: "", lieu: "", email: "" });
   const [error, setError] = useState("");
   const pathname = usePathname();
 
   // État d'édition inline
   const [editingId, setEditingId] = useState(null);
-  const [editValues, setEditValues] = useState({ client: "", lieu: "" });
+  const [editValues, setEditValues] = useState({ client: "", lieu: "", email: "" });
 
   const isAdmin = user && (user["https://app.com/role"] || user.role) === "admin";
 
@@ -58,7 +58,7 @@ export default function AdminPage() {
       });
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.message);
-      setForm({ nom_automate: "", client: "", lieu: "" });
+      setForm({ nom_automate: "", client: "", lieu: "", email: "" });
       fetchAutomates();
     } catch (err) {
       setError(err.message);
@@ -79,13 +79,13 @@ export default function AdminPage() {
 
   const startEdit = (a) => {
     setEditingId(a.nom_automate);
-    setEditValues({ client: a.client || "", lieu: a.lieu || "" });
+    setEditValues({ client: a.client || "", lieu: a.lieu || "", email: a.email || "" });
     setError("");
   };
 
   const cancelEdit = () => {
     setEditingId(null);
-    setEditValues({ client: "", lieu: "" });
+    setEditValues({ client: "", lieu: "", email: "" });
   };
 
   const saveEdit = async (nom) => {
@@ -94,14 +94,14 @@ export default function AdminPage() {
       const res = await fetch(`${BACKEND_URL}/automates/${encodeURIComponent(nom)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ client: editValues.client, lieu: editValues.lieu })
+        body: JSON.stringify({ client: editValues.client, lieu: editValues.lieu, email: editValues.email })
       });
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(`Erreur ${res.status}: ${txt || 'échec de la mise à jour'}`);
       }
       // Mise à jour locale de la ligne sans refetch global
-      setAutomates((prev) => prev.map((it) => it.nom_automate === nom ? { ...it, client: editValues.client, lieu: editValues.lieu } : it));
+      setAutomates((prev) => prev.map((it) => it.nom_automate === nom ? { ...it, client: editValues.client, lieu: editValues.lieu, email: editValues.email } : it));
       cancelEdit();
     } catch (e) {
       setError(e.message);
@@ -144,6 +144,14 @@ export default function AdminPage() {
             required
             className={styles.input}
           />
+          <input
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            placeholder="Email (optionnel)"
+            className={styles.input}
+          />
           <button type="submit" className={`${styles.button} ${styles.addButton}`}>Ajouter</button>
         </form>
 
@@ -155,6 +163,7 @@ export default function AdminPage() {
                 <th className={styles.th} style={{ border: "1px solid #ccc", padding: 4 }}>Nom automate</th>
                 <th className={styles.th} style={{ border: "1px solid #ccc", padding: 4 }}>Client</th>
                 <th className={styles.th} style={{ border: "1px solid #ccc", padding: 4 }}>Lieu</th>
+                <th className={styles.th} style={{ border: "1px solid #ccc", padding: 4 }}>Email</th>
                 <th className={styles.th}></th>
               </tr>
             </thead>
@@ -182,6 +191,18 @@ export default function AdminPage() {
                       />
                     ) : (
                       a.lieu
+                    )}
+                  </td>
+                  <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4 }}>
+                    {editingId === a.nom_automate ? (
+                      <input
+                        type="email"
+                        value={editValues.email ?? ""}
+                        onChange={(e) => setEditValues((v) => ({ ...v, email: e.target.value }))}
+                        className={styles.input}
+                      />
+                    ) : (
+                      a.email || ""
                     )}
                   </td>
                   <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4, display: 'flex', gap: 8 }}>
