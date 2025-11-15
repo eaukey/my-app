@@ -51,10 +51,19 @@ export default function AdminPage() {
     e.preventDefault();
     setError("");
     try {
+      const payload = {
+        nom_automate: form.nom_automate,
+        client: form.client,
+        lieu: form.lieu
+      };
+      const trimmedEmail = (form.email || "").trim();
+      if (trimmedEmail !== "") {
+        payload.email = trimmedEmail;
+      }
       const res = await fetch(`${BACKEND_URL}/automate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.message);
