@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Send, Check } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { getCachedAdminSenderIds, discoverAdminSenderIds } from "./chatRoleUtils";
+import { API_BASE } from "../lib/apiBase";
 import styles from "./ChatConversation.module.css";
 
 export default function ChatConversation({ clientId }) {
@@ -20,7 +21,7 @@ export default function ChatConversation({ clientId }) {
     const fetchMessages = async () => {
       try {
         const res = await fetch(
-          `https://backend-eaukey.duckdns.org/messages/${clientId}`
+          `${API_BASE}/messages/${clientId}`
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
@@ -90,7 +91,7 @@ export default function ChatConversation({ clientId }) {
     const markAdminMessagesAsRead = async () => {
       try {
         await fetch(
-          `https://backend-eaukey.duckdns.org/messages_client/${clientId}/marquer_non_lu`,
+          `${API_BASE}/messages_client/${clientId}/marquer_non_lu`,
           {
             method: "POST",
           }
@@ -111,7 +112,7 @@ export default function ChatConversation({ clientId }) {
     const markClientMessagesAsRead = async () => {
       try {
         await fetch(
-          `https://backend-eaukey.duckdns.org/messages_admin/${clientId}/marquer_non_lu`,
+          `${API_BASE}/messages_admin/${clientId}/marquer_non_lu`,
           {
             method: "POST",
           }
@@ -147,7 +148,7 @@ export default function ChatConversation({ clientId }) {
       // Log de vérification du payload
       console.log("SEND payload =", { isAdmin, sender_id: senderId, content: txt });
       await fetch(
-        `https://backend-eaukey.duckdns.org/messages/${clientId}`,
+        `${API_BASE}/messages/${clientId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

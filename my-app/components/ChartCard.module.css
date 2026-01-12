@@ -1,0 +1,137 @@
+ .card {
+  background: #ffffff;
+  border-radius: var(--radius-12);
+  padding: var(--space-16);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid #eef1f3;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-height: 320px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-12);
+}
+
+.subtitle {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0 0 4px 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.badge {
+  align-self: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-size: 0.75rem;
+  border: 1px solid #e2e8f0;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skeleton {
+  width: 100%;
+  height: 240px;
+  border-radius: var(--radius-12);
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.error {
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: var(--space-12);
+  border-radius: var(--radius-12);
+  border: 1px solid #fecaca;
+  text-align: center;
+  width: 100%;
+}
+
+.error button {
+  margin-top: var(--space-8);
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid #ef4444;
+  background: #fff;
+  color: #b91c1c;
+  cursor: pointer;
+}
+
+.emptyState {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--radius-12);
+  padding: var(--space-16);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  color: #334155;
+}
+
+.emptyState h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.emptyState p {
+  margin: 0;
+  color: #475569;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #0f172a;
+}
+
+.emptyActions {
+  display: flex;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.emptyButton {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #d6e4ff;
+  background: #e0f2fe;
+  color: #0f172a;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ghostButton {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+  font-weight: 500;
+}
+

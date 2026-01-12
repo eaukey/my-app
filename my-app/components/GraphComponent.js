@@ -10,8 +10,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { API_BASE } from "../lib/apiBase";
+import ChartCard from "./ChartCard";
 
-const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoint }) => {
+const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoint, onRequestFallback }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -66,34 +68,28 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
         setLoading(false);
         return;
       }
-      const response = await fetch(
-        `https://backend-eaukey.duckdns.org${endpoint}?nom_automate=${selectedMachine}`
-      );
+      const response = await fetch(`${API_BASE}${endpoint}?nom_automate=${selectedMachine}`);
       if (!response.ok) {
         throw new Error(`Erreur serveur: ${response.status}`);
       }
       const result = await response.json();
-      console.log('RAW result', result);
 
-      // Le backend renvoie toujours { labels: [...], data: [...] }
       if (result.labels && Array.isArray(result.data)) {
         const formattedData = result.labels.map((label, index) => {
           const raw = result.data[index];
           let value = raw;
-          if (isRecyclingRate && typeof raw === 'number' && Number.isFinite(raw)) {
-            const needsScaling = selectedPeriod === 'jour' || selectedPeriod === 'semaine';
+          if (isRecyclingRate && typeof raw === "number" && Number.isFinite(raw)) {
+            const needsScaling = selectedPeriod === "jour" || selectedPeriod === "semaine";
             const scaled = needsScaling ? raw * 100 : raw;
             value = Math.min(100, Math.round(scaled));
           }
           return { time: label, value };
         });
-        console.log('DATA POUR RECHARTS', formattedData);
         setData(formattedData);
       } else {
         throw new Error("Format des données incorrect depuis le backend");
       }
     } catch (error) {
-      console.error('Erreur lors de la récupération des données:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -104,22 +100,26 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
     fetchData();
   }, [selectedPeriod, selectedMachine, endpoint]);
 
+  const hasData =
+    Array.isArray(data) &&
+    data.some((d) => d && d.value !== null && d.value !== undefined && !Number.isNaN(parseFloat(d.value)));
+  const isEmpty = !loading && !error && !hasData;
+
   return (
-    <div
-      style={{
-        backgroundColor: "white",
-        padding: "16px",
-        borderRadius: "8px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-      }}
+    <ChartCard
+      title={title}
+      loading={loading}
+      error={error}
+      isEmpty={isEmpty}
+      onRetry={fetchData}
+      onViewLastAvailable={onRequestFallback}
+      emptyTitle={!selectedMachine ? "Sélectionnez un site" : undefined}
+      emptyDescription={
+        !selectedMachine ? "Choisissez un site pour afficher les données." : undefined
+      }
     >
-      <h3 style={{ marginBottom: "16px" }}>{title}</h3>
-      {loading ? (
-        <p>Chargement...</p>
-      ) : error ? (
-        <p style={{ color: "red" }}>Erreur : {error}</p>
-      ) : (
-        <ResponsiveContainer height={220}>
+      {hasData && (
+        <ResponsiveContainer height={240}>
           <RechartsLineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="time" tickFormatter={formatTick} />
@@ -130,17 +130,17 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
             <Tooltip
               formatter={(val, name) => (isRecyclingRate ? [`${Math.min(100, Math.round(val))}%`, name] : [val, name])}
             />
-            <Line 
-              type="monotone" 
-              dataKey="value" 
-              stroke={color} 
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke={color}
               strokeWidth={2}
               dot={false}
             />
           </RechartsLineChart>
         </ResponsiveContainer>
       )}
-    </div>
+    </ChartCard>
   );
 };
 

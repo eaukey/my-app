@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth0 } from "@auth0/auth0-react";
+import { API_BASE } from "../lib/apiBase";
 import { usePathname } from "next/navigation";
 import styles from "./ConversationList.module.css";
 
@@ -28,7 +29,7 @@ export default function ConversationList({ onSelect }) {
     const fetchClients = async () => {
       try {
         const ts = Date.now();
-        const res = await fetch(`https://backend-eaukey.duckdns.org/clients?is_admin=true&t=${ts}`);
+        const res = await fetch(`${API_BASE}/clients?is_admin=true&t=${ts}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setClients(data);
@@ -47,8 +48,6 @@ export default function ConversationList({ onSelect }) {
     if (!Array.isArray(clients) || clients.length === 0) return;
 
     let intervalId;
-    const backendBase = "https://backend-eaukey.duckdns.org";
-
     const tick = async () => {
       try {
         const ts = Date.now();
@@ -56,7 +55,7 @@ export default function ConversationList({ onSelect }) {
           clients.map(async (c) => {
             try {
               const r = await fetch(
-                `${backendBase}/notifications/admin/${encodeURIComponent(c.client_id)}?t=${ts}`
+                `${API_BASE}/notifications/admin/${encodeURIComponent(c.client_id)}?t=${ts}`
               );
               if (!r.ok) return [c.client_id, 0];
               const d = await r.json();

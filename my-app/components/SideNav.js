@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Home, BarChart2, Settings, MessageCircle, FileText, Table } from "lucide-react";
 import Image from "next/image";
 import { useAuth0 } from "@auth0/auth0-react";
+import { API_BASE } from "../lib/apiBase";
 import styles from "./SideNav.module.css";
 
 export default function SideNav() {
@@ -26,14 +27,12 @@ export default function SideNav() {
     if (!isAuthenticated) return;
 
     let intervalId;
-    const backendBase = "https://backend-eaukey.duckdns.org";
-
     const fetchUnreadForClient = async () => {
       if (!effectiveClientId) return;
       try {
         const ts = Date.now();
         const res = await fetch(
-          `${backendBase}/notifications/client/${encodeURIComponent(effectiveClientId)}?t=${ts}`
+          `${API_BASE}/notifications/client/${encodeURIComponent(effectiveClientId)}?t=${ts}`
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
@@ -47,7 +46,7 @@ export default function SideNav() {
     const fetchUnreadForAdmin = async () => {
       try {
         const ts = Date.now();
-        const resClients = await fetch(`${backendBase}/clients?is_admin=true&t=${ts}`);
+        const resClients = await fetch(`${API_BASE}/clients?is_admin=true&t=${ts}`);
         if (!resClients.ok) throw new Error(`HTTP ${resClients.status}`);
         const clients = await resClients.json();
         if (!Array.isArray(clients)) return;
@@ -56,7 +55,7 @@ export default function SideNav() {
           clients.map(async (c) => {
             try {
               const r = await fetch(
-                `${backendBase}/notifications/admin/${encodeURIComponent(c.client_id)}?t=${ts}`
+                `${API_BASE}/notifications/admin/${encodeURIComponent(c.client_id)}?t=${ts}`
               );
               if (!r.ok) return 0;
               const d = await r.json();
@@ -99,9 +98,8 @@ export default function SideNav() {
       const openedClientId = e?.detail?.clientId;
       if (!openedClientId) return;
       try {
-        const backendBase = "https://backend-eaukey.duckdns.org";
         const ts = Date.now();
-        const r = await fetch(`${backendBase}/notifications/admin/${encodeURIComponent(openedClientId)}?t=${ts}`);
+        const r = await fetch(`${API_BASE}/notifications/admin/${encodeURIComponent(openedClientId)}?t=${ts}`);
         if (!r.ok) return;
         const d = await r.json();
         const delta = Number(d?.count || 0);

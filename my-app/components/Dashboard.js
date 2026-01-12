@@ -6,94 +6,84 @@ import MultiSeriesGraphComponent from "./MultiSeriesGraphComponent";
 import RealTimeData from "./RealTimeData";
 import { useAuth0 } from "@auth0/auth0-react";
 import styles from "./Dashboard.module.css";
+import { API_BASE } from "../lib/apiBase";
 
 // Le mapping station <-> nom est désormais récupéré dynamiquement depuis l'API
 // via l'endpoint /recherche/automate_LCA (sans paramètre).
 
-// Configuration des graphiques
-const graphConfigs = [
-  // Données générales de performance
-  {
-    title: "Volume renvoi (m³)",
-    color: "#2196F3",
-    endpoint: (period) => `/renvoi/${period}`,
-    category: "performance"
-  },
-  {
-    title: "Volume adoucie (m³)",
-    color: "#4CAF50",
-    endpoint: (period) => `/adoucie/${period}`,
-    category: "performance"
-  },
-  {
-    title: "Volume relevage (m³)",
-    color: "#FF9800",
-    endpoint: (period) => `/relevage/${period}`,
-    category: "performance"
-  },
-  {
-    title: "Volumes (m³)",
-    color: "#4CAF50",
-    endpoint: (period) => `/volumes_all/${period}`,
-    seriesConfig: [
-      { key: "vol_renvoi_m3", label: "Renvoi", color: "#2196F3" },
-      { key: "vol_adoucie_m3", label: "Adoucie", color: "#4CAF50" },
-      { key: "vol_relevage_m3", label: "Relevage", color: "#FFC107" }
-    ],
-    category: "performance"
-  },
-  {
-    title: "Taux de recyclage (%)",
-    color: "#009688",
-    endpoint: (period) => `/taux_recyclage/${period}`,
-    category: "performance"
-  },
-  {
-    title: "Consommation électrique (kWh)",
-    color: "#795548",
-    endpoint: (period) => `/compteur_elec/${period}`,
-    category: "performance"
-  },
-  
-  // Données techniques
-  {
-    title: "Taux désinfection (%)",
-    color: "#673AB7",
-    endpoint: (period) => `/taux_desinfection/${period}`,
-    category: "technical"
-  },
-  {
-    title: "Pression (mbar)",
-    color: "#2196F3",
-    endpoint: (period) => `/pression_all/${period}`,
-    seriesConfig: [
-      { key: "p1_med_mbar", label: "P1", color: "#2196F3" },
-      { key: "p2_med_mbar", label: "P2", color: "#4CAF50" },
-      { key: "p3_med_mbar", label: "P3", color: "#FFC107" },
-      { key: "p4_med_mbar", label: "P4", color: "#FF5722" },
-      { key: "p5_med_mbar", label: "P5", color: "#9C27B0" }
-    ],
-    category: "technical"
-  },
-  {
-    title: "Température (°C)",
-    color: "#E91E63",
-    endpoint: (period) => `/temperature/${period}`,
-    category: "technical"
-  },
-  {
-    title: "Chlore (mV)",
-    color: "#9C27B0",
-    endpoint: (period) => `/chlore/${period}`,
-    category: "technical"
-  },
-  {
-    title: "pH",
-    color: "#FF9800",
-    endpoint: (period) => `/ph/${period}`,
-    category: "technical"
-  }
-];
+const chartGroups = {
+  performance: [
+    {
+      title: "Volumes (m³)",
+      color: "#4CAF50",
+      endpoint: (period) => `/volumes_all/${period}`,
+      seriesConfig: [
+        { key: "vol_renvoi_m3", label: "Renvoi", color: "#2196F3" },
+        { key: "vol_adoucie_m3", label: "Adoucie", color: "#4CAF50" },
+        { key: "vol_relevage_m3", label: "Relevage", color: "#FFC107" },
+      ],
+    },
+    {
+      title: "Détail – Renvoi (m³)",
+      color: "#2196F3",
+      endpoint: (period) => `/renvoi/${period}`,
+    },
+  ],
+  technical: [
+    {
+      title: "Volume adoucie (m³)",
+      color: "#4CAF50",
+      endpoint: (period) => `/adoucie/${period}`,
+    },
+    {
+      title: "Volume relevage (m³)",
+      color: "#FF9800",
+      endpoint: (period) => `/relevage/${period}`,
+    },
+    {
+      title: "Taux de recyclage (%)",
+      color: "#009688",
+      endpoint: (period) => `/taux_recyclage/${period}`,
+    },
+    {
+      title: "Consommation électrique (kWh)",
+      color: "#795548",
+      endpoint: (period) => `/compteur_elec/${period}`,
+    },
+    {
+      title: "Taux désinfection (%)",
+      color: "#673AB7",
+      endpoint: (period) => `/taux_desinfection/${period}`,
+    },
+    {
+      title: "Pression (mbar)",
+      color: "#2196F3",
+      endpoint: (period) => `/pression_all/${period}`,
+      seriesConfig: [
+        { key: "p1_med_mbar", label: "P1", color: "#2196F3" },
+        { key: "p2_med_mbar", label: "P2", color: "#4CAF50" },
+        { key: "p3_med_mbar", label: "P3", color: "#FFC107" },
+        { key: "p4_med_mbar", label: "P4", color: "#FF5722" },
+        { key: "p5_med_mbar", label: "P5", color: "#9C27B0" },
+      ],
+    },
+    {
+      title: "Température (°C)",
+      color: "#E91E63",
+      endpoint: (period) => `/temperature/${period}`,
+    },
+    {
+      title: "Chlore (mV)",
+      color: "#9C27B0",
+      endpoint: (period) => `/chlore/${period}`,
+    },
+    {
+      title: "pH",
+      color: "#FF9800",
+      endpoint: (period) => `/ph/${period}`,
+    },
+  ],
+};
 
 const Dashboard = () => {
   const { user, isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0();
@@ -110,7 +100,7 @@ const Dashboard = () => {
     } catch (_) {}
     return "";
   });
-  const [activeDataCategory, setActiveDataCategory] = useState("performance"); // "performance" ou "technical"
+  const [activeDataCategory, setActiveDataCategory] = useState("performance");
   const [availableMachines, setAvailableMachines] = useState([]);
 
   // Fonction utilitaire pour comparer des IDs (gère "2023004" vs "2023004.0")
@@ -163,7 +153,7 @@ const Dashboard = () => {
     // 1️⃣ Récupère le mapping complet depuis l'API au premier rendu
     const fetchStationMapping = async () => {
       try {
-        const res = await fetch("https://backend-eaukey.duckdns.org/recherche/automate_LCA");
+        const res = await fetch(`${API_BASE}/recherche/automate_LCA`);
         if (!res.ok) {
           throw new Error(`Erreur serveur: ${res.status}`);
         }
@@ -227,54 +217,45 @@ const Dashboard = () => {
     }
   }, [isAuthenticated, user, stationMapping, allAutomates, isAdmin]);
 
-  // Filtrer les graphiques selon la catégorie active
-  const filteredGraphs = graphConfigs.filter(graph => graph.category === activeDataCategory);
+  const filteredGraphs = chartGroups[activeDataCategory] || [];
+
+  const handleFallbackPeriod = () => {
+    setSelectedPeriod((prev) => {
+      const fallbackMap = {
+        jour: "jour",
+        semaine: "jour",
+        mois: "semaine",
+        annee: "mois",
+      };
+      return fallbackMap[prev] || "jour";
+    });
+  };
 
   if (isLoading) {
     return <div>Chargement...</div>;
   }
   return (
     <div className={styles.container}>
-      {/* En-tête avec bouton Connexion/Déconnexion */}
-      <div className={styles.headerRow}>
-        {isAuthenticated ? (
-          <>
-            <h1>Bienvenue, {user?.name || "Utilisateur"}</h1>
-            <button
-              onClick={() => logout({ returnTo: window.location.origin })}
-              style={{
-                padding: "0.375rem 0.75rem",
-                backgroundColor: "#41AEAD",
-                color: "white",
-                border: "none",
-                borderRadius: "0.5rem",
-                cursor: "pointer",
-                fontSize: "0.875rem",
-              }}
-            >
+      <div className={styles.pageHeader}>
+        <div>
+          <p className={styles.pageEyebrow}>Pilotage</p>
+          <h1 className={styles.pageTitle}>Données générales de performance</h1>
+        </div>
+        <div className={styles.authActions}>
+          {isAuthenticated ? (
+            <button className={styles.primaryBtn} onClick={() => logout({ returnTo: window.location.origin })}>
               Déconnexion
             </button>
-          </>
-        ) : (
-          <button
-            onClick={() => loginWithRedirect()}
-            style={{
-              padding: "0.375rem 0.75rem",
-              backgroundColor: "#41AEAD",
-              color: "white",
-              border: "none",
-              borderRadius: "0.5rem",
-              cursor: "pointer",
-              fontSize: "0.875rem",
-            }}
-          >
-            Connexion
-          </button>
-        )}
+          ) : (
+            <button className={styles.primaryBtn} onClick={() => loginWithRedirect()}>
+              Connexion
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Sélection de la station */}
-      <div className={styles.block}>
+      <div className={styles.selectorCard}>
+        <div className={styles.selectorLabel}>Site</div>
         <select
           value={selectedMachine}
           onChange={(e) => {
@@ -286,14 +267,7 @@ const Dashboard = () => {
               console.warn("localStorage inaccessible pour écriture (onChange):", err);
             }
           }}
-          style={{
-            padding: "0.375rem 0.75rem",
-            borderRadius: "0.5rem",
-            border: "1px solid #ddd",
-            width: "100%",
-            maxWidth: "20rem",
-            fontSize: "0.875rem",
-          }}
+          className={styles.selector}
         >
           <option value="">Sélectionnez une station</option>
           {availableMachines.length > 0 ? (
@@ -312,26 +286,29 @@ const Dashboard = () => {
         </select>
       </div>
 
-      {/* Données en temps réel */}
-      {selectedMachine && <RealTimeData selectedMachine={selectedMachine} />}
+      {selectedMachine && (
+        <RealTimeData
+          selectedMachine={selectedMachine}
+          selectedPeriod={selectedPeriod}
+          siteLabel={stationMapping[selectedMachine] || availableMachines.find((s) => s.id === selectedMachine)?.name}
+        />
+      )}
 
-      {/* Sélection des catégories de données */}
-      <div className={styles.segmented}>
+      <div className={styles.tabsRow}>
         <button
           onClick={() => setActiveDataCategory("performance")}
-          className={`${styles.segBtn} ${activeDataCategory === "performance" ? styles.selectedButtonStyle : ""}`}
+          className={`${styles.tabBtn} ${activeDataCategory === "performance" ? styles.tabBtnActive : ""}`}
         >
-          Données générales de performance
+          Synthèse & performance
         </button>
         <button
           onClick={() => setActiveDataCategory("technical")}
-          className={`${styles.segBtn} ${activeDataCategory === "technical" ? styles.selectedButtonStyle : ""}`}
+          className={`${styles.tabBtn} ${activeDataCategory === "technical" ? styles.tabBtnActive : ""}`}
         >
           Données techniques
         </button>
       </div>
 
-      {/* Sélection des périodes */}
       <div className={styles.periodRow}>
         {periods.map((period) => (
           <button
@@ -344,25 +321,20 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Affichage des graphiques filtrés par catégorie */}
       <div className={styles.chartsGrid}>
-        {filteredGraphs.map((cfg) => {
-          // Si le graphique a une configuration multi-séries, utiliser MultiSeriesGraphComponent
-          if (cfg.seriesConfig) {
-            return (
-              <MultiSeriesGraphComponent
-                key={cfg.title}
-                title={cfg.title}
-                color={cfg.color}
-                selectedPeriod={selectedPeriod}
-                selectedMachine={selectedMachine}
-                endpoint={cfg.endpoint(selectedPeriod)}
-                seriesConfig={typeof cfg.seriesConfig === 'function' ? cfg.seriesConfig(selectedPeriod) : cfg.seriesConfig}
-              />
-            );
-          } 
-          // Sinon, utiliser le GraphComponent standard
-          return (
+        {filteredGraphs.map((cfg) =>
+          cfg.seriesConfig ? (
+            <MultiSeriesGraphComponent
+              key={cfg.title}
+              title={cfg.title}
+              color={cfg.color}
+              selectedPeriod={selectedPeriod}
+              selectedMachine={selectedMachine}
+              endpoint={cfg.endpoint(selectedPeriod)}
+              seriesConfig={typeof cfg.seriesConfig === "function" ? cfg.seriesConfig(selectedPeriod) : cfg.seriesConfig}
+              onRequestFallback={handleFallbackPeriod}
+            />
+          ) : (
             <GraphComponent
               key={cfg.title}
               title={cfg.title}
@@ -370,12 +342,13 @@ const Dashboard = () => {
               selectedPeriod={selectedPeriod}
               selectedMachine={selectedMachine}
               endpoint={cfg.endpoint(selectedPeriod)}
+              onRequestFallback={handleFallbackPeriod}
             />
-          );
-        })}
+          )
+        )}
       </div>
     </div>
   );
-}
+};
 
 export default Dashboard;

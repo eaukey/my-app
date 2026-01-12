@@ -11,8 +11,18 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { API_BASE } from "../lib/apiBase";
+import ChartCard from "./ChartCard";
 
-const MultiSeriesGraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoint, seriesConfig }) => {
+const MultiSeriesGraphComponent = ({
+  title,
+  color,
+  selectedPeriod,
+  selectedMachine,
+  endpoint,
+  seriesConfig,
+  onRequestFallback,
+}) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -66,27 +76,23 @@ const MultiSeriesGraphComponent = ({ title, color, selectedPeriod, selectedMachi
         setLoading(false);
         return;
       }
-      const response = await fetch(
-        `https://backend-eaukey.duckdns.org${endpoint}?nom_automate=${selectedMachine}`
-      );
+      const response = await fetch(`${API_BASE}${endpoint}?nom_automate=${selectedMachine}`);
       if (!response.ok) {
         throw new Error(`Erreur serveur: ${response.status}`);
       }
       const result = await response.json();
-      console.log('RAW result (multi-séries)', result);
 
       if (!result.labels) {
         throw new Error("Les données ne contiennent pas de labels");
       }
 
-      // Formatage pour multi-séries
       const formattedData = result.labels.map((label, index) => {
         const dataPoint = { time: label };
-        seriesConfig.forEach(serie => {
+        seriesConfig.forEach((serie) => {
           if (result[serie.key]) {
             const rawVal = result[serie.key][index];
-            if (isRecyclingRate && typeof rawVal === 'number' && Number.isFinite(rawVal)) {
-              const needsScaling = selectedPeriod === 'jour' || selectedPeriod === 'semaine';
+            if (isRecyclingRate && typeof rawVal === "number" && Number.isFinite(rawVal)) {
+              const needsScaling = selectedPeriod === "jour" || selectedPeriod === "semaine";
               const scaled = needsScaling ? rawVal * 100 : rawVal;
               dataPoint[serie.key] = Math.min(100, Math.round(scaled));
             } else {
@@ -96,11 +102,9 @@ const MultiSeriesGraphComponent = ({ title, color, selectedPeriod, selectedMachi
         });
         return dataPoint;
       });
-      
-      console.log('DATA POUR RECHARTS (multi-séries)', formattedData);
+
       setData(formattedData);
     } catch (error) {
-      console.error('Erreur lors de la récupération des données:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -111,22 +115,28 @@ const MultiSeriesGraphComponent = ({ title, color, selectedPeriod, selectedMachi
     fetchData();
   }, [selectedPeriod, selectedMachine, endpoint, JSON.stringify(seriesConfig)]);
 
+  const hasData =
+    Array.isArray(data) &&
+    data.some((d) =>
+      seriesConfig.some(
+        (serie) => d && d[serie.key] !== null && d[serie.key] !== undefined && !Number.isNaN(parseFloat(d[serie.key]))
+      )
+    );
+  const isEmpty = !loading && !error && !hasData;
+
   return (
-    <div
-      style={{
-        backgroundColor: "white",
-        padding: "16px",
-        borderRadius: "8px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-      }}
+    <ChartCard
+      title={title}
+      loading={loading}
+      error={error}
+      isEmpty={isEmpty}
+      onRetry={fetchData}
+      onViewLastAvailable={onRequestFallback}
+      emptyTitle={!selectedMachine ? "Sélectionnez un site" : undefined}
+      emptyDescription={!selectedMachine ? "Choisissez un site pour afficher les données." : undefined}
     >
-      <h3 style={{ marginBottom: "16px" }}>{title}</h3>
-      {loading ? (
-        <p>Chargement...</p>
-      ) : error ? (
-        <p style={{ color: "red" }}>Erreur : {error}</p>
-      ) : (
-        <ResponsiveContainer height={220}>
+      {hasData && (
+        <ResponsiveContainer height={240}>
           <RechartsLineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="time" tickFormatter={formatTick} />
@@ -152,7 +162,7 @@ const MultiSeriesGraphComponent = ({ title, color, selectedPeriod, selectedMachi
           </RechartsLineChart>
         </ResponsiveContainer>
       )}
-    </div>
+    </ChartCard>
   );
 };
 

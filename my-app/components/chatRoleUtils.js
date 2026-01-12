@@ -18,7 +18,9 @@ export function cacheAdminSenderIds(idsSet) {
   } catch {}
 }
 
-export async function discoverAdminSenderIds(backendBaseUrl = "https://backend-eaukey.duckdns.org") {
+import { API_BASE } from "../lib/apiBase";
+
+export async function discoverAdminSenderIds(backendBaseUrl = API_BASE) {
   // Récupère la liste des clients puis agrège les sender_id qui parlent à plusieurs clients
   const adminIds = new Set();
   try {

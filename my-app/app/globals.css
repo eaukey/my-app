@@ -50,3 +50,18 @@
   color: #fff;
   box-shadow: 0 0 8px rgba(65,174,173,0.8), 0 0 15px rgba(65,174,173,0.6);
 }
+
+/* --- Design tokens (dashboard) --- */
+:root {
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --border-neutral: 1px solid #e5e7eb;
+  --text-title: 22px;
+  --text-kpi: 32px;
+  --text-label: 13px;
+}
