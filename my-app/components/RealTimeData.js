@@ -36,9 +36,9 @@ const getStatusForValue = (key, value) => {
     return "neutral";
   }
   if (key === "hauteur_cuve_traitement" || key === "hauteur_cuve_disconnection") {
-    if (value > 85) return "critical";
-    if (value >= 70) return "watch";
-    return "ok";
+    if (value > 80) return "ok";
+    if (value >= 60) return "watch";
+    return "critical";
   }
   if (key === "taux_recyclage") {
     if (value < 5) return "critical";
@@ -50,15 +50,16 @@ const getStatusForValue = (key, value) => {
 
 const getInterpretation = (key, status, deltaDirection) => {
   if (status === "critical") {
-    if (key === "hauteur_cuve_traitement") return "Critique : niveau de cuve élevé";
-    if (key === "hauteur_cuve_disconnection") return "Critique : cuve de renvoi saturée";
+    if (key === "hauteur_cuve_traitement" || key === "hauteur_cuve_disconnection") return "Niveau bas";
     return "Critique";
   }
   if (status === "watch") {
+    if (key === "hauteur_cuve_traitement" || key === "hauteur_cuve_disconnection") return "Niveau moyen";
     if (key === "taux_recyclage") return "À surveiller : recyclage faible";
     return "Zone de vigilance";
   }
   if (status === "ok") {
+    if (key === "hauteur_cuve_traitement" || key === "hauteur_cuve_disconnection") return "Niveau élevé";
     if (deltaDirection === "down" && key === "taux_recyclage") return "Attention à la baisse récente";
     return "Conforme aux attentes";
   }
@@ -265,7 +266,9 @@ const RealTimeData = ({ selectedMachine, selectedPeriod, siteLabel }) => {
   );
 
   const insight =
-    worstKpi.weight > 1
+    worstKpi.kpi?.key === "taux_recyclage"
+      ? null
+      : worstKpi.weight > 1
       ? `Zone critique sur ${worstKpi.kpi?.label}`
       : worstKpi.weight === 1
       ? `Vigilance : ${worstKpi.kpi?.label}`
