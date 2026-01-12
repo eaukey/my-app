@@ -8,6 +8,18 @@ import { useAuth0 } from "@auth0/auth0-react";
 import styles from "./Dashboard.module.css";
 import { API_BASE } from "../lib/apiBase";
 
+const chartPalette = {
+  primary: "var(--primary)",
+  green: "#34d399",
+  amber: "#fbbf24",
+  orange: "#f97316",
+  teal: "#22d3ee",
+  violet: "#a855f7",
+  pink: "#f472b6",
+  blueSoft: "#7dd3fc",
+  slate: "#cbd5f5",
+};
+
 // Le mapping station <-> nom est désormais récupéré dynamiquement depuis l'API
 // via l'endpoint /recherche/automate_LCA (sans paramètre).
 
@@ -15,71 +27,71 @@ const chartGroups = {
   performance: [
     {
       title: "Volumes (m³)",
-      color: "#4CAF50",
+      color: chartPalette.green,
       endpoint: (period) => `/volumes_all/${period}`,
       seriesConfig: [
-        { key: "vol_renvoi_m3", label: "Renvoi", color: "#2196F3" },
-        { key: "vol_adoucie_m3", label: "Adoucie", color: "#4CAF50" },
-        { key: "vol_relevage_m3", label: "Relevage", color: "#FFC107" },
+        { key: "vol_renvoi_m3", label: "Renvoi", color: chartPalette.primary },
+        { key: "vol_adoucie_m3", label: "Adoucie", color: chartPalette.green },
+        { key: "vol_relevage_m3", label: "Relevage", color: chartPalette.amber },
       ],
     },
     {
       title: "Détail – Renvoi (m³)",
-      color: "#2196F3",
+      color: chartPalette.primary,
       endpoint: (period) => `/renvoi/${period}`,
     },
   ],
   technical: [
     {
       title: "Volume adoucie (m³)",
-      color: "#4CAF50",
+      color: chartPalette.green,
       endpoint: (period) => `/adoucie/${period}`,
     },
     {
       title: "Volume relevage (m³)",
-      color: "#FF9800",
+      color: chartPalette.orange,
       endpoint: (period) => `/relevage/${period}`,
     },
     {
       title: "Taux de recyclage (%)",
-      color: "#009688",
+      color: chartPalette.teal,
       endpoint: (period) => `/taux_recyclage/${period}`,
     },
     {
       title: "Consommation électrique (kWh)",
-      color: "#795548",
+      color: chartPalette.blueSoft,
       endpoint: (period) => `/compteur_elec/${period}`,
     },
     {
       title: "Taux désinfection (%)",
-      color: "#673AB7",
+      color: chartPalette.violet,
       endpoint: (period) => `/taux_desinfection/${period}`,
     },
     {
       title: "Pression (mbar)",
-      color: "#2196F3",
+      color: chartPalette.primary,
       endpoint: (period) => `/pression_all/${period}`,
       seriesConfig: [
-        { key: "p1_med_mbar", label: "P1", color: "#2196F3" },
-        { key: "p2_med_mbar", label: "P2", color: "#4CAF50" },
-        { key: "p3_med_mbar", label: "P3", color: "#FFC107" },
-        { key: "p4_med_mbar", label: "P4", color: "#FF5722" },
-        { key: "p5_med_mbar", label: "P5", color: "#9C27B0" },
+        { key: "p1_med_mbar", label: "P1", color: chartPalette.primary },
+        { key: "p2_med_mbar", label: "P2", color: chartPalette.green },
+        { key: "p3_med_mbar", label: "P3", color: chartPalette.amber },
+        { key: "p4_med_mbar", label: "P4", color: chartPalette.orange },
+        { key: "p5_med_mbar", label: "P5", color: chartPalette.violet },
       ],
     },
     {
       title: "Température (°C)",
-      color: "#E91E63",
+      color: chartPalette.pink,
       endpoint: (period) => `/temperature/${period}`,
     },
     {
       title: "Chlore (mV)",
-      color: "#9C27B0",
+      color: chartPalette.violet,
       endpoint: (period) => `/chlore/${period}`,
     },
     {
       title: "pH",
-      color: "#FF9800",
+      color: chartPalette.orange,
       endpoint: (period) => `/ph/${period}`,
     },
   ],

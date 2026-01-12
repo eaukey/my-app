@@ -4,6 +4,6 @@
   .messages { padding: 0.5rem; }
   .bubble { max-width: 85%; }
   .meta { font-size: 0.7rem; }
-  .inputBar { position: sticky; bottom: 0; background: #ffffff; padding: 0.5rem 0.75rem; padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)); }
+  .inputBar { position: sticky; bottom: 0; background: var(--bg-elevated); padding: 0.5rem 0.75rem; padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)); }
   .inputField { font-size: 0.95rem; }
 } 

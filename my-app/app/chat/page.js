@@ -26,7 +26,7 @@ export default function ChatPage() {
 
   if (isAdmin) {
     return (
-      <div className="p-8">
+      <div className="p-8 text-[var(--text-primary)] bg-[var(--bg-base)] min-h-screen">
         <h1 className="text-xl font-semibold mb-4">Conversations clients</h1>
         <ConversationList />
       </div>

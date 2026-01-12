@@ -118,14 +118,14 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
       {/* Barre de navigation interne supprimée: s'appuie sur la side nav globale du layout */}
 
       {/* Contenu principal */}
       <div className={`flex-1 p-8 overflow-y-auto ${styles.mainFull || ''}`}>
         <h1 className={styles.pageTitle}>Gestion des automates</h1>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <p style={{ color: "var(--critical)" }}>{error}</p>}
 
         {/* Formulaire d'ajout */}
         <form onSubmit={handleAdd} className={styles.form}>
@@ -169,18 +169,18 @@ export default function AdminPage() {
           <table className={styles.table} style={{ borderCollapse: "collapse", width: "100%" }}>
             <thead>
               <tr>
-                <th className={styles.th} style={{ border: "1px solid #ccc", padding: 4 }}>Nom automate</th>
-                <th className={styles.th} style={{ border: "1px solid #ccc", padding: 4 }}>Client</th>
-                <th className={styles.th} style={{ border: "1px solid #ccc", padding: 4 }}>Lieu</th>
-                <th className={styles.th} style={{ border: "1px solid #ccc", padding: 4 }}>Email</th>
+                <th className={styles.th} style={{ border: "1px solid var(--border-subtle)", padding: 4 }}>Nom automate</th>
+                <th className={styles.th} style={{ border: "1px solid var(--border-subtle)", padding: 4 }}>Client</th>
+                <th className={styles.th} style={{ border: "1px solid var(--border-subtle)", padding: 4 }}>Lieu</th>
+                <th className={styles.th} style={{ border: "1px solid var(--border-subtle)", padding: 4 }}>Email</th>
                 <th className={styles.th}></th>
               </tr>
             </thead>
             <tbody>
               {automates.map((a) => (
                 <tr key={a.nom_automate}>
-                  <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4 }}>{a.nom_automate}</td>
-                  <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4 }}>
+                  <td className={styles.td} style={{ border: "1px solid var(--border-subtle)", padding: 4 }}>{a.nom_automate}</td>
+                  <td className={styles.td} style={{ border: "1px solid var(--border-subtle)", padding: 4 }}>
                     {editingId === a.nom_automate ? (
                       <input
                         value={editValues.client}
@@ -191,7 +191,7 @@ export default function AdminPage() {
                       a.client
                     )}
                   </td>
-                  <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4 }}>
+                  <td className={styles.td} style={{ border: "1px solid var(--border-subtle)", padding: 4 }}>
                     {editingId === a.nom_automate ? (
                       <input
                         value={editValues.lieu}
@@ -202,7 +202,7 @@ export default function AdminPage() {
                       a.lieu
                     )}
                   </td>
-                  <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4 }}>
+                  <td className={styles.td} style={{ border: "1px solid var(--border-subtle)", padding: 4 }}>
                     {editingId === a.nom_automate ? (
                       <input
                         type="email"
@@ -214,7 +214,7 @@ export default function AdminPage() {
                       a.email || ""
                     )}
                   </td>
-                  <td className={styles.td} style={{ border: "1px solid #ccc", padding: 4, display: 'flex', gap: 8 }}>
+                  <td className={styles.td} style={{ border: "1px solid var(--border-subtle)", padding: 4, display: 'flex', gap: 8 }}>
                     {editingId === a.nom_automate ? (
                       <>
                         <button onClick={() => saveEdit(a.nom_automate)} className={styles.button} title="Enregistrer"><Save size={16} /></button>
@@ -223,7 +223,7 @@ export default function AdminPage() {
                     ) : (
                       <>
                         <button onClick={() => startEdit(a)} className={styles.button} title="Modifier"><Edit size={16} /></button>
-                        <button onClick={() => handleDelete(a.nom_automate)} className={styles.button} title="Supprimer" aria-label="Supprimer"><X size={16} color="#dc2626" /></button>
+                        <button onClick={() => handleDelete(a.nom_automate)} className={styles.button} title="Supprimer" aria-label="Supprimer"><X size={16} color="var(--critical)" /></button>
                       </>
                     )}
                   </td>

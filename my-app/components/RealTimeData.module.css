@@ -6,8 +6,8 @@
 }
 
 .summaryBar {
-  background: #ffffff;
-  border: 1px solid #eef1f3;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-16);
   padding: var(--space-16) var(--space-24);
   box-shadow: var(--shadow-soft);
@@ -29,7 +29,7 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   font-weight: 700;
 }
 
@@ -46,10 +46,10 @@
   gap: 8px;
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .statusDot {
@@ -60,41 +60,41 @@
 }
 
 .okStatus {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-  color: #166534;
+  background: var(--success-ghost);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: var(--text-primary);
 }
 
 .watchStatus {
-  background: #fffbeb;
-  border-color: #fed7aa;
-  color: #92400e;
+  background: var(--warning-ghost);
+  border-color: rgba(251, 191, 36, 0.45);
+  color: var(--text-primary);
 }
 
 .criticalStatus {
-  background: #fef2f2;
-  border-color: #fecdd3;
-  color: #b91c1c;
+  background: var(--critical-ghost);
+  border-color: rgba(248, 113, 113, 0.45);
+  color: var(--text-primary);
 }
 
 .neutralStatus {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-  color: #475569;
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
 }
 
-.okStatus .statusDot { background: #22c55e; }
-.watchStatus .statusDot { background: #f59e0b; }
-.criticalStatus .statusDot { background: #dc2626; }
-.neutralStatus .statusDot { background: #94a3b8; }
+.okStatus .statusDot { background: var(--success); }
+.watchStatus .statusDot { background: var(--warning); }
+.criticalStatus .statusDot { background: var(--critical); }
+.neutralStatus .statusDot { background: var(--text-muted); }
 
 .summaryMeta {
-  color: #475569;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
 .summaryInsight {
-  color: #0f172a;
+  color: var(--text-primary);
   font-weight: 700;
   max-width: 420px;
   line-height: 1.4;
@@ -107,8 +107,8 @@
 }
 
 .kpiCard {
-  background: #ffffff;
-  border: 1px solid #eef1f3;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-16);
   padding: var(--space-16);
   box-shadow: var(--shadow-soft);
@@ -121,7 +121,7 @@
 
 .kpiCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.07);
+  box-shadow: var(--shadow-strong);
 }
 
 .kpiHeader {
@@ -133,13 +133,13 @@
 
 .kpiLabel {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
 .kpiTimestamp {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .kpiValueRow {
@@ -151,12 +151,12 @@
 .kpiValue {
   font-size: var(--text-kpi);
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .kpiUnit {
   font-size: 0.95rem;
-  color: #475569;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
@@ -174,26 +174,26 @@
   font-size: 0.9rem;
 }
 
-.up { background: #ecfdf3; color: #15803d; }
-.down { background: #fef2f2; color: #b91c1c; }
-.flat { background: #f1f5f9; color: #475569; }
-.deltaMuted { color: #94a3b8; font-size: 0.9rem; }
+.up { background: var(--success-ghost); color: var(--text-primary); }
+.down { background: var(--critical-ghost); color: var(--text-primary); }
+.flat { background: var(--bg-highlight); color: var(--text-muted); }
+.deltaMuted { color: var(--text-muted); font-size: 0.9rem; }
 
 .kpiInterpretation {
   font-size: 0.92rem;
-  color: #475569;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
-.okKpi { border-top: 3px solid #22c55e; }
-.watchKpi { border-top: 3px solid #f59e0b; }
-.criticalKpi { border-top: 3px solid #dc2626; }
-.neutralKpi { border-top: 3px solid #e2e8f0; }
+.okKpi { border-top: 3px solid var(--success); }
+.watchKpi { border-top: 3px solid var(--warning); }
+.criticalKpi { border-top: 3px solid var(--critical); }
+.neutralKpi { border-top: 3px solid var(--border-strong); }
 
 .kpiSkeleton {
   height: 170px;
   border-radius: var(--radius-16);
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, #1b2537 25%, #0f1828 50%, #1b2537 75%);
   background-size: 200% 100%;
   animation: pulse 1.4s ease-in-out infinite;
 }

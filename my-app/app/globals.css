@@ -2,13 +2,114 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: dark;
+  --bg-base: #070d1a;
+  --bg-surface: #0c1626;
+  --bg-elevated: #121d32;
+  --bg-highlight: #18253c;
+  --bg-input: #0f1a2d;
+  --text-primary: #e7edf8;
+  --text-secondary: #c1c9da;
+  --text-muted: #98a3b8;
+  --text-disabled: #626a7c;
+  --border-subtle: #1a2538;
+  --border-strong: #24334a;
+  --primary: #41AEAD;
+  --primary-strong: #2d8f8e;
+  --primary-ghost: rgba(65, 174, 173, 0.16);
+  --success: #34d399;
+  --success-ghost: rgba(52, 211, 153, 0.16);
+  --warning: #fbbf24;
+  --warning-ghost: rgba(251, 191, 36, 0.18);
+  --critical: #f87171;
+  --critical-ghost: rgba(248, 113, 113, 0.18);
+  --shadow-soft: 0 14px 40px rgba(0, 0, 0, 0.38);
+  --shadow-strong: 0 22px 60px rgba(0, 0, 0, 0.45);
+  --card-glow: 0 0 0 1px rgba(65, 174, 173, 0.18);
+  --grid-line: rgba(255, 255, 255, 0.08);
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --border-neutral: 1px solid var(--border-subtle);
+  --text-title: 22px;
+  --text-kpi: 32px;
+  --text-label: 13px;
+}
+
+body {
+  background:
+    radial-gradient(120% 120% at 10% 10%, rgba(65, 174, 173, 0.05), transparent 40%),
+    radial-gradient(120% 120% at 90% 10%, rgba(65, 174, 173, 0.06), transparent 45%),
+    var(--bg-base);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+main {
+  background: transparent;
+}
+
+a {
+  color: var(--text-secondary);
+}
+
+button {
+  background: transparent;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid rgba(65, 174, 173, 0.45);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(65, 174, 173, 0.18);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 10px;
+  border: 2px solid var(--bg-surface);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-strong);
+}
+
 /* --- Fond sombre technique pour l'écran de connexion --- */
 .login-gradient-bg {
   /* Superposition de deux halos et d'un dégradé diagonal */
   background:
     radial-gradient(800px 800px at 20% 20%, rgba(65, 174, 173, 0.35) 0%, transparent 60%),
     radial-gradient(600px 600px at 80% 80%, rgba(0, 212, 255, 0.25) 0%, transparent 60%),
-    linear-gradient(135deg, #0a0f13 0%, #04161a 100%);
+    linear-gradient(135deg, #050b15 0%, #071523 100%);
   background-attachment: fixed;
   background-size: cover;
   animation: gradientShift 20s ease-in-out infinite alternate;
@@ -49,19 +150,4 @@
 .neon-btn:hover {
   color: #fff;
   box-shadow: 0 0 8px rgba(65,174,173,0.8), 0 0 15px rgba(65,174,173,0.6);
-}
-
-/* --- Design tokens (dashboard) --- */
-:root {
-  --space-8: 8px;
-  --space-12: 12px;
-  --space-16: 16px;
-  --space-24: 24px;
-  --radius-12: 12px;
-  --radius-16: 16px;
-  --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.06);
-  --border-neutral: 1px solid #e5e7eb;
-  --text-title: 22px;
-  --text-kpi: 32px;
-  --text-label: 13px;
 }

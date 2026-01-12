@@ -22,7 +22,7 @@
 .pageEyebrow {
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #94a3b8;
+  color: var(--text-muted);
   font-weight: 700;
   margin: 0;
   font-size: 0.78rem;
@@ -31,7 +31,7 @@
 .pageTitle {
   margin: 4px 0 0;
   font-size: 1.5rem;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .authActions {
@@ -42,17 +42,17 @@
 .primaryBtn {
   padding: 10px 14px;
   border-radius: 12px;
-  border: none;
-  background: #41AEAD;
-  color: white;
+  border: 1px solid var(--primary-strong);
+  background: var(--primary);
+  color: #04131a;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--card-glow);
 }
 
 .selectorCard {
-  background: #ffffff;
-  border: 1px solid #eef1f3;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-16);
   padding: var(--space-16);
   box-shadow: var(--shadow-soft);
@@ -61,18 +61,19 @@
 
 .selectorLabel {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   margin-bottom: 6px;
 }
 
 .selector {
   width: 100%;
   max-width: 360px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
   padding: 10px;
   font-size: 0.95rem;
-  background: #fff;
+  background: var(--bg-input);
+  color: var(--text-primary);
 }
 
 .tabsRow {
@@ -85,18 +86,18 @@
 .tabBtn {
   padding: 10px 14px;
   border-radius: 14px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
   font-weight: 700;
-  color: #475569;
+  color: var(--text-muted);
   cursor: pointer;
 }
 
 .tabBtnActive {
-  background: #e0f7f7;
-  color: #0f5a5a;
-  border-color: #41AEAD;
-  box-shadow: var(--shadow-soft);
+  background: var(--primary-ghost);
+  color: var(--text-primary);
+  border-color: var(--primary);
+  box-shadow: var(--card-glow);
 }
 
 .periodRow {
@@ -109,18 +110,18 @@
 .periodBtn {
   padding: 8px 12px;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #0f172a;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-primary);
   cursor: pointer;
   font-weight: 600;
 }
 
 .periodBtnActive {
-  background: #e0f7f7;
-  color: #0f5a5a;
-  border-color: #41AEAD;
-  box-shadow: var(--shadow-soft);
+  background: var(--primary-ghost);
+  color: var(--text-primary);
+  border-color: var(--primary);
+  box-shadow: var(--card-glow);
 }
 
 .chartsGrid {

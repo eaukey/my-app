@@ -1,9 +1,9 @@
- .card {
-  background: #ffffff;
+.card {
+  background: var(--bg-elevated);
   border-radius: var(--radius-12);
   padding: var(--space-16);
   box-shadow: var(--shadow-soft);
-  border: 1px solid #eef1f3;
+  border: 1px solid var(--border-strong);
   display: flex;
   flex-direction: column;
   gap: var(--space-12);
@@ -19,7 +19,7 @@
 
 .subtitle {
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--text-muted);
   margin: 0 0 4px 0;
 }
 
@@ -27,17 +27,17 @@
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .badge {
   align-self: center;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #f1f5f9;
-  color: #0f172a;
+  background: var(--bg-highlight);
+  color: var(--text-primary);
   font-size: 0.75rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-subtle);
 }
 
 .body {
@@ -51,7 +51,7 @@
   width: 100%;
   height: 240px;
   border-radius: var(--radius-12);
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, #1b2537 25%, #0f1828 50%, #1b2537 75%);
   background-size: 200% 100%;
   animation: pulse 1.4s ease-in-out infinite;
 }
@@ -62,11 +62,11 @@
 }
 
 .error {
-  background: #fef2f2;
-  color: #b91c1c;
+  background: var(--critical-ghost);
+  color: var(--text-primary);
   padding: var(--space-12);
   border-radius: var(--radius-12);
-  border: 1px solid #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.4);
   text-align: center;
   width: 100%;
 }
@@ -75,23 +75,23 @@
   margin-top: var(--space-8);
   padding: 6px 10px;
   border-radius: 10px;
-  border: 1px solid #ef4444;
-  background: #fff;
-  color: #b91c1c;
+  border: 1px solid rgba(248, 113, 113, 0.7);
+  background: transparent;
+  color: var(--text-primary);
   cursor: pointer;
 }
 
 .emptyState {
   width: 100%;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
+  background: var(--bg-surface);
+  border: 1px dashed var(--border-subtle);
   border-radius: var(--radius-12);
   padding: var(--space-16);
   text-align: left;
   display: flex;
   flex-direction: column;
   gap: var(--space-12);
-  color: #334155;
+  color: var(--text-primary);
 }
 
 .emptyState h4 {
@@ -101,12 +101,12 @@
 
 .emptyState p {
   margin: 0;
-  color: #475569;
+  color: var(--text-muted);
 }
 
 .hint {
   font-size: 0.85rem;
-  color: #0f172a;
+  color: var(--text-secondary);
 }
 
 .emptyActions {
@@ -118,9 +118,9 @@
 .emptyButton {
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid #d6e4ff;
-  background: #e0f2fe;
-  color: #0f172a;
+  border: 1px solid rgba(65, 174, 173, 0.45);
+  background: var(--primary-ghost);
+  color: var(--text-primary);
   cursor: pointer;
   font-weight: 600;
 }
@@ -128,9 +128,9 @@
 .ghostButton {
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
-  color: #0f172a;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-primary);
   cursor: pointer;
   font-weight: 500;
 }

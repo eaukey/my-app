@@ -83,25 +83,25 @@ export default function ConversationList({ onSelect }) {
     } catch {}
   };
 
-  if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
-  if (loading) return <p>Chargement des clients…</p>;
-  if (clients.length === 0) return <p>Aucun client.</p>;
+  if (!isAuthenticated) return <p className="text-[var(--text-primary)]">Veuillez vous connecter…</p>;
+  if (loading) return <p className="text-[var(--text-primary)]">Chargement des clients…</p>;
+  if (clients.length === 0) return <p className="text-[var(--text-primary)]">Aucun client.</p>;
 
   const list = clients.map((client) => {
     const count = unreadByClient?.[client.client_id] || 0;
     return (
-      <li key={client.client_id} className="border-b last:border-none">
+      <li key={client.client_id} className="border-b border-[var(--border-subtle)] last:border-none">
         {onSelect ? (
           <button
             onClick={() => {
               handleAdminOpenConversation(client.client_id);
               onSelect(client.client_id);
             }}
-            className={`w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center justify-between ${styles.item || ''}`}
+            className={`w-full text-left px-4 py-3 hover:bg-[var(--bg-highlight)] flex items-center justify-between text-[var(--text-primary)] ${styles.item || ''}`}
           >
             <span className={styles.name || ''}>{client.client_name}</span>
             {count > 0 && (
-              <span className={`ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] ${styles.badge || ''}`}>
+              <span className={`ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--critical)] text-[#0a0f18] text-[10px] ${styles.badge || ''}`}>
                 {count > 99 ? "99+" : count}
               </span>
             )}
@@ -110,13 +110,13 @@ export default function ConversationList({ onSelect }) {
           <Link
             href={`/chat/${client.client_id}`}
             onClick={() => handleAdminOpenConversation(client.client_id)}
-            className={`block px-4 py-3 hover:bg-gray-100 ${
-              pathname === `/chat/${client.client_id}` ? "bg-gray-100" : ""
-            } flex items-center justify-between ${styles.item || ''}`}
+            className={`block px-4 py-3 hover:bg-[var(--bg-highlight)] ${
+              pathname === `/chat/${client.client_id}` ? "bg-[var(--bg-highlight)]" : ""
+            } flex items-center justify-between text-[var(--text-primary)] ${styles.item || ''}`}
           >
             <span className={styles.name || ''}>{client.client_name}</span>
             {count > 0 && (
-              <span className={`ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] ${styles.badge || ''}`}>
+              <span className={`ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--critical)] text-[#0a0f18] text-[10px] ${styles.badge || ''}`}>
                 {count > 99 ? "99+" : count}
               </span>
             )}
@@ -126,5 +126,5 @@ export default function ConversationList({ onSelect }) {
     );
   });
 
-  return <ul className={`divide-y rounded-lg border w-full max-w-md bg-white ${styles.container || ''}`}>{list}</ul>;
+  return <ul className={`divide-y divide-[var(--border-subtle)] rounded-lg border border-[var(--border-strong)] w-full max-w-md bg-[var(--bg-elevated)] text-[var(--text-primary)] ${styles.container || ''}`}>{list}</ul>;
 } 

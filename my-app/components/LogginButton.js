@@ -9,9 +9,9 @@ const LoginButton = () => {
       onClick={() => loginWithRedirect()}
       style={{
         padding: "8px 16px",
-        backgroundColor: "#41AEAD",
-        color: "white",
-        border: "none",
+        backgroundColor: "var(--primary)",
+        color: "#04131a",
+        border: "1px solid var(--primary-strong)",
         borderRadius: "8px",
         cursor: "pointer",
       }}

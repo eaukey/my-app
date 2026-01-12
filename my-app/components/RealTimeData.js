@@ -207,7 +207,7 @@ const RealTimeData = ({ selectedMachine, selectedPeriod, siteLabel }) => {
   }, [selectedMachine, selectedPeriod]);
 
   if (error) {
-    return <div style={{ textAlign: "center", margin: "20px 0", color: "red" }}>{error}</div>;
+    return <div style={{ textAlign: "center", margin: "20px 0", color: "var(--critical)" }}>{error}</div>;
   }
 
   const getDeltaLabel = (key) => {

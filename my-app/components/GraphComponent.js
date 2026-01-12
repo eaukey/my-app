@@ -121,20 +121,36 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
       {hasData && (
         <ResponsiveContainer height={240}>
           <RechartsLineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" tickFormatter={formatTick} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--grid-line)" />
+            <XAxis
+              dataKey="time"
+              tickFormatter={formatTick}
+              tick={{ fill: "var(--text-muted)", fontSize: 12 }}
+              axisLine={{ stroke: "var(--border-strong)" }}
+              tickLine={{ stroke: "var(--border-strong)" }}
+            />
             <YAxis
               tickFormatter={(val) => (isRecyclingRate ? `${Math.min(100, Math.round(val))}%` : val)}
               {...(isRecyclingRate ? { domain: [0, 100] } : {})}
+              tick={{ fill: "var(--text-muted)", fontSize: 12 }}
+              axisLine={{ stroke: "var(--border-strong)" }}
+              tickLine={{ stroke: "var(--border-strong)" }}
             />
             <Tooltip
+              contentStyle={{
+                background: "var(--bg-elevated)",
+                border: "1px solid var(--border-strong)",
+                borderRadius: 12,
+                color: "var(--text-primary)",
+              }}
+              labelStyle={{ color: "var(--text-secondary)" }}
               formatter={(val, name) => (isRecyclingRate ? [`${Math.min(100, Math.round(val))}%`, name] : [val, name])}
             />
             <Line
               type="monotone"
               dataKey="value"
-              stroke={color}
-              strokeWidth={2}
+              stroke={color || "var(--primary)"}
+              strokeWidth={2.4}
               dot={false}
             />
           </RechartsLineChart>

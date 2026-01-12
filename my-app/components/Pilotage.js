@@ -10,8 +10,8 @@ import styles from './Pilotage.module.css';
 // Composant ToggleSwitch
 const ToggleSwitch = ({ isOn, onToggle, label }) => {
   return (
-    <div className={`flex items-center justify-between p-4 bg-white rounded-lg ${styles.itemRow || ''}`}>
-      <span className={`capitalize text-gray-700 ${styles.label || ''}`}>{label.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
+    <div className={`flex items-center justify-between p-4 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg ${styles.itemRow || ''}`}>
+      <span className={`capitalize text-[var(--text-primary)] ${styles.label || ''}`}>{label.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
       <label className="relative inline-block w-16 h-8 cursor-pointer">
         <input
           type="checkbox"
@@ -21,13 +21,13 @@ const ToggleSwitch = ({ isOn, onToggle, label }) => {
         />
         <div 
           className={`absolute top-0 left-0 right-0 bottom-0 
-            ${isOn ? 'bg-green-500' : 'bg-gray-300'}
+            ${isOn ? 'bg-[var(--success)]' : 'bg-[var(--border-subtle)]'}
             rounded-full transition-all duration-300`
           }
         >
           <div 
             className={`absolute top-1 left-1 
-              bg-white w-6 h-6 rounded-full shadow-md 
+              bg-[var(--bg-base)] w-6 h-6 rounded-full shadow-md 
               transition-transform duration-300
               ${isOn ? 'transform translate-x-8' : 'transform translate-x-0'}`
             }
@@ -96,7 +96,7 @@ export default function PilotageDashboard() {
  };
 
  return (
-       <div className="flex h-screen bg-gray-50">
+       <div className="flex h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
       {/* Barre latérale interne supprimée: on utilise la side nav globale du layout */}
 
       {/* Contenu principal */}
@@ -105,7 +105,7 @@ export default function PilotageDashboard() {
          <h1 className="text-2xl font-bold mb-6">Page Pilotage</h1>
          
          {/* État des variables */}
-         <div className={`bg-white p-6 rounded-lg shadow mb-6 ${styles.sectionCard || ''}`}>
+         <div className={`bg-[var(--bg-elevated)] border border-[var(--border-strong)] p-6 rounded-lg shadow-[0_18px_50px_rgba(0,0,0,0.35)] mb-6 ${styles.sectionCard || ''}`}>
            <div className="grid gap-6">
              {/* Section variables binaires */}
              <div>
@@ -114,9 +114,9 @@ export default function PilotageDashboard() {
                  {Object.entries(variables)
                    .filter(([key, value]) => typeof value === 'boolean')
                    .map(([key, value]) => (
-                     <div key={key} className={`flex items-center justify-between p-3 bg-gray-50 rounded-lg ${styles.itemRow || ''}`}>
+                     <div key={key} className={`flex items-center justify-between p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg ${styles.itemRow || ''}`}>
                        <span className={`capitalize ${styles.label || ''}`}>{key.replace(/([A-Z])/g, ' $1').toLowerCase()}</span>
-                       <div className={`w-4 h-4 rounded-full ${value ? 'bg-green-500' : 'bg-red-500'} ${styles.valuePill || ''}`} />
+                       <div className={`w-4 h-4 rounded-full ${value ? 'bg-[var(--success)]' : 'bg-[var(--critical)]'} ${styles.valuePill || ''}`} />
                      </div>
                    ))}
                </div>
@@ -129,13 +129,13 @@ export default function PilotageDashboard() {
                  {Object.entries(variables)
                    .filter(([key, value]) => typeof value === 'number')
                    .map(([key, value]) => (
-                     <div key={key} className={`p-3 bg-gray-50 rounded-lg ${styles.itemRow || ''}`}>
+                     <div key={key} className={`p-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg ${styles.itemRow || ''}`}>
                        <span className={`block text-sm capitalize ${styles.label || ''}`}>
                          {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
                        </span>
                        <div className="flex justify-between items-center mt-2">
                          <span className="font-bold">{value.toFixed(1)}</span>
-                         <span className="text-sm text-gray-600">
+                         <span className="text-sm text-[var(--text-secondary)]">
                            {key.includes('volume') ? 'm³' :
                             key.includes('Pression') ? 'mbar' :
                             key.includes('temperature') ? '°C' :
@@ -151,7 +151,7 @@ export default function PilotageDashboard() {
          </div>
 
          {/* Boutons de contrôle */}
-         <div className={`bg-white p-6 rounded-lg shadow ${styles.sectionCard || ''}`}>
+         <div className={`bg-[var(--bg-elevated)] border border-[var(--border-strong)] p-6 rounded-lg shadow-[0_18px_50px_rgba(0,0,0,0.35)] ${styles.sectionCard || ''}`}>
            <h2 className={`text-lg font-semibold mb-4 ${styles.title || ''}`}>Contrôles</h2>
            <div className={`grid grid-cols-4 gap-4 ${styles.gridMobileOneCol || ''}`}>
              {Object.entries(binaryControls).map(([key, value]) => (

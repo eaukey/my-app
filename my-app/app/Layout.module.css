@@ -1,7 +1,7 @@
 /* Conteneur global de l'application */
 .shell {
   display: flex;
-  background-color: #f9fafb; /*  e9quiv. bg-gray-50 */
+  background-color: var(--bg-base);
 }
 
 /* Zone de contenu principale */
@@ -9,6 +9,7 @@
 .content {
   flex: 1;
   margin-left: 4rem; /*  e9quiv. ml-16 */
+  background: var(--bg-base);
 }
 
 /* --- Responsive --- */

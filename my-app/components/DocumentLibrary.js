@@ -28,8 +28,7 @@ const DocumentLibrary = () => {
     <div className="flex h-screen">
       {/* Barre latérale */}
       <div 
-        className={`w-16 min-h-screen fixed flex flex-col items-center ${styles.sideNavHidden || ''}`}
-        style={{ backgroundColor: '#41AEAD' }}
+        className={`w-16 min-h-screen fixed flex flex-col items-center border-r border-[var(--border-subtle)] bg-[var(--bg-elevated)] ${styles.sideNavHidden || ''}`}
       >
         {/* Logo Eaukey */}
         <div className="py-4">
@@ -57,12 +56,12 @@ const DocumentLibrary = () => {
               key={href}
               href={href}
               className={`w-12 h-12 flex items-center justify-center ${
-                pathname === href ? 'bg-white rounded-lg' : 'hover:bg-white hover:bg-opacity-10 rounded-lg'
+                pathname === href ? 'bg-[var(--primary-ghost)] rounded-lg' : 'hover:bg-[var(--bg-highlight)] rounded-lg'
               }`}
             >
               <Icon 
                 size={24} 
-                style={{ color: pathname === href ? '#41AEAD' : 'white' }}
+                style={{ color: pathname === href ? 'var(--primary)' : 'var(--text-secondary)' }}
                 strokeWidth={pathname === href ? 2 : 1.5}
               />
             </Link>
@@ -71,20 +70,20 @@ const DocumentLibrary = () => {
       </div>
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col bg-white ml-16 ${styles.mainFull || ''}`}>
+      <div className={`flex-1 flex flex-col bg-[var(--bg-base)] ml-16 ${styles.mainFull || ''}`}>
         {/* Header */}
-        <div className={`py-4 px-6 border-b ${styles.header || ''}`}>
-          <h1 className="font-semibold text-gray-800">Documents</h1>
+        <div className={`py-4 px-6 border-b border-[var(--border-strong)] bg-[var(--bg-elevated)] ${styles.header || ''}`}>
+          <h1 className="font-semibold text-[var(--text-primary)]">Documents</h1>
         </div>
 
         {/* Search bar */}
-        <div className={`p-4 border-b ${styles.searchBarWrap || ''}`}>
+        <div className={`p-4 border-b border-[var(--border-subtle)] bg-[var(--bg-base)] ${styles.searchBarWrap || ''}`}>
           <div className="relative">
-            <Search className={`absolute h-5 w-5 text-gray-400 ${styles.searchIcon || ''}`} />
+            <Search className={`absolute h-5 w-5 text-[var(--text-muted)] ${styles.searchIcon || ''}`} />
             <input
               type="text"
               placeholder="Rechercher un document..."
-              className={`w-full pl-10 pr-4 py-2 bg-gray-50 rounded-md border border-gray-200 ${styles.searchInput || ''}`}
+              className={`w-full pl-10 pr-4 py-2 bg-[var(--bg-input)] text-[var(--text-primary)] rounded-md border border-[var(--border-subtle)] ${styles.searchInput || ''}`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -97,7 +96,7 @@ const DocumentLibrary = () => {
             filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className={`flex items-center justify-between px-6 py-3 hover:bg-gray-50 border-b ${styles.docRow || ''}`}
+                className={`flex items-center justify-between px-6 py-3 hover:bg-[var(--bg-highlight)] border-b border-[var(--border-subtle)] ${styles.docRow || ''}`}
               >
                 <div className="flex items-center">
                   {doc.type === 'pdf' ? (
@@ -106,18 +105,18 @@ const DocumentLibrary = () => {
                     <Video className={`w-5 h-5 mr-3 ${styles.docIcon || ''}`} style={{ color: '#3b82f6' }} />
                   )}
                   <div>
-                    <div className={`text-sm font-medium text-gray-900 ${styles.docTitle || ''}`}>{doc.name}</div>
-                    <div className={`text-xs text-gray-500 ${styles.docMeta || ''}`}>{doc.size} • Ajouté le {doc.date}</div>
+                    <div className={`text-sm font-medium text-[var(--text-primary)] ${styles.docTitle || ''}`}>{doc.name}</div>
+                    <div className={`text-xs text-[var(--text-muted)] ${styles.docMeta || ''}`}>{doc.size} • Ajouté le {doc.date}</div>
                   </div>
                 </div>
-                <button className={`text-[#41AEAD] text-sm hover:underline flex items-center ${styles.downloadBtn || ''}`}>
+                <button className={`text-[var(--primary)] text-sm hover:underline flex items-center ${styles.downloadBtn || ''}`}>
                   <Download className="w-4 h-4 mr-1" />
                   Télécharger
                 </button>
               </div>
             ))
           ) : (
-            <div className="px-6 py-4 text-gray-500 text-center">
+            <div className="px-6 py-4 text-[var(--text-muted)] text-center">
               Aucun document trouvé
             </div>
           )}

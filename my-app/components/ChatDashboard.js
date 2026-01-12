@@ -113,25 +113,25 @@ const ChatDashboard = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-white">
+    <div className="flex-1 flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)]">
       {/* Header */}
-      <div className="border-b">
+      <div className="border-b border-[var(--border-strong)] bg-[var(--bg-elevated)]">
         {/* Navigation principale */}
-        <div className="flex justify-between px-4 py-2 border-b">
+        <div className="flex justify-between px-4 py-2 border-b border-[var(--border-subtle)]">
           <div className="font-medium">{discussionTypes.find(t => t.id === activeType)?.name}</div>
           <div className="relative">
             <button
-              className="text-gray-600 hover:text-gray-800"
+              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               onClick={() => setShowOtherMenu(!showOtherMenu)}
             >
               Autre discussion
             </button>
             {showOtherMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-1 z-10">
+              <div className="absolute right-0 mt-2 w-48 bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-lg py-1 z-10 shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
                 {getOtherTypes().map(type => (
                   <button
                     key={type.id}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-600"
+                    className="w-full text-left px-4 py-2 hover:bg-[var(--bg-highlight)] text-[var(--text-secondary)]"
                     onClick={() => handleTypeChange(type.id)}
                   >
                     {type.name}
@@ -149,8 +149,8 @@ const ChatDashboard = () => {
               key={disc.id}
               className={`mr-4 px-4 py-2 rounded-lg ${
                 activeDiscussionId === disc.id
-                  ? 'bg-gray-100 text-[#41AEAD]'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-[var(--primary-ghost)] text-[var(--primary)]'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-highlight)]'
               }`}
               onClick={() => setActiveDiscussionId(disc.id)}
             >
@@ -158,7 +158,7 @@ const ChatDashboard = () => {
             </button>
           ))}
           <button
-            className="p-2 text-gray-600 hover:text-gray-800"
+            className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             onClick={() => handleAddDiscussion(activeType)}
           >
             <PlusCircle size={20} />
@@ -167,25 +167,25 @@ const ChatDashboard = () => {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 bg-[var(--bg-base)]">
         <div className="space-y-4">
           {getCurrentDiscussion()?.messages.map((message) => (
             <div 
               key={message.id}
               className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className="bg-gray-100 rounded-lg p-3 max-w-[80%]">
-                <p className="text-gray-800">{message.text}</p>
+              <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg p-3 max-w-[80%]">
+                <p className="text-[var(--text-primary)]">{message.text}</p>
                 {message.file && (
                   <div 
                     onClick={() => window.open(message.file.url, '_blank')}
-                    className="mt-2 p-2 bg-white bg-opacity-80 rounded flex items-center gap-2 cursor-pointer"
+                    className="mt-2 p-2 bg-[var(--bg-highlight)] rounded flex items-center gap-2 cursor-pointer border border-[var(--border-subtle)]"
                   >
-                    <Paperclip className="w-4 h-4 text-[#41AEAD]" />
-                    <span className="text-sm text-gray-600">{message.file.name}</span>
+                    <Paperclip className="w-4 h-4 text-[var(--primary)]" />
+                    <span className="text-sm text-[var(--text-secondary)]">{message.file.name}</span>
                   </div>
                 )}
-                <span className="text-xs text-gray-500 mt-1 block">
+                <span className="text-xs text-[var(--text-muted)] mt-1 block">
                   {message.timestamp}
                 </span>
               </div>
@@ -195,18 +195,18 @@ const ChatDashboard = () => {
       </div>
 
       {/* Input Area */}
-      <div className="px-4 py-3 border-t">
+      <div className="px-4 py-3 border-t border-[var(--border-strong)] bg-[var(--bg-elevated)]">
         {selectedFile && (
-          <div className="mb-2 p-2 bg-gray-100 rounded-lg flex items-center justify-between">
+          <div className="mb-2 p-2 bg-[var(--bg-highlight)] border border-[var(--border-subtle)] rounded-lg flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Paperclip className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-600">{selectedFile.name}</span>
+              <Paperclip className="w-4 h-4 text-[var(--text-muted)]" />
+              <span className="text-sm text-[var(--text-secondary)]">{selectedFile.name}</span>
             </div>
             <button 
               onClick={() => setSelectedFile(null)}
-              className="p-1 hover:bg-gray-200 rounded-full"
+              className="p-1 hover:bg-[var(--bg-surface)] rounded-full"
             >
-              <X className="w-4 h-4 text-gray-500" />
+              <X className="w-4 h-4 text-[var(--text-muted)]" />
             </button>
           </div>
         )}
@@ -218,9 +218,9 @@ const ChatDashboard = () => {
             className="hidden"
             id="file-input"
           />
-          <label 
+          <label
             htmlFor="file-input" 
-            className="cursor-pointer p-2 text-gray-400 hover:text-gray-600"
+            className="cursor-pointer p-2 text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
           >
             <Paperclip className="w-5 h-5" />
           </label>
@@ -230,11 +230,11 @@ const ChatDashboard = () => {
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Écrivez votre message..."
-            className="flex-1 focus:outline-none"
+            className="flex-1 focus:outline-none bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-subtle)] rounded-xl px-3 py-2"
           />
           <button
             onClick={handleSend}
-            className="p-2 text-[#41AEAD]"
+            className="p-2 text-[var(--primary)]"
             disabled={!newMessage.trim() && !selectedFile}
           >
             <Send className="w-5 h-5" />

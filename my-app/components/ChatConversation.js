@@ -165,9 +165,13 @@ export default function ChatConversation({ clientId }) {
   if (loading) return <p>Chargement…</p>;
 
   return (
-    <div className={`flex flex-col h-full ${styles.container || ''}`}>
+    <div
+      className={`flex flex-col h-full bg-[var(--bg-base)] text-[var(--text-primary)] ${styles.container || ""}`}
+    >
       {/* Zone messages */}
-      <div className={`flex-1 overflow-y-auto p-4 flex flex-col justify-end ${styles.messages || ''}`}>
+      <div
+        className={`flex-1 overflow-y-auto p-4 flex flex-col justify-end bg-[var(--bg-base)] ${styles.messages || ""}`}
+      >
         {/* Liste des messages */}
         {messages.map((msg, idx) => {
           const isMe = msg.sender_id == senderId;
@@ -180,7 +184,7 @@ export default function ChatConversation({ clientId }) {
           return (
             <React.Fragment key={msg.id}>
               {showDate && (
-                <div className="text-center text-xs text-gray-500 my-2">
+                <div className="text-center text-xs text-[var(--text-muted)] my-2">
                   {new Date(msg.created_at).toLocaleDateString()}
                 </div>
               )}
@@ -190,27 +194,30 @@ export default function ChatConversation({ clientId }) {
                 <div className={`flex-1 flex ${isMe ? "justify-end" : "justify-start"}`}>
                   <div
                     className={`p-3 rounded-xl max-w-[70%] shadow-sm ${styles.bubble || ''}`}
-                    style={{ backgroundColor: isMe ? "#E6F7F6" : "#F0F0F0" }}
+                    style={{
+                      backgroundColor: isMe ? "var(--primary-ghost)" : "var(--bg-elevated)",
+                      border: `1px solid var(--border-subtle)`,
+                    }}
                   >
-                    <div className="text-xs text-gray-600 mb-1">
+                    <div className="text-xs text-[var(--text-muted)] mb-1">
                       {isMe ? displayName : otherName}
                     </div>
-                    <p className="text-gray-800 whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-[var(--text-primary)] whitespace-pre-wrap">{msg.content}</p>
 
-                    <span className={`text-xs text-gray-500 flex items-center gap-1 mt-1 ${styles.meta || ''}`}>
+                    <span className={`text-xs text-[var(--text-muted)] flex items-center gap-1 mt-1 ${styles.meta || ''}`}>
                       {new Date(msg.created_at).toLocaleTimeString()}
                       {/* Message non lu */}
                       {isMe && !msg.is_read && (
                         <div className="flex items-center gap-0.5">
-                          <Check className="w-3 h-3 text-green-500" />
+                          <Check className="w-3 h-3 text-[var(--success)]" />
                           <span className="ml-1">Envoyé</span>
                         </div>
                       )}
                       {/* Message lu */}
                       {isMe && msg.is_read && (
                         <div className="flex items-center gap-0.5">
-                          <Check className="w-3 h-3 text-green-500" />
-                          <Check className="w-3 h-3 text-blue-500" />
+                          <Check className="w-3 h-3 text-[var(--success)]" />
+                          <Check className="w-3 h-3 text-[var(--primary)]" />
                           <span className="ml-1">Lu</span>
                         </div>
                       )}
@@ -225,19 +232,21 @@ export default function ChatConversation({ clientId }) {
       </div>
 
       {/* Input */}
-      <div className={`border-t px-4 py-3 flex items-center gap-3 ${styles.inputBar || ''}`}>
+      <div
+        className={`border-t px-4 py-3 flex items-center gap-3 bg-[var(--bg-elevated)] border-[var(--border-strong)] ${styles.inputBar || ""}`}
+      >
         <input
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder="Écrivez votre message…"
-          className={`flex-1 focus:outline-none ${styles.inputField || ''}`}
+          className={`flex-1 focus:outline-none bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-subtle)] rounded-xl px-3 py-2 ${styles.inputField || ""}`}
         />
         <button
           onClick={handleSend}
           disabled={!newMessage.trim()}
-          className="text-[#41AEAD] disabled:opacity-50"
+          className="text-[var(--primary)] disabled:opacity-50"
         >
           <Send className="w-5 h-5" />
         </button>

@@ -32,12 +32,12 @@
 .addButton {
   margin-left: 8px;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db; /* gris clair */
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  background: #ffffff;
-  color: #374151; /* gris foncé */
+  background: var(--bg-surface);
+  color: var(--text-primary);
   cursor: pointer;
 }
 .addButton:hover {
-  background: #f9fafb;
+  background: var(--bg-highlight);
 } 
