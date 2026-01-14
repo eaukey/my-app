@@ -100,17 +100,24 @@ export default function AdminPage() {
   const saveEdit = async (nom) => {
     try {
       setError("");
-      const res = await fetch(`${BACKEND_URL}/automates/${encodeURIComponent(nom)}`, {
+      const trimmedEmail = (editValues.email || "").trim();
+      const payload = {
+        client: editValues.client,
+        lieu: editValues.lieu,
+        email: trimmedEmail === "" ? null : trimmedEmail
+      };
+      const res = await fetch(`${BACKEND_URL}/automate/${encodeURIComponent(nom)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ client: editValues.client, lieu: editValues.lieu, email: editValues.email })
+        body: JSON.stringify(payload)
       });
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(`Erreur ${res.status}: ${txt || 'échec de la mise à jour'}`);
       }
       // Mise à jour locale de la ligne sans refetch global
-      setAutomates((prev) => prev.map((it) => it.nom_automate === nom ? { ...it, client: editValues.client, lieu: editValues.lieu, email: editValues.email } : it));
+      const normalizedEmail = payload.email ?? "";
+      setAutomates((prev) => prev.map((it) => it.nom_automate === nom ? { ...it, client: editValues.client, lieu: editValues.lieu, email: normalizedEmail } : it));
       cancelEdit();
     } catch (e) {
       setError(e.message);
