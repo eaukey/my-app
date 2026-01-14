@@ -3,6 +3,7 @@
 .title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
 .formGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
 .input, .textarea, .select { width: 100%; padding: 10px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: 10px; }
+.input, .select { padding: 12px; min-height: 44px; }
 .textarea { min-height: 88px; resize: vertical; }
 .actions { display: flex; justify-content: flex-end; margin-top: 8px; }
 .button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; }
@@ -13,4 +14,7 @@
 .th, .td { border: 1px solid var(--border-subtle); padding: 8px; text-align: left; font-size: 14px; }
 .tdActions { display: flex; gap: 8px; }
 .pill { display: inline-block; padding: 4px 8px; border-radius: 999px; background: var(--bg-input); font-size: 12px; }
+.inlineField { display: flex; flex-direction: column; gap: 6px; }
+.checkboxLabel { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-secondary); }
+.checkboxLabel input { width: 16px; height: 16px; }
 

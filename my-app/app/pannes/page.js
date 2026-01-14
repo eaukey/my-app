@@ -26,6 +26,7 @@ export default function PannesPage() {
   const [stations, setStations] = useState([]);
   const [panneTypes, setPanneTypes] = useState([]);
   const [customPanneType, setCustomPanneType] = useState("");
+  const [inProgress, setInProgress] = useState(false);
   const [pannes, setPannes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -151,7 +152,11 @@ export default function PannesPage() {
       setError("Tous les champs obligatoires doivent être remplis.");
       return;
     }
-    if (form.date_fin && new Date(form.date_fin) < new Date(form.date_debut)) {
+    if (!inProgress && !form.date_fin) {
+      setError("Renseignez une date de fin ou cochez « En cours de traitement ».");
+      return;
+    }
+    if (!inProgress && form.date_fin && new Date(form.date_fin) < new Date(form.date_debut)) {
       setError("La date de fin doit être postérieure ou égale à la date de début.");
       return;
     }
@@ -164,7 +169,7 @@ export default function PannesPage() {
         panne: panneValue,
         probleme: form.probleme,
         date_debut: toIso(form.date_debut),
-        date_fin: form.date_fin ? toIso(form.date_fin) : null,
+        date_fin: inProgress ? null : form.date_fin ? toIso(form.date_fin) : null,
       };
       const res = await fetch(`${API_BASE}/pannes`, {
         method: "POST",
@@ -175,6 +180,7 @@ export default function PannesPage() {
       await res.json();
       setForm(emptyForm);
       setCustomPanneType("");
+      setInProgress(false);
       fetchPannes();
       fetchPanneTypes();
     } catch (e) {
@@ -294,13 +300,30 @@ export default function PannesPage() {
             </div>
             <div>
               <label>Date fin</label>
-              <input
-                type="datetime-local"
-                name="date_fin"
-                value={form.date_fin}
-                onChange={handleChange}
-                className={styles.input}
-              />
+              <div className={styles.inlineField}>
+                <input
+                  type="datetime-local"
+                  name="date_fin"
+                  value={form.date_fin}
+                  onChange={handleChange}
+                  className={styles.input}
+                  disabled={inProgress}
+                />
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={inProgress}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setInProgress(checked);
+                      if (checked) {
+                        setForm((prev) => ({ ...prev, date_fin: "" }));
+                      }
+                    }}
+                  />
+                  <span>En cours de traitement</span>
+                </label>
+              </div>
             </div>
           </div>
           <div style={{ marginTop: 12 }}>
