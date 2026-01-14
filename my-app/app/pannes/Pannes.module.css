@@ -1,0 +1,16 @@
+.container { display: flex; flex-direction: column; gap: 16px; padding: 24px; background: var(--bg-base); color: var(--text-primary); min-height: 100vh; }
+.section { background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+.title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+.formGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.input, .textarea, .select { width: 100%; padding: 10px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: 10px; }
+.textarea { min-height: 88px; resize: vertical; }
+.actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+.button { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+.button:disabled { opacity: 0.6; cursor: not-allowed; }
+.error { color: var(--critical); font-size: 14px; margin-bottom: 8px; }
+.tableWrap { overflow: auto; }
+.table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.th, .td { border: 1px solid var(--border-subtle); padding: 8px; text-align: left; font-size: 14px; }
+.tdActions { display: flex; gap: 8px; }
+.pill { display: inline-block; padding: 4px 8px; border-radius: 999px; background: var(--bg-input); font-size: 12px; }
+

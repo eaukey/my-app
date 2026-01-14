@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BarChart2, Settings, MessageCircle, FileText, Table } from "lucide-react";
+import { Home, BarChart2, Settings, MessageCircle, FileText, Table, AlertTriangle } from "lucide-react";
 import Image from "next/image";
 import { useAuth0 } from "@auth0/auth0-react";
 import { API_BASE } from "../lib/apiBase";
@@ -11,7 +11,9 @@ import styles from "./SideNav.module.css";
 export default function SideNav() {
   const pathname = usePathname();
   const { user, isAuthenticated } = useAuth0();
-  const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
+  const appRole = user?.["https://app.com/role"] || user?.role;
+  const roles = user?.["https://app.com/roles"] || user?.roles;
+  const isAdmin = appRole === "admin" || (Array.isArray(roles) && roles.includes("admin"));
   const clientId =
     user?.["https://app.com/client"] ||
     (Array.isArray(user?.clients) ? user.clients[0] : user?.clients);
@@ -114,7 +116,10 @@ export default function SideNav() {
     { icon: Home, href: "/", title: "Accueil" },
     // { icon: BarChart2, href: "/stock", title: "Stock" }, // Masqué du menu (conservé côté routes)
     // { icon: Settings, href: "/pilotage", title: "Pilotage" }, // Masqué du menu (conservé côté routes)
-    ...(isAdmin ? [{ icon: Table, href: "/admin", title: "Automates" }] : []),
+    ...(isAdmin ? [
+      { icon: Table, href: "/admin", title: "Automates" },
+      { icon: AlertTriangle, href: "/pannes", title: "Pannes" },
+    ] : []),
     { icon: MessageCircle, href: "/chat", title: "Chat" },
     { icon: FileText, href: "/documents", title: "Documents" },
   ];
