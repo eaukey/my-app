@@ -24,9 +24,13 @@ export default function PannesPage() {
   const [form, setForm] = useState(emptyForm);
   const [clients, setClients] = useState([]);
   const [stations, setStations] = useState([]);
+  const [panneTypes, setPanneTypes] = useState([]);
+  const [customPanneType, setCustomPanneType] = useState("");
   const [pannes, setPannes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const NEW_PANNE_VALUE = "__NEW_PANNE__";
 
   const baseHeaders = useMemo(
     () => ({
@@ -36,6 +40,20 @@ export default function PannesPage() {
     }),
     [isAdmin, user?.email]
   );
+
+  const fetchPanneTypes = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/pannes/types`, { headers: baseHeaders });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      const list = Array.isArray(data) ? data.filter(Boolean).map((s) => String(s).trim()).filter(Boolean) : [];
+      list.sort((a, b) => a.localeCompare(b, "fr", { sensitivity: "base" }));
+      setError("");
+      setPanneTypes(list);
+    } catch (e) {
+      setError(e.message || "Erreur lors du chargement des types de pannes");
+    }
+  };
 
   const fetchClients = async () => {
     try {
@@ -100,6 +118,7 @@ export default function PannesPage() {
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) return;
     fetchClients();
+    fetchPanneTypes();
     fetchPannes();
   }, [isAuthenticated, isAdmin]);
 
@@ -125,7 +144,10 @@ export default function PannesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!form.client || !form.lieu || !form.nom_automate || !form.panne || !form.probleme || !form.date_debut) {
+    const isNewType = form.panne === NEW_PANNE_VALUE;
+    const panneValue = isNewType ? customPanneType.trim() : form.panne;
+
+    if (!form.client || !form.lieu || !form.nom_automate || !panneValue || !form.probleme || !form.date_debut) {
       setError("Tous les champs obligatoires doivent être remplis.");
       return;
     }
@@ -139,7 +161,7 @@ export default function PannesPage() {
         client: form.client,
         lieu: form.lieu,
         nom_automate: form.nom_automate,
-        panne: form.panne,
+        panne: panneValue,
         probleme: form.probleme,
         date_debut: toIso(form.date_debut),
         date_fin: form.date_fin ? toIso(form.date_fin) : null,
@@ -152,7 +174,9 @@ export default function PannesPage() {
       if (!res.ok) throw new Error(await res.text());
       await res.json();
       setForm(emptyForm);
+      setCustomPanneType("");
       fetchPannes();
+      fetchPanneTypes();
     } catch (e) {
       setError(e.message || "Erreur lors de la création de la panne");
     } finally {
@@ -229,16 +253,34 @@ export default function PannesPage() {
               />
             </div>
             <div>
-              <label>Panne *</label>
-              <input
+              <label>Type de panne *</label>
+              <select
                 name="panne"
                 value={form.panne}
                 onChange={handleChange}
-                className={styles.input}
-                placeholder="Titre court"
+                className={styles.select}
                 required
-              />
+              >
+                <option value="">Sélectionner</option>
+                {panneTypes.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+                <option value={NEW_PANNE_VALUE}>Nouvelle panne</option>
+              </select>
             </div>
+            {form.panne === NEW_PANNE_VALUE ? (
+              <div>
+                <label>Nouveau type de panne *</label>
+                <input
+                  name="custom_panne"
+                  value={customPanneType}
+                  onChange={(e) => setCustomPanneType(e.target.value)}
+                  className={styles.input}
+                  placeholder="Ex: Capteur pression HS"
+                  required
+                />
+              </div>
+            ) : null}
             <div>
               <label>Date début *</label>
               <input
@@ -289,7 +331,7 @@ export default function PannesPage() {
                 <th className={styles.th}>Client</th>
                 <th className={styles.th}>Station</th>
                 <th className={styles.th}>Automate</th>
-                <th className={styles.th}>Panne</th>
+                <th className={styles.th}>Type de panne</th>
                 <th className={styles.th}>Début</th>
                 <th className={styles.th}>Fin</th>
                 <th className={styles.th}>Problème</th>
