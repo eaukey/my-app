@@ -50,7 +50,6 @@ const DocumentLibrary = () => {
             { icon: Settings, href: '/pilotage', title: 'Pilotage' },
             ...(isAdmin ? [{ icon: Table, href: '/admin', title: 'Automates' }] : []),
             { icon: MessageCircle, href: '/chat', title: 'Chat' },
-            { icon: FileText, href: '/documents', title: 'Documents' }
           ].map(({ icon: Icon, href, title }) => (
             <Link 
               key={href}

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BarChart2, Settings, MessageCircle, FileText, Table, AlertTriangle } from "lucide-react";
+import { Home, MessageCircle, Table, AlertTriangle } from "lucide-react";
 import Image from "next/image";
 import { useAuth0 } from "@auth0/auth0-react";
 import { API_BASE } from "../lib/apiBase";
@@ -121,7 +121,7 @@ export default function SideNav() {
       { icon: AlertTriangle, href: "/pannes", title: "Pannes" },
     ] : []),
     { icon: MessageCircle, href: "/chat", title: "Chat" },
-    { icon: FileText, href: "/documents", title: "Documents" },
+    // { icon: FileText, href: "/documents", title: "Documents" }, // Masqué du menu (conservé côté routes)
   ];
 
   return (
