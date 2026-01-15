@@ -1,20 +1,8 @@
-// Nouvelle page Admin Automates
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import {
-  Edit,
-  Save,
-  X,
-  Trash2,
-  Search,
-  Filter,
-  Loader2,
-  Check,
-  AlertCircle,
-  Plus,
-} from "lucide-react";
+import { Edit, Save, X, Search, Plus, Loader2, Trash2, Check } from "lucide-react";
 import styles from "./AdminMobile.module.css";
 
 const BACKEND_URL = "https://backend-eaukey.duckdns.org";
@@ -24,21 +12,20 @@ export default function AdminPage() {
   const [automates, setAutomates] = useState([]);
   const [form, setForm] = useState({ nom_automate: "", client: "", lieu: "", email: "" });
   const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterClient, setFilterClient] = useState("all");
-  const [pendingDelete, setPendingDelete] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
 
-  // État d'édition inline
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({ client: "", lieu: "", email: "" });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isLoadingList, setIsLoadingList] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [savingId, setSavingId] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const isAdmin = user && (user["https://app.com/role"] || user.role) === "admin";
 
-  // Charge la liste
   const fetchAutomates = async () => {
-    setLoading(true);
+    setIsLoadingList(true);
     try {
       const res = await fetch(`${BACKEND_URL}/recherche/automate_LCA`);
       const data = await res.json();
@@ -47,16 +34,13 @@ export default function AdminPage() {
       console.error(e);
       setError("Erreur lors de la récupération des automates");
     } finally {
-      setLoading(false);
+      setIsLoadingList(false);
     }
   };
 
   useEffect(() => {
     fetchAutomates();
   }, []);
-
-  if (isLoading) return <p>Chargement...</p>;
-  if (!isAuthenticated || !isAdmin) return <p>Accès refusé.</p>;
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -65,12 +49,12 @@ export default function AdminPage() {
   const handleAdd = async (e) => {
     e.preventDefault();
     setError("");
-    setSubmitting(true);
+    setIsSubmitting(true);
     try {
       const payload = {
         nom_automate: form.nom_automate,
         client: form.client,
-        lieu: form.lieu
+        lieu: form.lieu,
       };
       const trimmedEmail = (form.email || "").trim();
       if (trimmedEmail !== "") {
@@ -88,23 +72,27 @@ export default function AdminPage() {
     } catch (err) {
       setError(err.message);
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
-  const requestDelete = (automate) => setPendingDelete(automate);
+  const askDelete = (nom) => {
+    setPendingDelete(nom);
+  };
 
   const confirmDelete = async () => {
     if (!pendingDelete) return;
+    setDeletingId(pendingDelete);
     setError("");
     try {
-      const res = await fetch(`${BACKEND_URL}/automate/${pendingDelete.nom_automate}`, { method: "DELETE" });
+      const res = await fetch(`${BACKEND_URL}/automate/${pendingDelete}`, { method: "DELETE" });
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.message);
       fetchAutomates();
     } catch (err) {
       setError(err.message);
     } finally {
+      setDeletingId(null);
       setPendingDelete(null);
     }
   };
@@ -122,86 +110,70 @@ export default function AdminPage() {
 
   const saveEdit = async (nom) => {
     try {
+      setSavingId(nom);
       setError("");
       const trimmedEmail = (editValues.email || "").trim();
       const payload = {
         client: editValues.client,
         lieu: editValues.lieu,
-        email: trimmedEmail === "" ? null : trimmedEmail
+        email: trimmedEmail === "" ? null : trimmedEmail,
       };
       const res = await fetch(`${BACKEND_URL}/automate/${encodeURIComponent(nom)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const txt = await res.text();
-        throw new Error(`Erreur ${res.status}: ${txt || 'échec de la mise à jour'}`);
+        throw new Error(`Erreur ${res.status}: ${txt || "échec de la mise à jour"}`);
       }
-      // Mise à jour locale de la ligne sans refetch global
       const normalizedEmail = payload.email ?? "";
-      setAutomates((prev) => prev.map((it) => it.nom_automate === nom ? { ...it, client: editValues.client, lieu: editValues.lieu, email: normalizedEmail } : it));
+      setAutomates((prev) =>
+        prev.map((it) =>
+          it.nom_automate === nom ? { ...it, client: editValues.client, lieu: editValues.lieu, email: normalizedEmail } : it
+        )
+      );
       cancelEdit();
     } catch (e) {
       setError(e.message);
+    } finally {
+      setSavingId(null);
     }
   };
 
-  const clientOptions = useMemo(() => {
-    const set = new Set();
-    automates.forEach((a) => {
-      if (a.client) set.add(a.client);
-    });
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [automates]);
-
   const filteredAutomates = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    return automates.filter((a) => {
-      const matchesClient = filterClient === "all" || (a.client || "").toLowerCase() === filterClient.toLowerCase();
-      const matchesSearch =
-        term === "" ||
-        [a.nom_automate, a.client, a.lieu, a.email]
-          .filter(Boolean)
-          .some((field) => field.toLowerCase().includes(term));
-      return matchesClient && matchesSearch;
-    });
-  }, [automates, filterClient, searchTerm]);
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return automates;
+    return automates.filter((a) =>
+      [a.nom_automate, a.client, a.lieu, a.email].some((v) => (v || "").toLowerCase().includes(term))
+    );
+  }, [automates, searchTerm]);
+
+  if (isLoading) return <p>Chargement...</p>;
+  if (!isAuthenticated || !isAdmin) return <p>Accès refusé.</p>;
 
   return (
-    <div className={styles.screen}>
-      <div className={styles.page}>
-        <header className={styles.pageHeader}>
-          <div>
-            <p className={styles.kicker}>Administration</p>
-            <h1 className={styles.pageTitle}>Gestion des automates</h1>
-            <p className={styles.pageSubtitle}>Ajout, édition et suppression des automates</p>
-          </div>
-          <div className={styles.headerBadge}>
-            <Check size={16} />
-            <span>{automates.length} automates suivis</span>
-          </div>
-        </header>
+    <div className={styles.pageShell}>
+      <div className={styles.header}>
+        <div>
+          <p className={styles.eyebrow}>Administration</p>
+          <h1 className={styles.pageTitle}>Gestion des automates</h1>
+          <p className={styles.subTitle}>Ajout, édition et suppression des automates.</p>
+        </div>
+      </div>
 
-        {error && (
-          <div className={styles.alert}>
-            <AlertCircle size={18} />
-            <span>{error}</span>
-          </div>
-        )}
+      {error && <div className={styles.alert}>{error}</div>}
 
+      <div className={styles.sectionGrid}>
         <section className={styles.card}>
           <div className={styles.cardHeader}>
             <div>
-              <p className={styles.cardKicker}>Ajout rapide</p>
+              <p className={styles.eyebrow}>Automate</p>
               <h2 className={styles.cardTitle}>Ajouter un automate</h2>
-              <p className={styles.cardDescription}>Renseignez les informations pour créer un nouvel automate.</p>
-            </div>
-            <div className={styles.badgeMuted}>
-              <Plus size={16} />
-              <span>Création</span>
+              <p className={styles.cardHint}>Renseignez les champs puis validez pour ajouter à la liste.</p>
             </div>
           </div>
+
           <form onSubmit={handleAdd} className={styles.formGrid}>
             <label className={styles.field}>
               <span className={styles.label}>Nom automate</span>
@@ -209,7 +181,7 @@ export default function AdminPage() {
                 name="nom_automate"
                 value={form.nom_automate}
                 onChange={handleChange}
-                placeholder="Ex : 20240714.0"
+                placeholder="Ex: 20240101.0"
                 required
                 className={styles.input}
               />
@@ -220,7 +192,7 @@ export default function AdminPage() {
                 name="client"
                 value={form.client}
                 onChange={handleChange}
-                placeholder="Ex : Albertini"
+                placeholder="Client"
                 required
                 className={styles.input}
               />
@@ -231,7 +203,7 @@ export default function AdminPage() {
                 name="lieu"
                 value={form.lieu}
                 onChange={handleChange}
-                placeholder="Ex : Sorbo - Ocagnano"
+                placeholder="Site / Ville"
                 required
                 className={styles.input}
               />
@@ -243,19 +215,21 @@ export default function AdminPage() {
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="client@email.com"
+                placeholder="contact@email.com"
                 className={styles.input}
               />
             </label>
-            <div className={styles.actions}>
-              <button type="submit" className={styles.primaryButton} disabled={submitting}>
-                {submitting ? (
+            <div className={styles.actionCell}>
+              <button type="submit" className={`${styles.button} ${styles.primaryButton}`} disabled={isSubmitting}>
+                {isSubmitting ? (
                   <>
-                    <Loader2 className={styles.spin} size={16} /> Ajout...
+                    <Loader2 size={16} className={styles.spin} />
+                    Ajout...
                   </>
                 ) : (
                   <>
-                    <Plus size={16} /> Ajouter
+                    <Plus size={16} />
+                    Ajouter
                   </>
                 )}
               </button>
@@ -266,35 +240,20 @@ export default function AdminPage() {
         <section className={styles.card}>
           <div className={styles.cardHeader}>
             <div>
-              <p className={styles.cardKicker}>Inventaire</p>
+              <p className={styles.eyebrow}>Liste</p>
               <h2 className={styles.cardTitle}>Liste des automates</h2>
-              <p className={styles.cardDescription}>Recherche, édition et suppression des automates existants.</p>
             </div>
             <div className={styles.toolbar}>
               <div className={styles.searchBox}>
                 <Search size={16} />
                 <input
+                  className={styles.searchInput}
+                  placeholder="Rechercher (nom, client, lieu, email)"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Rechercher (nom, client, lieu, email)"
                 />
               </div>
-              <div className={styles.filter}>
-                <Filter size={14} />
-                <select
-                  value={filterClient}
-                  onChange={(e) => setFilterClient(e.target.value)}
-                  className={styles.filterSelect}
-                >
-                  <option value="all">Tous les clients</option>
-                  {clientOptions.map((client) => (
-                    <option key={client} value={client}>
-                      {client}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={styles.counter}>{filteredAutomates.length} automates</div>
+              <div className={styles.countBadge}>{filteredAutomates.length} automates</div>
             </div>
           </div>
 
@@ -303,107 +262,132 @@ export default function AdminPage() {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th className={styles.th}>Nom automate</th>
-                    <th className={styles.th}>Client</th>
-                    <th className={styles.th}>Lieu</th>
-                    <th className={styles.th}>Email</th>
-                    <th className={styles.th} style={{ width: 120 }}>Actions</th>
+                    <th>Nom automate</th>
+                    <th>Client</th>
+                    <th>Lieu</th>
+                    <th>Email</th>
+                    <th className={styles.actionsCol}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {loading && automates.length === 0 && (
-                    Array.from({ length: 5 }).map((_, idx) => (
+                  {isLoadingList &&
+                    Array.from({ length: 6 }).map((_, idx) => (
                       <tr key={`skeleton-${idx}`} className={styles.skeletonRow}>
-                        <td colSpan={5}>
-                          <div className={styles.skeletonBar} />
-                        </td>
+                        <td colSpan={5} />
                       </tr>
-                    ))
-                  )}
+                    ))}
 
-                  {!loading && filteredAutomates.length === 0 && (
+                  {!isLoadingList && filteredAutomates.length === 0 && (
                     <tr>
-                      <td colSpan={5}>
-                        <div className={styles.emptyState}>
-                          <div className={styles.emptyIcon}>–</div>
-                          <div>
-                            <p className={styles.emptyTitle}>Aucun automate trouvé</p>
-                            <p className={styles.emptyText}>Ajoutez un automate ou modifiez votre recherche.</p>
-                          </div>
+                      <td colSpan={5} className={styles.emptyState}>
+                        <div>
+                          <p className={styles.emptyTitle}>Aucun automate trouvé</p>
+                          <p className={styles.emptyText}>Ajoutez un automate ou ajustez votre recherche.</p>
+                          <button
+                            type="button"
+                            className={`${styles.button} ${styles.primaryButton}`}
+                            onClick={() => {
+                              setSearchTerm("");
+                            }}
+                          >
+                            <Plus size={16} />
+                            Ajouter un automate
+                          </button>
                         </div>
                       </td>
                     </tr>
                   )}
 
-                  {filteredAutomates.map((a) => (
-                    <tr key={a.nom_automate} className={styles.row}>
-                      <td className={styles.td}>{a.nom_automate}</td>
-                      <td className={styles.td}>
-                        {editingId === a.nom_automate ? (
-                          <input
-                            value={editValues.client}
-                            onChange={(e) => setEditValues((v) => ({ ...v, client: e.target.value }))}
-                            className={styles.input}
-                          />
-                        ) : (
-                          a.client
-                        )}
-                      </td>
-                      <td className={styles.td}>
-                        {editingId === a.nom_automate ? (
-                          <input
-                            value={editValues.lieu}
-                            onChange={(e) => setEditValues((v) => ({ ...v, lieu: e.target.value }))}
-                            className={styles.input}
-                          />
-                        ) : (
-                          a.lieu
-                        )}
-                      </td>
-                      <td className={styles.td}>
-                        {editingId === a.nom_automate ? (
-                          <input
-                            type="email"
-                            value={editValues.email ?? ""}
-                            onChange={(e) => setEditValues((v) => ({ ...v, email: e.target.value }))}
-                            className={styles.input}
-                          />
-                        ) : (
-                          <span title={a.email || ""} className={styles.ellipsis}>
-                            {a.email || "—"}
-                          </span>
-                        )}
-                      </td>
-                      <td className={styles.td}>
-                        <div className={styles.actionsRow}>
+                  {!isLoadingList &&
+                    filteredAutomates.map((a) => (
+                      <tr key={a.nom_automate}>
+                        <td>
+                          <span className={styles.mono}>{a.nom_automate}</span>
+                        </td>
+                        <td>
                           {editingId === a.nom_automate ? (
-                            <>
-                              <button onClick={() => saveEdit(a.nom_automate)} className={styles.iconButton} title="Enregistrer">
-                                <Save size={16} />
+                            <input
+                              value={editValues.client}
+                              onChange={(e) => setEditValues((v) => ({ ...v, client: e.target.value }))}
+                              className={`${styles.input} ${styles.cellInput}`}
+                            />
+                          ) : (
+                            <span className={styles.textStrong}>{a.client}</span>
+                          )}
+                        </td>
+                        <td>
+                          {editingId === a.nom_automate ? (
+                            <input
+                              value={editValues.lieu}
+                              onChange={(e) => setEditValues((v) => ({ ...v, lieu: e.target.value }))}
+                              className={`${styles.input} ${styles.cellInput}`}
+                            />
+                          ) : (
+                            a.lieu
+                          )}
+                        </td>
+                        <td>
+                          {editingId === a.nom_automate ? (
+                            <input
+                              type="email"
+                              value={editValues.email ?? ""}
+                              onChange={(e) => setEditValues((v) => ({ ...v, email: e.target.value }))}
+                              className={`${styles.input} ${styles.cellInput}`}
+                            />
+                          ) : (
+                            <span className={styles.ellipsis} title={a.email || ""}>
+                              {a.email || "—"}
+                            </span>
+                          )}
+                        </td>
+                        <td className={styles.actionsCol}>
+                          {editingId === a.nom_automate ? (
+                            <div className={styles.actionGroup}>
+                              <button
+                                type="button"
+                                onClick={() => saveEdit(a.nom_automate)}
+                                className={`${styles.iconButton} ${styles.primaryGhost}`}
+                                data-tooltip="Enregistrer"
+                              >
+                                {savingId === a.nom_automate ? <Loader2 size={16} className={styles.spin} /> : <Check size={16} />}
                               </button>
-                              <button onClick={cancelEdit} className={styles.iconButton} title="Annuler">
+                              <button
+                                type="button"
+                                onClick={cancelEdit}
+                                className={styles.iconButton}
+                                data-tooltip="Annuler"
+                              >
                                 <X size={16} />
                               </button>
-                            </>
+                            </div>
                           ) : (
-                            <>
-                              <button onClick={() => startEdit(a)} className={styles.iconButton} title="Modifier">
+                            <div className={styles.actionGroup}>
+                              <button
+                                type="button"
+                                onClick={() => startEdit(a)}
+                                className={`${styles.iconButton} ${styles.primaryGhost}`}
+                                data-tooltip="Modifier"
+                              >
                                 <Edit size={16} />
                               </button>
                               <button
-                                onClick={() => requestDelete(a)}
+                                type="button"
+                                onClick={() => askDelete(a.nom_automate)}
                                 className={`${styles.iconButton} ${styles.dangerGhost}`}
-                                title="Supprimer"
+                                data-tooltip="Supprimer"
                                 aria-label="Supprimer"
                               >
-                                <Trash2 size={16} />
+                                {deletingId === a.nom_automate ? (
+                                  <Loader2 size={16} className={styles.spin} />
+                                ) : (
+                                  <Trash2 size={16} />
+                                )}
                               </button>
-                            </>
+                            </div>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -415,15 +399,26 @@ export default function AdminPage() {
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
-              <AlertCircle size={18} />
-              <span>Confirmer la suppression</span>
+              <div>
+                <p className={styles.eyebrow}>Confirmation</p>
+                <h3 className={styles.cardTitle}>Supprimer l'automate ?</h3>
+                <p className={styles.cardHint}>Cette action est définitive pour {pendingDelete}.</p>
+              </div>
             </div>
-            <p className={styles.modalText}>
-              Voulez-vous vraiment supprimer l&apos;automate <strong>{pendingDelete.nom_automate}</strong> ?
-            </p>
             <div className={styles.modalActions}>
-              <button onClick={() => setPendingDelete(null)} className={styles.secondaryButton}>Annuler</button>
-              <button onClick={confirmDelete} className={styles.dangerButton}>Supprimer</button>
+              <button type="button" className={styles.button} onClick={() => setPendingDelete(null)}>
+                <X size={16} />
+                Annuler
+              </button>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.primaryButton}`}
+                onClick={confirmDelete}
+                disabled={deletingId === pendingDelete}
+              >
+                {deletingId === pendingDelete ? <Loader2 size={16} className={styles.spin} /> : <Trash2 size={16} />}
+                Supprimer
+              </button>
             </div>
           </div>
         </div>
