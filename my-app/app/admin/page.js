@@ -7,27 +7,30 @@ import styles from "./AdminMobile.module.css";
 
 const BACKEND_URL = "https://backend-eaukey.duckdns.org";
 
-const splitEmails = (value) => {
-  if (!value) return [];
-  if (Array.isArray(value)) return value.map((e) => (e || "").trim()).filter(Boolean);
-  return String(value)
-    .replace(/;/g, ",")
-    .split(",")
-    .map((e) => (e || "").trim())
-    .filter(Boolean);
+const normalizeEmail = (val) => {
+  const e = (val || "").trim().toLowerCase();
+  return e || "";
 };
 
-const normalizeEmailList = (list) =>
-  splitEmails(list).map((e) => e.toLowerCase()).filter((v, idx, arr) => arr.indexOf(v) === idx);
+const uniqueNonEmpty = (arr) => {
+  const seen = new Set();
+  return arr
+    .map((v) => normalizeEmail(v))
+    .filter((v) => {
+      if (!v || seen.has(v)) return false;
+      seen.add(v);
+      return true;
+    });
+};
 
 export default function AdminPage() {
   const { user, isAuthenticated, isLoading } = useAuth0();
   const [automates, setAutomates] = useState([]);
-  const [form, setForm] = useState({ nom_automate: "", client: "", lieu: "", emails: [""] });
+  const [form, setForm] = useState({ nom_automate: "", client: "", lieu: "", email: "", email2: "", email3: "" });
   const [error, setError] = useState("");
 
   const [editingId, setEditingId] = useState(null);
-  const [editValues, setEditValues] = useState({ client: "", lieu: "", emails: [""] });
+  const [editValues, setEditValues] = useState({ client: "", lieu: "", email: "", email2: "", email3: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoadingList, setIsLoadingList] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,47 +62,10 @@ export default function AdminPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleEmailChange = (index, value) => {
-    setForm((prev) => {
-      const next = [...(prev.emails || [])];
-      next[index] = value;
-      return { ...prev, emails: next };
-    });
+  const getEmailList = (item) => {
+    const list = [item?.email, item?.email2, item?.email3];
+    return uniqueNonEmpty(list);
   };
-
-  const addEmailField = () => {
-    setForm((prev) => ({ ...prev, emails: [...(prev.emails || []), ""] }));
-  };
-
-  const removeEmailField = (index) => {
-    setForm((prev) => {
-      const next = [...(prev.emails || [])];
-      next.splice(index, 1);
-      return { ...prev, emails: next.length ? next : [""] };
-    });
-  };
-
-  const handleEditEmailChange = (index, value) => {
-    setEditValues((prev) => {
-      const next = [...(prev.emails || [])];
-      next[index] = value;
-      return { ...prev, emails: next };
-    });
-  };
-
-  const addEditEmailField = () => {
-    setEditValues((prev) => ({ ...prev, emails: [...(prev.emails || []), ""] }));
-  };
-
-  const removeEditEmailField = (index) => {
-    setEditValues((prev) => {
-      const next = [...(prev.emails || [])];
-      next.splice(index, 1);
-      return { ...prev, emails: next.length ? next : [""] };
-    });
-  };
-
-  const getEmailList = (item) => (item?.emails && item.emails.length ? item.emails : splitEmails(item?.email));
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -111,11 +77,11 @@ export default function AdminPage() {
         client: form.client,
         lieu: form.lieu,
       };
-      const normalizedEmails = normalizeEmailList(form.emails);
-      if (normalizedEmails.length > 0) {
-        payload.email = normalizedEmails;
-        payload.emails = normalizedEmails;
-      }
+      const normalizedEmails = uniqueNonEmpty([form.email, form.email2, form.email3]);
+      const [e1, e2, e3] = [normalizedEmails[0] || "", normalizedEmails[1] || "", normalizedEmails[2] || ""];
+      payload.email = e1;
+      payload.email2 = e2 || "";
+      payload.email3 = e3 || "";
       const res = await fetch(`${BACKEND_URL}/automate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -123,7 +89,7 @@ export default function AdminPage() {
       });
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.message);
-      setForm({ nom_automate: "", client: "", lieu: "", emails: [""] });
+      setForm({ nom_automate: "", client: "", lieu: "", email: "", email2: "", email3: "" });
       fetchAutomates();
     } catch (err) {
       setError(err.message);
@@ -158,26 +124,30 @@ export default function AdminPage() {
     setEditValues({
       client: a.client || "",
       lieu: a.lieu || "",
-      emails: (a.emails && a.emails.length ? a.emails : splitEmails(a.email)).concat([""]).slice(0),
+      email: a.email || "",
+      email2: a.email2 || "",
+      email3: a.email3 || "",
     });
     setError("");
   };
 
   const cancelEdit = () => {
     setEditingId(null);
-    setEditValues({ client: "", lieu: "", emails: [""] });
+    setEditValues({ client: "", lieu: "", email: "", email2: "", email3: "" });
   };
 
   const saveEdit = async (nom) => {
     try {
       setSavingId(nom);
       setError("");
-      const normalizedEmails = normalizeEmailList(editValues.emails);
+      const normalizedEmails = uniqueNonEmpty([editValues.email, editValues.email2, editValues.email3]);
+      const [e1, e2, e3] = [normalizedEmails[0] || "", normalizedEmails[1] || "", normalizedEmails[2] || ""];
       const payload = {
         client: editValues.client,
         lieu: editValues.lieu,
-        email: normalizedEmails,
-        emails: normalizedEmails,
+        email: e1,
+        email2: e2 || "",
+        email3: e3 || "",
       };
       const res = await fetch(`${BACKEND_URL}/automate/${encodeURIComponent(nom)}`, {
         method: "PUT",
@@ -188,11 +158,18 @@ export default function AdminPage() {
         const txt = await res.text();
         throw new Error(`Erreur ${res.status}: ${txt || "échec de la mise à jour"}`);
       }
-      const normalizedEmail = (normalizedEmails || []).join(",");
       setAutomates((prev) =>
         prev.map((it) =>
           it.nom_automate === nom
-            ? { ...it, client: editValues.client, lieu: editValues.lieu, email: normalizedEmail, emails: normalizedEmails }
+            ? {
+                ...it,
+                client: editValues.client,
+                lieu: editValues.lieu,
+                email: e1,
+                email2: e2 || "",
+                email3: e3 || "",
+                emails: normalizedEmails,
+              }
             : it
         )
       );
@@ -272,34 +249,37 @@ export default function AdminPage() {
               />
             </label>
             <label className={styles.field}>
-              <span className={styles.label}>Emails (optionnel)</span>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {(form.emails || []).map((email, idx) => (
-                  <div key={`email-${idx}`} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <span className={styles.label}>Email 1 (optionnel)</span>
               <input
                 type="email"
-                      value={email}
-                      onChange={(e) => handleEmailChange(idx, e.target.value)}
-                      placeholder={`Email ${idx + 1}`}
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="contact@email.com"
                 className={styles.input}
               />
-                    {form.emails.length > 1 && (
-                      <button
-                        type="button"
-                        className={styles.iconButton}
-                        onClick={() => removeEmailField(idx)}
-                        aria-label="Supprimer cet email"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button type="button" className={styles.button} onClick={addEmailField}>
-                  <Plus size={14} />
-                  Ajouter un email
-                </button>
-              </div>
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>Email 2 (optionnel)</span>
+              <input
+                type="email"
+                name="email2"
+                value={form.email2}
+                onChange={handleChange}
+                placeholder="email2@email.com"
+                className={styles.input}
+              />
+            </label>
+            <label className={styles.field}>
+              <span className={styles.label}>Email 3 (optionnel)</span>
+              <input
+                type="email"
+                name="email3"
+                value={form.email3}
+                onChange={handleChange}
+                placeholder="email3@email.com"
+                className={styles.input}
+              />
             </label>
             <div className={styles.actionCell}>
               <button type="submit" className={`${styles.button} ${styles.primaryButton}`} disabled={isSubmitting}>
@@ -411,30 +391,27 @@ export default function AdminPage() {
                         <td>
                           {editingId === a.nom_automate ? (
                             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                              {(editValues.emails || []).map((email, idx) => (
-                                <div key={`edit-email-${idx}`} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                            <input
-                              type="email"
-                                    value={email}
-                                    onChange={(e) => handleEditEmailChange(idx, e.target.value)}
-                              className={`${styles.input} ${styles.cellInput}`}
-                                    placeholder={`Email ${idx + 1}`}
-                            />
-                                  {editValues.emails.length > 1 && (
-                                    <button
-                                      type="button"
-                                      className={styles.iconButton}
-                                      onClick={() => removeEditEmailField(idx)}
-                                      aria-label="Supprimer cet email"
-                                    >
-                                      <X size={14} />
-                                    </button>
-                                  )}
-                                </div>
-                              ))}
-                              <button type="button" className={styles.iconButton} onClick={addEditEmailField} aria-label="Ajouter un email">
-                                <Plus size={14} />
-                              </button>
+                              <input
+                                type="email"
+                                value={editValues.email}
+                                onChange={(e) => setEditValues((v) => ({ ...v, email: e.target.value }))}
+                                className={`${styles.input} ${styles.cellInput}`}
+                                placeholder="Email 1"
+                              />
+                              <input
+                                type="email"
+                                value={editValues.email2}
+                                onChange={(e) => setEditValues((v) => ({ ...v, email2: e.target.value }))}
+                                className={`${styles.input} ${styles.cellInput}`}
+                                placeholder="Email 2"
+                              />
+                              <input
+                                type="email"
+                                value={editValues.email3}
+                                onChange={(e) => setEditValues((v) => ({ ...v, email3: e.target.value }))}
+                                className={`${styles.input} ${styles.cellInput}`}
+                                placeholder="Email 3"
+                              />
                             </div>
                           ) : (
                             <span className={styles.ellipsis} title={(getEmailList(a).join(", ")) || ""}>

@@ -250,7 +250,7 @@ def fetch_annee_simple(nom_automate: str, column: str) -> dict:
 @app.get("/recherche/automate_LCA")
 def liste_automates():
     query = """
-        SELECT client, numero_automate, nom_automate, lieu, email
+        SELECT client, numero_automate, nom_automate, lieu, email, email2, email3
         FROM automate
         ORDER BY client NULLS LAST, nom_automate
     """
@@ -262,7 +262,9 @@ def liste_automates():
             "nom_automate": r[2],
             "lieu": r[3],
             "email": r[4],
-            "emails": _split_emails(r[4]),
+            "email2": r[5],
+            "email3": r[6],
+            "emails": [e for e in [r[4], r[5], r[6]] if e],
         }
         for r in rows
     ]
@@ -1103,13 +1105,13 @@ def recherche_automate_lca(
     # Cas 1️⃣ : on veut un automate précis
     if nom_automate:
         query = (
-            "SELECT nom_automate, client, lieu, email "
+            "SELECT nom_automate, client, lieu, email, email2, email3 "
             "FROM automate "
             "WHERE nom_automate = %s;"
         )
         rows = executer_requete_sql(query, (nom_automate,))
         if not rows:
-            return {"nom_automate": None, "client": None, "lieu": None, "email": None, "emails": []}
+            return {"nom_automate": None, "client": None, "lieu": None, "email": None, "email2": None, "email3": None, "emails": []}
 
         row = rows[0]
         return {
@@ -1117,14 +1119,24 @@ def recherche_automate_lca(
             "client": row[1],
             "lieu": row[2],
             "email": row[3],
-            "emails": _split_emails(row[3]),
+            "email2": row[4],
+            "email3": row[5],
+            "emails": [e for e in [row[3], row[4], row[5]] if e],
         }
 
     # Cas 2️⃣ : pas de filtre ➜ on renvoie tout
-    query = "SELECT nom_automate, client, lieu, email FROM automate;"
+    query = "SELECT nom_automate, client, lieu, email, email2, email3 FROM automate;"
     rows = executer_requete_sql(query)
     return [
-        {"nom_automate": r[0], "client": r[1], "lieu": r[2], "email": r[3], "emails": _split_emails(r[3])}
+        {
+            "nom_automate": r[0],
+            "client": r[1],
+            "lieu": r[2],
+            "email": r[3],
+            "email2": r[4],
+            "email3": r[5],
+            "emails": [e for e in [r[3], r[4], r[5]] if e],
+        }
         for r in rows
     ]
 
@@ -1139,18 +1151,22 @@ class AutomateIn(BaseModel):
     nom_automate: str
     client: str
     lieu: str
-    email: str | List[str] | None = None
+    email: str | None = None
+    email2: str | None = None
+    email3: str | None = None
     emails: List[str] | None = None
 
 
 @app.post("/automate")
 def add_automate(auto: AutomateIn):
     """Ajoute un automate dans la table automate."""
-    source_emails = auto.emails if auto.emails is not None else auto.email
-    _, emails_str = _normalize_emails(source_emails)
+    def norm(v: str | None):
+        v = (v or "").strip().lower()
+        return v if v else None
+    emails = [norm(auto.email), norm(auto.email2), norm(auto.email3)]
     query = """
-        INSERT INTO automate (nom_automate, client, lieu, email)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO automate (nom_automate, client, lieu, email, email2, email3)
+        VALUES (%s, %s, %s, %s, %s, %s)
         ON CONFLICT (nom_automate) DO NOTHING;
     """
     try:
@@ -1160,7 +1176,9 @@ def add_automate(auto: AutomateIn):
                 auto.nom_automate,
                 auto.client,
                 auto.lieu,
-                emails_str,
+                emails[0],
+                emails[1],
+                emails[2],
             ),
         )
         return {"status": "success"}
@@ -1171,8 +1189,9 @@ def add_automate(auto: AutomateIn):
 class AutomateUpdate(BaseModel):
     client: str | None = None
     lieu: str | None = None
-    email: str | List[str] | None = None
-    emails: List[str] | None = None
+    email: str | None = None
+    email2: str | None = None
+    email3: str | None = None
 
 
 @app.put("/automate/{nom_automate}")
@@ -1186,11 +1205,18 @@ def update_automate(nom_automate: str, upd: AutomateUpdate):
     if upd.lieu is not None:
         fields.append("lieu   = %s")
         values.append(upd.lieu)
-    if upd.email is not None or upd.emails is not None:
+    def norm(v: str | None):
+        v = (v or "").strip().lower()
+        return v if v else None
+    if upd.email is not None:
         fields.append("email  = %s")
-        source_emails = upd.emails if upd.emails is not None else upd.email
-        _, emails_csv = _normalize_emails(source_emails)
-        values.append(emails_csv)
+        values.append(norm(upd.email))
+    if upd.email2 is not None:
+        fields.append("email2 = %s")
+        values.append(norm(upd.email2))
+    if upd.email3 is not None:
+        fields.append("email3 = %s")
+        values.append(norm(upd.email3))
 
     if not fields:
         return {"status": "error", "message": "Aucune donnée à mettre à jour"}
