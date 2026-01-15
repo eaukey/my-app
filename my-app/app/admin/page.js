@@ -26,11 +26,11 @@ const uniqueNonEmpty = (arr) => {
 export default function AdminPage() {
   const { user, isAuthenticated, isLoading } = useAuth0();
   const [automates, setAutomates] = useState([]);
-  const [form, setForm] = useState({ nom_automate: "", client: "", lieu: "", email: "", email2: "", email3: "" });
+  const [form, setForm] = useState({ nom_automate: "", client: "", lieu: "", emails: [""] });
   const [error, setError] = useState("");
 
   const [editingId, setEditingId] = useState(null);
-  const [editValues, setEditValues] = useState({ client: "", lieu: "", email: "", email2: "", email3: "" });
+  const [editValues, setEditValues] = useState({ client: "", lieu: "", emails: [""] });
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoadingList, setIsLoadingList] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,8 +62,32 @@ export default function AdminPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleEmailChange = (index, value) => {
+    setForm((prev) => {
+      const next = [...(prev.emails || [])];
+      next[index] = value;
+      return { ...prev, emails: next };
+    });
+  };
+
+  const addEmailField = () => {
+    setForm((prev) => {
+      const next = [...(prev.emails || [])];
+      if (next.length >= 3) return prev; // limite à 3 emails correspondant aux colonnes email/email2/email3
+      return { ...prev, emails: [...next, ""] };
+    });
+  };
+
+  const removeEmailField = (index) => {
+    setForm((prev) => {
+      const next = [...(prev.emails || [])];
+      next.splice(index, 1);
+      return { ...prev, emails: next.length ? next : [""] };
+    });
+  };
+
   const getEmailList = (item) => {
-    const list = [item?.email, item?.email2, item?.email3];
+    const list = [item?.email, item?.email2, item?.email3].concat(item?.emails || []);
     return uniqueNonEmpty(list);
   };
 
@@ -77,7 +101,7 @@ export default function AdminPage() {
         client: form.client,
         lieu: form.lieu,
       };
-      const normalizedEmails = uniqueNonEmpty([form.email, form.email2, form.email3]);
+      const normalizedEmails = uniqueNonEmpty(form.emails || []);
       const [e1, e2, e3] = [normalizedEmails[0] || "", normalizedEmails[1] || "", normalizedEmails[2] || ""];
       payload.email = e1;
       payload.email2 = e2 || "";
@@ -89,7 +113,7 @@ export default function AdminPage() {
       });
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.message);
-      setForm({ nom_automate: "", client: "", lieu: "", email: "", email2: "", email3: "" });
+      setForm({ nom_automate: "", client: "", lieu: "", emails: [""] });
       fetchAutomates();
     } catch (err) {
       setError(err.message);
@@ -124,23 +148,21 @@ export default function AdminPage() {
     setEditValues({
       client: a.client || "",
       lieu: a.lieu || "",
-      email: a.email || "",
-      email2: a.email2 || "",
-      email3: a.email3 || "",
+      emails: getEmailList(a).concat([""]).slice(0, 3),
     });
     setError("");
   };
 
   const cancelEdit = () => {
     setEditingId(null);
-    setEditValues({ client: "", lieu: "", email: "", email2: "", email3: "" });
+    setEditValues({ client: "", lieu: "", emails: [""] });
   };
 
   const saveEdit = async (nom) => {
     try {
       setSavingId(nom);
       setError("");
-      const normalizedEmails = uniqueNonEmpty([editValues.email, editValues.email2, editValues.email3]);
+      const normalizedEmails = uniqueNonEmpty(editValues.emails || []);
       const [e1, e2, e3] = [normalizedEmails[0] || "", normalizedEmails[1] || "", normalizedEmails[2] || ""];
       const payload = {
         client: editValues.client,
@@ -249,37 +271,36 @@ export default function AdminPage() {
               />
             </label>
             <label className={styles.field}>
-              <span className={styles.label}>Email 1 (optionnel)</span>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="contact@email.com"
-                className={styles.input}
-              />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.label}>Email 2 (optionnel)</span>
-              <input
-                type="email"
-                name="email2"
-                value={form.email2}
-                onChange={handleChange}
-                placeholder="email2@email.com"
-                className={styles.input}
-              />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.label}>Email 3 (optionnel)</span>
-              <input
-                type="email"
-                name="email3"
-                value={form.email3}
-                onChange={handleChange}
-                placeholder="email3@email.com"
-                className={styles.input}
-              />
+              <span className={styles.label}>Emails (optionnel)</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {(form.emails || []).map((email, idx) => (
+                  <div key={`email-${idx}`} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => handleEmailChange(idx, e.target.value)}
+                      placeholder={`Email ${idx + 1}`}
+                      className={styles.input}
+                    />
+                    {form.emails.length > 1 && (
+                      <button
+                        type="button"
+                        className={styles.iconButton}
+                        onClick={() => removeEmailField(idx)}
+                        aria-label="Supprimer cet email"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {form.emails.length < 3 && (
+                  <button type="button" className={styles.button} onClick={addEmailField}>
+                    <Plus size={14} />
+                    Ajouter un email
+                  </button>
+                )}
+              </div>
             </label>
             <div className={styles.actionCell}>
               <button type="submit" className={`${styles.button} ${styles.primaryButton}`} disabled={isSubmitting}>
@@ -391,27 +412,49 @@ export default function AdminPage() {
                         <td>
                           {editingId === a.nom_automate ? (
                             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                              <input
-                                type="email"
-                                value={editValues.email}
-                                onChange={(e) => setEditValues((v) => ({ ...v, email: e.target.value }))}
-                                className={`${styles.input} ${styles.cellInput}`}
-                                placeholder="Email 1"
-                              />
-                              <input
-                                type="email"
-                                value={editValues.email2}
-                                onChange={(e) => setEditValues((v) => ({ ...v, email2: e.target.value }))}
-                                className={`${styles.input} ${styles.cellInput}`}
-                                placeholder="Email 2"
-                              />
-                              <input
-                                type="email"
-                                value={editValues.email3}
-                                onChange={(e) => setEditValues((v) => ({ ...v, email3: e.target.value }))}
-                                className={`${styles.input} ${styles.cellInput}`}
-                                placeholder="Email 3"
-                              />
+                              {(editValues.emails || []).map((email, idx) => (
+                                <div key={`edit-email-${idx}`} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                  <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) =>
+                                      setEditValues((v) => {
+                                        const next = [...(v.emails || [])];
+                                        next[idx] = e.target.value;
+                                        return { ...v, emails: next };
+                                      })
+                                    }
+                                    className={`${styles.input} ${styles.cellInput}`}
+                                    placeholder={`Email ${idx + 1}`}
+                                  />
+                                  {editValues.emails.length > 1 && (
+                                    <button
+                                      type="button"
+                                      className={styles.iconButton}
+                                      onClick={() =>
+                                        setEditValues((v) => {
+                                          const next = [...(v.emails || [])];
+                                          next.splice(idx, 1);
+                                          return { ...v, emails: next.length ? next : [""] };
+                                        })
+                                      }
+                                      aria-label="Supprimer cet email"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                              {editValues.emails.length < 3 && (
+                                <button
+                                  type="button"
+                                  className={styles.iconButton}
+                                  onClick={() => setEditValues((v) => ({ ...v, emails: [...(v.emails || []), ""] }))}
+                                  aria-label="Ajouter un email"
+                                >
+                                  <Plus size={14} />
+                                </button>
+                              )}
                             </div>
                           ) : (
                             <span className={styles.ellipsis} title={(getEmailList(a).join(", ")) || ""}>
