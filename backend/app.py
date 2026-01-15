@@ -222,6 +222,11 @@ def fetch_annee_simple(nom_automate: str, column: str) -> dict:
 # ---------------------------------------------------------------------------
 @app.get("/recherche/automate_LCA")
 def liste_automates():
+    def split_emails(email_str) -> list[str]:
+        if not email_str:
+            return []
+        return [e.strip() for e in str(email_str).split(",") if e.strip()]
+
     query = """
         SELECT client, numero_automate, nom_automate, lieu, email
         FROM automate
@@ -235,6 +240,7 @@ def liste_automates():
             "nom_automate": r[2],
             "lieu": r[3],
             "email": r[4],
+            "emails": split_emails(r[4]),
         }
         for r in rows
     ]
@@ -1105,11 +1111,31 @@ class AutomateIn(BaseModel):
     client: str
     lieu: str
     email: str | None = None
+    emails: list[str] | None = None
 
 
 @app.post("/automate")
 def add_automate(auto: AutomateIn):
     """Ajoute un automate dans la table automate."""
+
+    def normalize_emails(value) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, list):
+            raw_list = value
+        else:
+            raw_list = str(value).split(",")
+        seen = set()
+        cleaned: list[str] = []
+        for item in raw_list:
+            e = item.strip().lower()
+            if not e or e in seen:
+                continue
+            seen.add(e)
+            cleaned.append(e)
+        return ",".join(cleaned) if cleaned else None
+
+    emails_str = normalize_emails(auto.emails if auto.emails is not None else auto.email)
     query = """
         INSERT INTO automate (nom_automate, client, lieu, email)
         VALUES (%s, %s, %s, %s)
@@ -1122,7 +1148,7 @@ def add_automate(auto: AutomateIn):
                 auto.nom_automate,
                 auto.client,
                 auto.lieu,
-                (auto.email or "").strip() or None,
+                emails_str,
             ),
         )
         return {"status": "success"}
@@ -1134,11 +1160,29 @@ class AutomateUpdate(BaseModel):
     client: str | None = None
     lieu: str | None = None
     email: str | None = None
+    emails: list[str] | None = None
 
 
 @app.put("/automate/{nom_automate}")
 def update_automate(nom_automate: str, upd: AutomateUpdate):
     """Met à jour client et/ou lieu pour un automate."""
+
+    def normalize_emails(value) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, list):
+            raw_list = value
+        else:
+            raw_list = str(value).split(",")
+        seen = set()
+        cleaned: list[str] = []
+        for item in raw_list:
+            e = item.strip().lower()
+            if not e or e in seen:
+                continue
+            seen.add(e)
+            cleaned.append(e)
+        return ",".join(cleaned) if cleaned else None
     fields = []
     values = []
     if upd.client is not None:
@@ -1147,9 +1191,12 @@ def update_automate(nom_automate: str, upd: AutomateUpdate):
     if upd.lieu is not None:
         fields.append("lieu   = %s")
         values.append(upd.lieu)
-    if upd.email is not None:
+    if upd.emails is not None:
         fields.append("email  = %s")
-        values.append((upd.email or "").strip() or None)
+        values.append(normalize_emails(upd.emails))
+    elif upd.email is not None:
+        fields.append("email  = %s")
+        values.append(normalize_emails(upd.email))
 
     if not fields:
         return {"status": "error", "message": "Aucune donnée à mettre à jour"}

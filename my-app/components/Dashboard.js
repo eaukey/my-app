@@ -20,6 +20,21 @@ const chartPalette = {
   slate: "#cbd5f5",
 };
 
+const splitEmails = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map((e) => (e || "").trim()).filter(Boolean);
+  return String(value)
+    .replace(/;/g, ",")
+    .split(",")
+    .map((e) => (e || "").trim())
+    .filter(Boolean);
+};
+
+const normalizeEmailList = (value) =>
+  splitEmails(value)
+    .map((e) => e.toLowerCase())
+    .filter((v, idx, arr) => arr.indexOf(v) === idx);
+
 // Le mapping station <-> nom est désormais récupéré dynamiquement depuis l'API
 // via l'endpoint /recherche/automate_LCA (sans paramètre).
 
@@ -194,11 +209,14 @@ const Dashboard = () => {
       return;
     }
 
-    // Filtrage non-admin par email utilisateur (correspondance exacte)
+    // Filtrage non-admin par email utilisateur (correspondance exacte, multi-emails support)
     const userEmail = (user?.email || "").toLowerCase();
     const filtered = isAdmin
       ? allAutomates
-      : allAutomates.filter((auto) => (auto.email || "").toLowerCase() === userEmail);
+      : allAutomates.filter((auto) => {
+          const emails = normalizeEmailList(auto.emails || auto.email);
+          return emails.includes(userEmail);
+        });
 
     // Construire la liste pour la <select>
     const mappedStations = filtered.map((auto) => ({
