@@ -114,6 +114,7 @@ export default function AdminPage() {
       const normalizedEmails = normalizeEmailList(form.emails);
       if (normalizedEmails.length > 0) {
         payload.email = normalizedEmails;
+        payload.emails = normalizedEmails;
       }
       const res = await fetch(`${BACKEND_URL}/automate`, {
         method: "POST",
@@ -176,6 +177,7 @@ export default function AdminPage() {
         client: editValues.client,
         lieu: editValues.lieu,
         email: normalizedEmails,
+        emails: normalizedEmails,
       };
       const res = await fetch(`${BACKEND_URL}/automate/${encodeURIComponent(nom)}`, {
         method: "PUT",
@@ -274,13 +276,13 @@ export default function AdminPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {(form.emails || []).map((email, idx) => (
                   <div key={`email-${idx}`} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                    <input
-                      type="email"
+              <input
+                type="email"
                       value={email}
                       onChange={(e) => handleEmailChange(idx, e.target.value)}
                       placeholder={`Email ${idx + 1}`}
-                      className={styles.input}
-                    />
+                className={styles.input}
+              />
                     {form.emails.length > 1 && (
                       <button
                         type="button"
@@ -411,13 +413,13 @@ export default function AdminPage() {
                             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                               {(editValues.emails || []).map((email, idx) => (
                                 <div key={`edit-email-${idx}`} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                                  <input
-                                    type="email"
+                            <input
+                              type="email"
                                     value={email}
                                     onChange={(e) => handleEditEmailChange(idx, e.target.value)}
-                                    className={`${styles.input} ${styles.cellInput}`}
+                              className={`${styles.input} ${styles.cellInput}`}
                                     placeholder={`Email ${idx + 1}`}
-                                  />
+                            />
                                   {editValues.emails.length > 1 && (
                                     <button
                                       type="button"

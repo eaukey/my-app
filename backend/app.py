@@ -106,6 +106,33 @@ def executer_requete_sql(requete_sql: str, params: tuple = None) -> List[Tuple]:
         if conn:
             _release_connection(conn)
 
+
+def _normalize_emails(raw: Optional[Union[str, List[str]]]) -> tuple[list[str], Optional[str]]:
+    """
+    Normalise emails depuis une chaîne "a,b" ou une liste.
+    - trim + lower
+    - dédoublonne
+    - supprime les entrées vides
+    Retourne (liste_normée, chaîne_csv_ou_None)
+    """
+    if raw is None:
+        return [], None
+    if isinstance(raw, str):
+        items = raw.replace(";", ",").split(",")
+    else:
+        items = list(raw)
+    cleaned: list[str] = []
+    for item in items:
+        email = (item or "").strip().lower()
+        if email and email not in cleaned:
+            cleaned.append(email)
+    return cleaned, ",".join(cleaned) if cleaned else None
+
+
+def _split_emails(raw: Optional[Union[str, List[str]]]) -> list[str]:
+    """Retourne uniquement la liste normalisée."""
+    return _normalize_emails(raw)[0]
+
 # Fonction pour calculer la consommation
 def calculer_consommation_par_intervalle(resultat_sql: List[Tuple], timeframe: str = "jour") -> dict:
     if not resultat_sql or len(resultat_sql) < 2:
@@ -222,11 +249,6 @@ def fetch_annee_simple(nom_automate: str, column: str) -> dict:
 # ---------------------------------------------------------------------------
 @app.get("/recherche/automate_LCA")
 def liste_automates():
-    def split_emails(email_str) -> list[str]:
-        if not email_str:
-            return []
-        return [e.strip() for e in str(email_str).split(",") if e.strip()]
-
     query = """
         SELECT client, numero_automate, nom_automate, lieu, email
         FROM automate
@@ -240,7 +262,7 @@ def liste_automates():
             "nom_automate": r[2],
             "lieu": r[3],
             "email": r[4],
-            "emails": split_emails(r[4]),
+            "emails": _split_emails(r[4]),
         }
         for r in rows
     ]
@@ -1081,22 +1103,29 @@ def recherche_automate_lca(
     # Cas 1️⃣ : on veut un automate précis
     if nom_automate:
         query = (
-            "SELECT nom_automate, client, lieu "
+            "SELECT nom_automate, client, lieu, email "
             "FROM automate "
             "WHERE nom_automate = %s;"
         )
         rows = executer_requete_sql(query, (nom_automate,))
         if not rows:
-            return {"nom_automate": None, "client": None, "lieu": None}
+            return {"nom_automate": None, "client": None, "lieu": None, "email": None, "emails": []}
 
         row = rows[0]
-        return {"nom_automate": row[0], "client": row[1], "lieu": row[2]}
+        return {
+            "nom_automate": row[0],
+            "client": row[1],
+            "lieu": row[2],
+            "email": row[3],
+            "emails": _split_emails(row[3]),
+        }
 
     # Cas 2️⃣ : pas de filtre ➜ on renvoie tout
-    query = "SELECT nom_automate, client, lieu FROM automate;"
+    query = "SELECT nom_automate, client, lieu, email FROM automate;"
     rows = executer_requete_sql(query)
     return [
-        {"nom_automate": r[0], "client": r[1], "lieu": r[2]} for r in rows
+        {"nom_automate": r[0], "client": r[1], "lieu": r[2], "email": r[3], "emails": _split_emails(r[3])}
+        for r in rows
     ]
 
 # ---------------------------------------------------------------------------
@@ -1110,32 +1139,15 @@ class AutomateIn(BaseModel):
     nom_automate: str
     client: str
     lieu: str
-    email: str | None = None
-    emails: list[str] | None = None
+    email: str | List[str] | None = None
+    emails: List[str] | None = None
 
 
 @app.post("/automate")
 def add_automate(auto: AutomateIn):
     """Ajoute un automate dans la table automate."""
-
-    def normalize_emails(value) -> str | None:
-        if value is None:
-            return None
-        if isinstance(value, list):
-            raw_list = value
-        else:
-            raw_list = str(value).split(",")
-        seen = set()
-        cleaned: list[str] = []
-        for item in raw_list:
-            e = item.strip().lower()
-            if not e or e in seen:
-                continue
-            seen.add(e)
-            cleaned.append(e)
-        return ",".join(cleaned) if cleaned else None
-
-    emails_str = normalize_emails(auto.emails if auto.emails is not None else auto.email)
+    source_emails = auto.emails if auto.emails is not None else auto.email
+    _, emails_str = _normalize_emails(source_emails)
     query = """
         INSERT INTO automate (nom_automate, client, lieu, email)
         VALUES (%s, %s, %s, %s)
@@ -1159,30 +1171,13 @@ def add_automate(auto: AutomateIn):
 class AutomateUpdate(BaseModel):
     client: str | None = None
     lieu: str | None = None
-    email: str | None = None
-    emails: list[str] | None = None
+    email: str | List[str] | None = None
+    emails: List[str] | None = None
 
 
 @app.put("/automate/{nom_automate}")
 def update_automate(nom_automate: str, upd: AutomateUpdate):
     """Met à jour client et/ou lieu pour un automate."""
-
-    def normalize_emails(value) -> str | None:
-        if value is None:
-            return None
-        if isinstance(value, list):
-            raw_list = value
-        else:
-            raw_list = str(value).split(",")
-        seen = set()
-        cleaned: list[str] = []
-        for item in raw_list:
-            e = item.strip().lower()
-            if not e or e in seen:
-                continue
-            seen.add(e)
-            cleaned.append(e)
-        return ",".join(cleaned) if cleaned else None
     fields = []
     values = []
     if upd.client is not None:
@@ -1191,12 +1186,11 @@ def update_automate(nom_automate: str, upd: AutomateUpdate):
     if upd.lieu is not None:
         fields.append("lieu   = %s")
         values.append(upd.lieu)
-    if upd.emails is not None:
+    if upd.email is not None or upd.emails is not None:
         fields.append("email  = %s")
-        values.append(normalize_emails(upd.emails))
-    elif upd.email is not None:
-        fields.append("email  = %s")
-        values.append(normalize_emails(upd.email))
+        source_emails = upd.emails if upd.emails is not None else upd.email
+        _, emails_csv = _normalize_emails(source_emails)
+        values.append(emails_csv)
 
     if not fields:
         return {"status": "error", "message": "Aucune donnée à mettre à jour"}
