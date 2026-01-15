@@ -1,8 +1,9 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Request
 from typing import List, Tuple, Optional, Union
 import psycopg2
+from psycopg2.pool import SimpleConnectionPool
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import date
+from datetime import date, datetime
 import decimal
 import os 
 
@@ -30,43 +31,80 @@ app.add_middleware(
     allow_headers=["*"],  # Autorisez tous les en-têtes
 )
 
-# Fonction de connexion PostgreSQL
+# Filet de sécurité CORS (si jamais une réponse passe hors CORSMiddleware)
+@app.middleware("http")
+async def _force_cors_headers(request, call_next):
+    resp = await call_next(request)
+    origin = request.headers.get("origin")
+    if origin and "access-control-allow-origin" not in resp.headers:
+        resp.headers["Access-Control-Allow-Origin"] = origin
+        resp.headers["Access-Control-Allow-Credentials"] = "true"
+        resp.headers.setdefault("Vary", "Origin")
+    return resp
+
+_DB_DSN = {
+    "dbname": os.getenv("DB_NAME", "EaukeyCloudSQLv1"),
+    "user": os.getenv("DB_USER", "romain"),
+    "password": os.getenv("DB_PASSWORD", "Lzl?h<P@zxle6xuL"),
+    "host": os.getenv("DB_HOST", "35.195.185.218"),
+    "connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "5")),
+}
+
+_pool: SimpleConnectionPool | None = None
+
+
+def _get_pool() -> SimpleConnectionPool:
+    global _pool
+    if _pool is None:
+        max_conn = int(os.getenv("DB_MAX_CONN", "10"))
+        _pool = SimpleConnectionPool(1, max_conn, **_DB_DSN)
+    return _pool
+
+
 def get_connection():
-    return psycopg2.connect(
-        dbname="EaukeyCloudSQLv1",
-        user="romain",
-        password="Lzl?h<P@zxle6xuL",
-        host="35.195.185.218"
-    )
+    return _get_pool().getconn()
+
+
+def _release_connection(conn):
+    try:
+        _get_pool().putconn(conn)
+    except Exception:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 def executer_requete_sql(requete_sql: str, params: tuple = None) -> List[Tuple]:
     """
     Exécute une requête SQL avec des paramètres optionnels.
     """
+    conn = None
     try:
-        with get_connection() as conn:
-            with conn.cursor() as cur:
-                # 1) Exécute la requête avec (ou sans) paramètres
-                if params:
-                    cur.execute(requete_sql, params)
-                else:
-                    cur.execute(requete_sql)
+        conn = get_connection()
+        with conn.cursor() as cur:
+            if params:
+                cur.execute(requete_sql, params)
+            else:
+                cur.execute(requete_sql)
 
-                # 2) S'il s'agit d'une requête *sélective* (SELECT…) → on récupère les lignes
-                #    Pour les INSERT/UPDATE/DELETE, ⁠ cursor.description ⁠ vaut None et ⁠ fetchall() ⁠ lèverait
-                #    l'erreur  "no result to fetch".
-                if cur.description is not None:
-                    resultats = cur.fetchall()
-                else:
-                    resultats = []  # aucune donnée à renvoyer
+            if cur.description is not None:
+                resultats = cur.fetchall()
+            else:
+                resultats = []
 
-                # 3) Valide les changements pour les requêtes d'écriture
-                conn.commit()
-
+        conn.commit()
         return resultats
     except Exception as e:
         print(f"Erreur SQL : {e}")
+        if conn:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
         return []
+    finally:
+        if conn:
+            _release_connection(conn)
 
 # Fonction pour calculer la consommation
 def calculer_consommation_par_intervalle(resultat_sql: List[Tuple], timeframe: str = "jour") -> dict:
@@ -939,6 +977,50 @@ def temps_reel_cuve_adoucie(nom_automate: str = Query(..., description="Nom de l
         "valeur": float(result[0][1]) if result[0][1] is not None else 0
     }
 
+@app.get("/temps_reel/hauteur_cuve_traitement")
+def temps_reel_hauteur_cuve_traitement(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+    SELECT
+      m.horodatage,
+      m.nom_automate,
+      LEAST(100, GREATEST(0, m.hauteur_cuve_traitement_pc))::numeric AS hauteur_cuve_traitement_pct
+    FROM mesures m
+    WHERE m.nom_automate = %s
+      AND m.hauteur_cuve_traitement_pc IS NOT NULL
+    ORDER BY m.horodatage DESC
+    LIMIT 1;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    if not result:
+        return {"horodatage": None, "valeur": 0}
+
+    return {
+        "horodatage": result[0][0].strftime("%Y-%m-%d %H:%M:%S"),
+        "valeur": float(result[0][2]) if result[0][2] is not None else 0
+    }
+
+@app.get("/temps_reel/hauteur_cuve_disconnection")
+def temps_reel_hauteur_cuve_disconnection(nom_automate: str = Query(..., description="Nom de l'automate")):
+    query = """
+    SELECT
+      m.horodatage,
+      m.nom_automate,
+      LEAST(100, GREATEST(0, m.hauteur_cuve_disconnection_pc))::numeric AS hauteur_cuve_disconnection_pct
+    FROM mesures m
+    WHERE m.nom_automate = %s
+      AND m.hauteur_cuve_disconnection_pc IS NOT NULL
+    ORDER BY m.horodatage DESC
+    LIMIT 1;
+    """
+    result = executer_requete_sql(query, (nom_automate,))
+    if not result:
+        return {"horodatage": None, "valeur": 0}
+
+    return {
+        "horodatage": result[0][0].strftime("%Y-%m-%d %H:%M:%S"),
+        "valeur": float(result[0][2]) if result[0][2] is not None else 0
+    }
+
 @app.get("/temps_reel/volume_renvoi")
 def temps_reel_volume_renvoi(nom_automate: str = Query(..., description="Nom de l'automate")):
     query = """
@@ -1015,25 +1097,34 @@ def recherche_automate_lca(
 # ENDPOINTS CRUD SUR LA TABLE AUTOMATE (réservés aux admins côté front)
 # ---------------------------------------------------------------------------
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AutomateIn(BaseModel):
     nom_automate: str
     client: str
     lieu: str
+    email: str | None = None
 
 
 @app.post("/automate")
 def add_automate(auto: AutomateIn):
     """Ajoute un automate dans la table automate."""
     query = """
-        INSERT INTO automate (nom_automate, client, lieu)
-        VALUES (%s, %s, %s)
+        INSERT INTO automate (nom_automate, client, lieu, email)
+        VALUES (%s, %s, %s, %s)
         ON CONFLICT (nom_automate) DO NOTHING;
     """
     try:
-        executer_requete_sql(query, (auto.nom_automate, auto.client, auto.lieu))
+        executer_requete_sql(
+            query,
+            (
+                auto.nom_automate,
+                auto.client,
+                auto.lieu,
+                (auto.email or "").strip() or None,
+            ),
+        )
         return {"status": "success"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -1042,6 +1133,7 @@ def add_automate(auto: AutomateIn):
 class AutomateUpdate(BaseModel):
     client: str | None = None
     lieu: str | None = None
+    email: str | None = None
 
 
 @app.put("/automate/{nom_automate}")
@@ -1055,6 +1147,9 @@ def update_automate(nom_automate: str, upd: AutomateUpdate):
     if upd.lieu is not None:
         fields.append("lieu   = %s")
         values.append(upd.lieu)
+    if upd.email is not None:
+        fields.append("email  = %s")
+        values.append((upd.email or "").strip() or None)
 
     if not fields:
         return {"status": "error", "message": "Aucune donnée à mettre à jour"}
@@ -1109,6 +1204,232 @@ class MessageOut(BaseModel):
 def executer_requete_sql_one(query: str, params: tuple = ()):
     rows = executer_requete_sql(query, params)
     return rows[0] if rows else None
+
+
+# ---------------------------------------------------------------------------
+# Helpers accès admin (basé sur l'en-tête transmis par le front Auth0)
+# ---------------------------------------------------------------------------
+def _require_admin(request: Request) -> str:
+    """
+    Vérifie que l'appelant est admin.
+    Attend l'en-tête HTTP `x-user-role: admin`.
+    Retourne le champ email pour l'audit (peut être vide).
+    """
+    role = (request.headers.get("x-user-role") or "").lower()
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Accès réservé à l'admin")
+    return request.headers.get("x-user-email") or ""
+
+
+# ---------------------------------------------------------------------------
+# ENDPOINTS PANNES (ADMIN-ONLY)
+# ---------------------------------------------------------------------------
+
+
+class PanneIn(BaseModel):
+    client: str = Field(..., min_length=1)
+    lieu: str = Field(..., min_length=1)
+    nom_automate: str = Field(..., min_length=1)
+    panne: str = Field(..., min_length=1)
+    probleme: str = Field(..., min_length=1)
+    date_debut: datetime
+    date_fin: Optional[datetime] = None
+
+
+def _validate_automate(client: str, lieu: str, nom_automate: str):
+    row = executer_requete_sql_one(
+        "SELECT nom_automate FROM automate WHERE client = %s AND lieu = %s LIMIT 1",
+        (client, lieu),
+    )
+    if row is None:
+        raise HTTPException(status_code=400, detail="Couple client/lieu introuvable")
+    if str(row[0]) != str(nom_automate):
+        raise HTTPException(status_code=400, detail="nom_automate ne correspond pas")
+
+
+@app.get("/pannes/types")
+def pannes_types(request: Request):
+    """
+    ADMIN ONLY
+    Renvoie la liste persistante des types de pannes (défauts + types déjà saisis),
+    triée alphabétiquement (case-insensitive) et dédupliquée (case-insensitive).
+    """
+    _require_admin(request)
+
+    types_defaut = [
+        "Pompe HS",
+        "Pompe désamorcée",
+        "Filtre colmaté",
+        "Filtre saturé",
+        "Électrovanne HS",
+        "Vanne bloquée",
+        "Pressostat défectueux",
+        "Capteur niveau HS",
+        "Sonde conductivité HS",
+        "Fuite hydraulique",
+        "Fuite cuve",
+        "Cuve pleine",
+        "Cuve vide",
+        "Débordement",
+        "Manque produit chimique",
+        "Surdosage produit",
+        "Qualité eau insuffisante",
+        "Odeur anormale",
+        "Carte électronique HS",
+        "Erreur automate",
+        "Problème électrique",
+        "Disjonction",
+        "Air dans le circuit",
+        "Bobine eV HS",
+        "VAR 3 en défaut",
+    ]
+
+    rows = executer_requete_sql(
+        """
+        SELECT DISTINCT panne
+        FROM public.pannes
+        WHERE panne IS NOT NULL AND trim(panne) <> '';
+        """
+    )
+    types_db = [str(r[0]).strip() for r in rows if r and r[0] is not None and str(r[0]).strip()]
+
+    merged: dict[str, str] = {}
+    for s in types_defaut:
+        t = (s or "").strip()
+        if not t:
+            continue
+        merged.setdefault(t.casefold(), t)
+    for s in types_db:
+        t = (s or "").strip()
+        if not t:
+            continue
+        merged.setdefault(t.casefold(), t)
+
+    return sorted(merged.values(), key=lambda x: x.casefold())
+
+
+@app.options("/pannes/types")
+def pannes_types_options():
+    return {}
+
+
+@app.get("/pannes/clients")
+def pannes_clients(request: Request):
+    _require_admin(request)
+    rows = executer_requete_sql(
+        "SELECT DISTINCT client FROM automate WHERE client IS NOT NULL ORDER BY client;"
+    )
+    return [r[0] for r in rows if r and r[0]]
+
+
+@app.get("/pannes/stations")
+def pannes_stations(request: Request, client: str = Query(..., description="Client")):
+    _require_admin(request)
+    rows = executer_requete_sql(
+        "SELECT DISTINCT lieu FROM automate WHERE client = %s AND lieu IS NOT NULL ORDER BY lieu;",
+        (client,),
+    )
+    return [r[0] for r in rows if r and r[0]]
+
+
+@app.get("/pannes/automate")
+def pannes_automate(
+    request: Request,
+    client: str = Query(..., description="Client"),
+    lieu: str = Query(..., description="Station"),
+):
+    _require_admin(request)
+    row = executer_requete_sql_one(
+        "SELECT nom_automate FROM automate WHERE client = %s AND lieu = %s LIMIT 1;",
+        (client, lieu),
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Automate introuvable")
+    return {"nom_automate": row[0]}
+
+
+@app.get("/pannes")
+def lister_pannes(request: Request):
+    _require_admin(request)
+    rows = executer_requete_sql(
+        """
+        SELECT id, client, lieu, nom_automate, panne, probleme, date_debut, date_fin, created_by, created_at
+        FROM pannes
+        ORDER BY created_at DESC;
+        """
+    )
+    def _fmt(dt_val):
+        return dt_val.isoformat() if hasattr(dt_val, "isoformat") else dt_val
+
+    return [
+        {
+            "id": r[0],
+            "client": r[1],
+            "lieu": r[2],
+            "nom_automate": r[3],
+            "panne": r[4],
+            "probleme": r[5],
+            "date_debut": _fmt(r[6]),
+            "date_fin": _fmt(r[7]),
+            "created_by": r[8],
+            "created_at": _fmt(r[9]),
+        }
+        for r in rows
+    ]
+
+
+@app.post("/pannes")
+def creer_panne(p: PanneIn, request: Request):
+    email = _require_admin(request)
+
+    if p.date_fin and p.date_fin < p.date_debut:
+        raise HTTPException(status_code=400, detail="date_fin doit être >= date_debut")
+
+    _validate_automate(p.client, p.lieu, p.nom_automate)
+
+    row = executer_requete_sql_one(
+        """
+        INSERT INTO pannes (client, lieu, nom_automate, panne, probleme, date_debut, date_fin, created_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id, created_at;
+        """,
+        (
+            p.client,
+            p.lieu,
+            p.nom_automate,
+            p.panne,
+            p.probleme,
+            p.date_debut,
+            p.date_fin,
+            email or "",
+        ),
+    )
+    if row is None:
+        raise HTTPException(status_code=500, detail="Insertion panne échouée")
+
+    return {
+        "id": row[0],
+        "client": p.client,
+        "lieu": p.lieu,
+        "nom_automate": p.nom_automate,
+        "panne": p.panne,
+        "probleme": p.probleme,
+        "date_debut": p.date_debut.isoformat(),
+        "date_fin": p.date_fin.isoformat() if p.date_fin else None,
+        "created_by": email or "",
+        "created_at": row[1].isoformat() if hasattr(row[1], "isoformat") else row[1],
+    }
+
+
+@app.delete("/pannes/{panne_id}")
+def supprimer_panne(panne_id: int, request: Request):
+    _require_admin(request)
+    row = executer_requete_sql_one(
+        "DELETE FROM pannes WHERE id = %s RETURNING id;", (panne_id,)
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Panne introuvable")
+    return {"status": "deleted", "id": panne_id}
 
 
 @app.get("/conversations", response_model=List[ConversationOut])
@@ -1246,16 +1567,17 @@ def get_messages_for_client(client_id: str):
         ORDER BY created_at
     """
     rows = executer_requete_sql(query, (client_id,))
+    to_str = lambda dt: dt.isoformat() if hasattr(dt, "isoformat") else (dt or "")
     return [
         {
-            "id": r[0], 
-            "client_id": r[1], 
-            "sender_id": r[2], 
-            "content": r[3], 
-            "file_url": r[4], 
-            "created_at": r[5],
+            "id": r[0],
+            "client_id": r[1],
+            "sender_id": r[2],
+            "content": r[3],
+            "file_url": r[4],
+            "created_at": to_str(r[5]),
             "is_read": r[6],
-        } 
+        }
         for r in rows
     ]
 

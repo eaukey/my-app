@@ -401,7 +401,7 @@ export default function AdminPage() {
             <div className={styles.modalHeader}>
               <div>
                 <p className={styles.eyebrow}>Confirmation</p>
-                <h3 className={styles.cardTitle}>Supprimer l'automate ?</h3>
+                <h3 className={styles.cardTitle}>Supprimer l&apos;automate ?</h3>
                 <p className={styles.cardHint}>Cette action est définitive pour {pendingDelete}.</p>
               </div>
             </div>
