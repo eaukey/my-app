@@ -183,6 +183,21 @@
   background: linear-gradient(120deg, var(--primary-strong), var(--primary));
 }
 
+.ghostSubtle {
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  box-shadow: none;
+}
+
+.ghostSubtle:hover {
+  background: var(--bg-highlight);
+  color: var(--text-primary);
+}
+
 .tableCard {
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);

@@ -295,7 +295,7 @@ export default function AdminPage() {
                   </div>
                 ))}
                 {form.emails.length < 3 && (
-                  <button type="button" className={styles.button} onClick={addEmailField}>
+                  <button type="button" className={`${styles.button} ${styles.ghostSubtle}`} onClick={addEmailField}>
                     <Plus size={14} />
                     Ajouter un email
                   </button>
@@ -448,11 +448,12 @@ export default function AdminPage() {
                               {editValues.emails.length < 3 && (
                                 <button
                                   type="button"
-                                  className={styles.iconButton}
+                                  className={`${styles.button} ${styles.ghostSubtle}`}
                                   onClick={() => setEditValues((v) => ({ ...v, emails: [...(v.emails || []), ""] }))}
                                   aria-label="Ajouter un email"
                                 >
                                   <Plus size={14} />
+                                  Ajouter un email
                                 </button>
                               )}
                             </div>
