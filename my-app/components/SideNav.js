@@ -53,22 +53,14 @@ export default function SideNav() {
         const clients = await resClients.json();
         if (!Array.isArray(clients)) return;
 
-        const counts = await Promise.all(
-          clients.map(async (c) => {
-            try {
-              const r = await fetch(
-                `${API_BASE}/notifications/admin/${encodeURIComponent(c.client_id)}?t=${ts}`
-              );
-              if (!r.ok) return 0;
-              const d = await r.json();
-              return Number(d?.count || 0);
-            } catch (e) {
-              console.debug("Notif admin: erreur fetch client", c?.client_id, e);
-              return 0;
-            }
-          })
-        );
-        const total = counts.reduce((sum, n) => sum + (Number.isFinite(n) ? n : 0), 0);
+        const resCounts = await fetch(`${API_BASE}/notifications/admin_all?t=${ts}`);
+        if (!resCounts.ok) throw new Error(`HTTP ${resCounts.status}`);
+        const byClient = (await resCounts.json()) || {};
+
+        const total = clients.reduce((sum, c) => {
+          const n = Number(byClient?.[String(c.client_id)] || 0);
+          return sum + (Number.isFinite(n) ? n : 0);
+        }, 0);
         setChatUnreadCount(total);
       } catch (e) {
         console.debug("Notif admin: erreur fetch liste clients", e);

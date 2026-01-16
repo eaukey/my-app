@@ -1706,6 +1706,22 @@ def notifications_admin(client_id: str):
     return {"count": int(row[0]) if row else 0}
 
 
+@app.get("/notifications/admin_all")
+def notifications_admin_all():
+    """Counts non lus envoyés par les clients (pour un admin), groupés par client_id."""
+    rows = executer_requete_sql(
+        """
+        SELECT client_id, COUNT(*)::int
+        FROM messages
+        WHERE is_read = false
+          AND sender_id = ANY(%s)
+        GROUP BY client_id;
+        """,
+        (list(CLIENT_SENDER_IDS),),
+    )
+    return {str(r[0]): int(r[1]) for r in rows if r and r[0] is not None}
+
+
 @app.post("/messages_client/{client_id}/marquer_non_lu")
 def marquer_messages_admin_lus(client_id: str):
     """Marque comme lus les messages envoyés par l'admin au client."""

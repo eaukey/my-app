@@ -51,30 +51,17 @@ export default function ConversationList({ onSelect }) {
     const tick = async () => {
       try {
         const ts = Date.now();
-        const entries = await Promise.all(
-          clients.map(async (c) => {
-            try {
-              const r = await fetch(
-                `${API_BASE}/notifications/admin/${encodeURIComponent(c.client_id)}?t=${ts}`
-              );
-              if (!r.ok) return [c.client_id, 0];
-              const d = await r.json();
-              return [c.client_id, Number(d?.count || 0)];
-            } catch (e) {
-              console.debug("Notif admin (list): erreur fetch client", c?.client_id, e);
-              return [c.client_id, 0];
-            }
-          })
-        );
-        const obj = Object.fromEntries(entries);
-        setUnreadByClient(obj);
+        const r = await fetch(`${API_BASE}/notifications/admin_all?t=${ts}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const byClient = (await r.json()) || {};
+        setUnreadByClient(byClient);
       } catch {}
     };
 
     tick();
     intervalId = setInterval(tick, 30000);
     return () => clearInterval(intervalId);
-  }, [isAuthenticated, isAdmin, JSON.stringify(clients)]);
+  }, [isAuthenticated, isAdmin, clients.length]);
 
   const handleAdminOpenConversation = (clickedClientId) => {
     setUnreadByClient((prev) => ({ ...prev, [clickedClientId]: 0 }));
