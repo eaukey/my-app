@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Check, X } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./Pannes.module.css";
@@ -36,7 +36,14 @@ export default function PannesPage() {
   const [inProgress, setInProgress] = useState(false);
   const [pannes, setPannes] = useState([]);
   const [activeTab, setActiveTab] = useState("in_progress");
-  const [editingId, setEditingId] = useState(null);
+  const [editingRowId, setEditingRowId] = useState(null);
+  const [rowValues, setRowValues] = useState({
+    panne: "",
+    probleme: "",
+    date_debut: "",
+    date_fin: "",
+    inProgress: false,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -180,10 +187,8 @@ export default function PannesPage() {
         date_debut: toIso(form.date_debut),
         date_fin: inProgress ? null : form.date_fin ? toIso(form.date_fin) : null,
       };
-      const url = editingId ? `${API_BASE}/pannes/${editingId}` : `${API_BASE}/pannes`;
-      const method = editingId ? "PUT" : "POST";
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(`${API_BASE}/pannes`, {
+        method: "POST",
         headers: baseHeaders,
         body: JSON.stringify(payload),
       });
@@ -192,7 +197,6 @@ export default function PannesPage() {
       setForm(emptyForm);
       setCustomPanneType("");
       setInProgress(false);
-      setEditingId(null);
       fetchPannes();
       fetchPanneTypes();
     } catch (e) {
@@ -217,27 +221,71 @@ export default function PannesPage() {
     }
   };
 
-  const handleEdit = (p) => {
+  const startRowEdit = (p) => {
     if (!p) return;
-    setEditingId(p.id);
-    setForm({
-      client: p.client || "",
-      lieu: p.lieu || "",
-      nom_automate: p.nom_automate || "",
+    setEditingRowId(p.id);
+    setRowValues({
       panne: p.panne || "",
       probleme: p.probleme || "",
       date_debut: p.date_debut ? new Date(p.date_debut).toISOString().slice(0, 16) : "",
       date_fin: p.date_fin ? new Date(p.date_fin).toISOString().slice(0, 16) : "",
+      inProgress: !p.date_fin,
     });
-    setCustomPanneType("");
-    setInProgress(!p.date_fin);
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setCustomPanneType("");
-    setInProgress(false);
+  const cancelRowEdit = () => {
+    setEditingRowId(null);
+    setRowValues({ panne: "", probleme: "", date_debut: "", date_fin: "", inProgress: false });
+  };
+
+  const handleRowChange = (field, value) => {
+    setRowValues((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleRowSave = async (p) => {
+    if (!editingRowId || !p) return;
+    const panneValue = (rowValues.panne || "").trim();
+    const problemeValue = (rowValues.probleme || "").trim();
+    if (!panneValue || !problemeValue || !rowValues.date_debut) {
+      setError("Remplissez panne, problème et date de début.");
+      return;
+    }
+    if (!rowValues.inProgress && !rowValues.date_fin) {
+      setError("Renseignez une date de fin ou cochez « En cours de traitement ».");
+      return;
+    }
+    if (!rowValues.inProgress && rowValues.date_fin && new Date(rowValues.date_fin) < new Date(rowValues.date_debut)) {
+      setError("La date de fin doit être postérieure ou égale à la date de début.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const payload = {
+        client: p.client,
+        lieu: p.lieu,
+        nom_automate: p.nom_automate,
+        panne: panneValue,
+        probleme: problemeValue,
+        date_debut: toIso(rowValues.date_debut),
+        date_fin: rowValues.inProgress ? null : rowValues.date_fin ? toIso(rowValues.date_fin) : null,
+      };
+      const res = await fetch(`${API_BASE}/pannes/${editingRowId}`, {
+        method: "PUT",
+        headers: baseHeaders,
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      await res.json();
+      setError("");
+      cancelRowEdit();
+      fetchPannes();
+      fetchPanneTypes();
+    } catch (e) {
+      setError(e.message || "Erreur lors de la mise à jour");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredPannes = useMemo(() => {
@@ -378,22 +426,11 @@ export default function PannesPage() {
               required
             />
           </div>
-        <div className={styles.actions}>
-          {editingId ? (
-            <>
-              <button type="button" className={`${styles.button} ${styles.buttonGhost}`} onClick={cancelEdit} disabled={loading}>
-                Annuler
-              </button>
-              <button type="submit" className={styles.button} disabled={loading}>
-                {loading ? "Mise à jour..." : "Mettre à jour"}
-              </button>
-            </>
-          ) : (
+          <div className={styles.actions}>
             <button type="submit" className={styles.button} disabled={loading}>
               {loading ? "Création..." : "Créer"}
             </button>
-          )}
-        </div>
+          </div>
         </form>
       </div>
 
@@ -434,39 +471,118 @@ export default function PannesPage() {
                   <td className={styles.td} colSpan={10}>Aucune panne</td>
                 </tr>
               ) : (
-                filteredPannes.map((p) => (
-                  <tr key={p.id}>
-                    <td className={styles.td}>{p.client}</td>
-                    <td className={styles.td}>{p.lieu}</td>
-                    <td className={styles.td}>{p.nom_automate}</td>
-                    <td className={styles.td}>{p.panne}</td>
-                    <td className={styles.td}>{p.date_debut ? new Date(p.date_debut).toLocaleString() : ""}</td>
-                    <td className={styles.td}>{p.date_fin ? new Date(p.date_fin).toLocaleString() : <span className={styles.pill}>En cours</span>}</td>
-                    <td className={styles.td}>{p.probleme}</td>
-                    <td className={styles.td}>{p.created_by || "-"}</td>
-                    <td className={styles.td}>{p.created_at ? new Date(p.created_at).toLocaleString() : "-"}</td>
-                    <td className={`${styles.td} ${styles.tdActions}`}>
-                      <div className={styles.actionGroup}>
-                        <button
-                          className={`${styles.iconButton} ${styles.primaryGhost}`}
-                          onClick={() => handleEdit(p)}
-                          data-tooltip="Modifier"
-                          aria-label="Modifier"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          className={`${styles.iconButton} ${styles.dangerGhost}`}
-                          onClick={() => handleDelete(p.id)}
-                          data-tooltip="Supprimer"
-                          aria-label="Supprimer"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                filteredPannes.map((p) => {
+                  const rowIsEditing = editingRowId === p.id;
+                  return (
+                    <tr key={p.id}>
+                      <td className={styles.td}>{p.client}</td>
+                      <td className={styles.td}>{p.lieu}</td>
+                      <td className={styles.td}>{p.nom_automate}</td>
+                      <td className={styles.td}>
+                        {rowIsEditing ? (
+                          <input
+                            className={styles.rowInput}
+                            value={rowValues.panne}
+                            onChange={(e) => handleRowChange("panne", e.target.value)}
+                          />
+                        ) : (
+                          p.panne
+                        )}
+                      </td>
+                      <td className={styles.td}>
+                        {rowIsEditing ? (
+                          <input
+                            type="datetime-local"
+                            className={styles.rowInput}
+                            value={rowValues.date_debut}
+                            onChange={(e) => handleRowChange("date_debut", e.target.value)}
+                          />
+                        ) : (
+                          p.date_debut ? new Date(p.date_debut).toLocaleString() : ""
+                        )}
+                      </td>
+                      <td className={styles.td}>
+                        {rowIsEditing ? (
+                          <div className={styles.inlineField}>
+                            <input
+                              type="datetime-local"
+                              className={styles.rowInput}
+                              value={rowValues.date_fin}
+                              onChange={(e) => handleRowChange("date_fin", e.target.value)}
+                              disabled={rowValues.inProgress}
+                            />
+                            <label className={styles.checkboxLabel}>
+                              <input
+                                type="checkbox"
+                                checked={rowValues.inProgress}
+                                onChange={(e) => handleRowChange("inProgress", e.target.checked)}
+                              />
+                              <span>En cours</span>
+                            </label>
+                          </div>
+                        ) : (
+                          p.date_fin ? new Date(p.date_fin).toLocaleString() : <span className={styles.pill}>En cours</span>
+                        )}
+                      </td>
+                      <td className={styles.td}>
+                        {rowIsEditing ? (
+                          <textarea
+                            className={styles.rowTextarea}
+                            value={rowValues.probleme}
+                            onChange={(e) => handleRowChange("probleme", e.target.value)}
+                          />
+                        ) : (
+                          p.probleme
+                        )}
+                      </td>
+                      <td className={styles.td}>{p.created_by || "-"}</td>
+                      <td className={styles.td}>{p.created_at ? new Date(p.created_at).toLocaleString() : "-"}</td>
+                      <td className={`${styles.td} ${styles.tdActions}`}>
+                        <div className={styles.actionGroup}>
+                          {rowIsEditing ? (
+                            <>
+                              <button
+                                className={`${styles.iconButton} ${styles.primaryGhost}`}
+                                onClick={() => handleRowSave(p)}
+                                data-tooltip="Enregistrer"
+                                aria-label="Enregistrer"
+                              >
+                                <Check size={16} />
+                              </button>
+                              <button
+                                className={styles.iconButton}
+                                onClick={cancelRowEdit}
+                                data-tooltip="Annuler"
+                                aria-label="Annuler"
+                              >
+                                <X size={16} />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className={`${styles.iconButton} ${styles.primaryGhost}`}
+                                onClick={() => startRowEdit(p)}
+                                data-tooltip="Modifier"
+                                aria-label="Modifier"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                className={`${styles.iconButton} ${styles.dangerGhost}`}
+                                onClick={() => handleDelete(p.id)}
+                                data-tooltip="Supprimer"
+                                aria-label="Supprimer"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

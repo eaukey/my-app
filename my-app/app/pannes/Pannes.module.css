@@ -31,4 +31,6 @@
 .dangerGhost:hover { background: var(--critical-ghost); }
 .iconButton[data-tooltip]:hover::after { content: attr(data-tooltip); position: absolute; bottom: -28px; background: var(--bg-highlight); color: var(--text-primary); padding: 4px 8px; border-radius: 8px; font-size: 12px; white-space: nowrap; border: 1px solid var(--border-subtle); }
 .buttonGhost { background: transparent; color: var(--text-primary); border: 1px solid var(--border-subtle); }
+.rowInput { width: 100%; padding: 8px 10px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: 8px; }
+.rowTextarea { width: 100%; min-height: 70px; padding: 8px 10px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: 8px; resize: vertical; }
 
