@@ -17,4 +17,8 @@
 .inlineField { display: flex; flex-direction: column; gap: 6px; }
 .checkboxLabel { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-secondary); }
 .checkboxLabel input { width: 16px; height: 16px; }
+.titleRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.tabButton { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-subtle); padding: 8px 12px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+.tabButtonActive { background: var(--primary); color: #fff; border-color: var(--primary); }
 

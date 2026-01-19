@@ -15,6 +15,12 @@ const emptyForm = {
   date_fin: "",
 };
 
+const TAB_OPTIONS = [
+  { key: "in_progress", label: "Pannes en cours" },
+  { key: "resolved", label: "Pannes résolues" },
+  { key: "all", label: "Toutes les pannes" },
+];
+
 export default function PannesPage() {
   const { user, isAuthenticated, isLoading } = useAuth0();
   const appRole = user?.["https://app.com/role"] || user?.role;
@@ -28,6 +34,7 @@ export default function PannesPage() {
   const [customPanneType, setCustomPanneType] = useState("");
   const [inProgress, setInProgress] = useState(false);
   const [pannes, setPannes] = useState([]);
+  const [activeTab, setActiveTab] = useState("in_progress");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -209,6 +216,17 @@ export default function PannesPage() {
   if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
   if (!isAdmin) return <p>Accès refusé.</p>;
 
+  const filteredPannes = useMemo(() => {
+    if (activeTab === "resolved") return pannes.filter((p) => p.date_fin);
+    if (activeTab === "in_progress") return pannes.filter((p) => !p.date_fin);
+    return pannes;
+  }, [activeTab, pannes]);
+
+  const activeTabLabel = useMemo(
+    () => TAB_OPTIONS.find((t) => t.key === activeTab)?.label || "Pannes existantes",
+    [activeTab]
+  );
+
   return (
     <div className={styles.container}>
       <div className={styles.section}>
@@ -346,7 +364,21 @@ export default function PannesPage() {
       </div>
 
       <div className={styles.section}>
-        <div className={styles.title}>Pannes existantes</div>
+        <div className={styles.titleRow}>
+          <div className={styles.title}>{activeTabLabel}</div>
+          <div className={styles.tabs}>
+            {TAB_OPTIONS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`${styles.tabButton} ${activeTab === tab.key ? styles.tabButtonActive : ""}`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead>
@@ -364,12 +396,12 @@ export default function PannesPage() {
               </tr>
             </thead>
             <tbody>
-              {pannes.length === 0 ? (
+              {filteredPannes.length === 0 ? (
                 <tr>
                   <td className={styles.td} colSpan={10}>Aucune panne</td>
                 </tr>
               ) : (
-                pannes.map((p) => (
+                filteredPannes.map((p) => (
                   <tr key={p.id}>
                     <td className={styles.td}>{p.client}</td>
                     <td className={styles.td}>{p.lieu}</td>
