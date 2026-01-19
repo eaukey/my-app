@@ -35,6 +35,7 @@ export default function PannesPage() {
   const [inProgress, setInProgress] = useState(false);
   const [pannes, setPannes] = useState([]);
   const [activeTab, setActiveTab] = useState("in_progress");
+  const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -178,8 +179,10 @@ export default function PannesPage() {
         date_debut: toIso(form.date_debut),
         date_fin: inProgress ? null : form.date_fin ? toIso(form.date_fin) : null,
       };
-      const res = await fetch(`${API_BASE}/pannes`, {
-        method: "POST",
+      const url = editingId ? `${API_BASE}/pannes/${editingId}` : `${API_BASE}/pannes`;
+      const method = editingId ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
         headers: baseHeaders,
         body: JSON.stringify(payload),
       });
@@ -188,6 +191,7 @@ export default function PannesPage() {
       setForm(emptyForm);
       setCustomPanneType("");
       setInProgress(false);
+      setEditingId(null);
       fetchPannes();
       fetchPanneTypes();
     } catch (e) {
@@ -210,6 +214,29 @@ export default function PannesPage() {
     } catch (e) {
       setError(e.message || "Erreur lors de la suppression");
     }
+  };
+
+  const handleEdit = (p) => {
+    if (!p) return;
+    setEditingId(p.id);
+    setForm({
+      client: p.client || "",
+      lieu: p.lieu || "",
+      nom_automate: p.nom_automate || "",
+      panne: p.panne || "",
+      probleme: p.probleme || "",
+      date_debut: p.date_debut ? new Date(p.date_debut).toISOString().slice(0, 16) : "",
+      date_fin: p.date_fin ? new Date(p.date_fin).toISOString().slice(0, 16) : "",
+    });
+    setCustomPanneType("");
+    setInProgress(!p.date_fin);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setCustomPanneType("");
+    setInProgress(false);
   };
 
   const filteredPannes = useMemo(() => {
@@ -350,11 +377,22 @@ export default function PannesPage() {
               required
             />
           </div>
-          <div className={styles.actions}>
+        <div className={styles.actions}>
+          {editingId ? (
+            <>
+              <button type="button" className={`${styles.button} ${styles.buttonGhost}`} onClick={cancelEdit} disabled={loading}>
+                Annuler
+              </button>
+              <button type="submit" className={styles.button} disabled={loading}>
+                {loading ? "Mise à jour..." : "Mettre à jour"}
+              </button>
+            </>
+          ) : (
             <button type="submit" className={styles.button} disabled={loading}>
               {loading ? "Création..." : "Créer"}
             </button>
-          </div>
+          )}
+        </div>
         </form>
       </div>
 
@@ -407,7 +445,12 @@ export default function PannesPage() {
                     <td className={styles.td}>{p.created_by || "-"}</td>
                     <td className={styles.td}>{p.created_at ? new Date(p.created_at).toLocaleString() : "-"}</td>
                     <td className={`${styles.td} ${styles.tdActions}`}>
-                      <button className={styles.button} onClick={() => handleDelete(p.id)}>Supprimer</button>
+                      <button className={`${styles.iconButton} ${styles.iconButtonEdit}`} onClick={() => handleEdit(p)} title="Modifier">
+                        ✏️
+                      </button>
+                      <button className={`${styles.iconButton} ${styles.iconButtonDelete}`} onClick={() => handleDelete(p.id)} title="Supprimer">
+                        🗑️
+                      </button>
                     </td>
                   </tr>
                 ))

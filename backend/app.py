@@ -1488,6 +1488,59 @@ def creer_panne(p: PanneIn, request: Request):
     }
 
 
+@app.put("/pannes/{panne_id}")
+def maj_panne(panne_id: int, p: PanneIn, request: Request):
+    _require_admin(request)
+
+    if p.date_fin and p.date_fin < p.date_debut:
+        raise HTTPException(status_code=400, detail="date_fin doit être >= date_debut")
+
+    _validate_automate(p.client, p.lieu, p.nom_automate)
+
+    row = executer_requete_sql_one(
+        """
+        UPDATE pannes
+        SET client = %s,
+            lieu = %s,
+            nom_automate = %s,
+            panne = %s,
+            probleme = %s,
+            date_debut = %s,
+            date_fin = %s
+        WHERE id = %s
+        RETURNING id, client, lieu, nom_automate, panne, probleme, date_debut, date_fin, created_by, created_at;
+        """,
+        (
+            p.client,
+            p.lieu,
+            p.nom_automate,
+            p.panne,
+            p.probleme,
+            p.date_debut,
+            p.date_fin,
+            panne_id,
+        ),
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Panne introuvable")
+
+    def _fmt(dt_val):
+        return dt_val.isoformat() if hasattr(dt_val, "isoformat") else dt_val
+
+    return {
+        "id": row[0],
+        "client": row[1],
+        "lieu": row[2],
+        "nom_automate": row[3],
+        "panne": row[4],
+        "probleme": row[5],
+        "date_debut": _fmt(row[6]),
+        "date_fin": _fmt(row[7]),
+        "created_by": row[8],
+        "created_at": _fmt(row[9]),
+    }
+
+
 @app.delete("/pannes/{panne_id}")
 def supprimer_panne(panne_id: int, request: Request):
     _require_admin(request)
