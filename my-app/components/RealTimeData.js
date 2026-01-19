@@ -95,7 +95,13 @@ const RealTimeData = ({ selectedMachine, selectedPeriod, siteLabel }) => {
           "compteur_electrique",
         ];
 
-        const newData = { ...data };
+        const newData = {
+          taux_recyclage: { value: null, lastUpdate: null },
+          hauteur_cuve_traitement: { value: null, lastUpdate: null },
+          hauteur_cuve_disconnection: { value: null, lastUpdate: null },
+          volume_renvoi: { value: null, lastUpdate: null },
+          compteur_electrique: { value: null, lastUpdate: null },
+        };
 
         for (const endpoint of endpoints) {
           try {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   LineChart as RechartsLineChart,
   Line,
@@ -58,7 +58,7 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
     return tick;
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -94,11 +94,11 @@ const GraphComponent = ({ title, color, selectedPeriod, selectedMachine, endpoin
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE, endpoint, isRecyclingRate, selectedMachine, selectedPeriod]);
 
   useEffect(() => {
     fetchData();
-  }, [selectedPeriod, selectedMachine, endpoint]);
+  }, [fetchData]);
 
   const hasData =
     Array.isArray(data) &&

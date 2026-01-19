@@ -61,7 +61,7 @@ export default function ConversationList({ onSelect }) {
     tick();
     intervalId = setInterval(tick, 30000);
     return () => clearInterval(intervalId);
-  }, [isAuthenticated, isAdmin, clients.length]);
+  }, [clients, isAuthenticated, isAdmin]);
 
   const handleAdminOpenConversation = (clickedClientId) => {
     setUnreadByClient((prev) => ({ ...prev, [clickedClientId]: 0 }));

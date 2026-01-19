@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./Pannes.module.css";
@@ -49,7 +49,7 @@ export default function PannesPage() {
     [isAdmin, user?.email]
   );
 
-  const fetchPanneTypes = async () => {
+  const fetchPanneTypes = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/pannes/types`, { headers: baseHeaders });
       if (!res.ok) throw new Error(await res.text());
@@ -61,9 +61,9 @@ export default function PannesPage() {
     } catch (e) {
       setError(e.message || "Erreur lors du chargement des types de pannes");
     }
-  };
+  }, [baseHeaders]);
 
-  const fetchClients = async () => {
+  const fetchClients = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/pannes/clients`, { headers: baseHeaders });
       if (!res.ok) throw new Error(await res.text());
@@ -73,9 +73,9 @@ export default function PannesPage() {
     } catch (e) {
       setError(e.message || "Erreur lors du chargement des clients");
     }
-  };
+  }, [baseHeaders]);
 
-  const fetchStations = async (client) => {
+  const fetchStations = useCallback(async (client) => {
     if (!client) {
       setStations([]);
       return;
@@ -92,9 +92,9 @@ export default function PannesPage() {
     } catch (e) {
       setError(e.message || "Erreur lors du chargement des stations");
     }
-  };
+  }, [baseHeaders]);
 
-  const fetchAutomate = async (client, lieu) => {
+  const fetchAutomate = useCallback(async (client, lieu) => {
     if (!client || !lieu) return;
     try {
       const res = await fetch(
@@ -109,9 +109,9 @@ export default function PannesPage() {
       setError(e.message || "Automate introuvable");
       setForm((prev) => ({ ...prev, nom_automate: "" }));
     }
-  };
+  }, [baseHeaders]);
 
-  const fetchPannes = async () => {
+  const fetchPannes = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/pannes`, { headers: baseHeaders });
       if (!res.ok) throw new Error(await res.text());
@@ -121,26 +121,26 @@ export default function PannesPage() {
     } catch (e) {
       setError(e.message || "Erreur lors du chargement des pannes");
     }
-  };
+  }, [baseHeaders]);
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) return;
     fetchClients();
     fetchPanneTypes();
     fetchPannes();
-  }, [isAuthenticated, isAdmin]);
+  }, [fetchClients, fetchPanneTypes, fetchPannes, isAuthenticated, isAdmin]);
 
   useEffect(() => {
     if (!form.client || !isAdmin) return;
     setForm((prev) => ({ ...prev, lieu: "", nom_automate: "" }));
     fetchStations(form.client);
-  }, [form.client, isAdmin]);
+  }, [fetchStations, form.client, isAdmin]);
 
   useEffect(() => {
     if (form.client && form.lieu && isAdmin) {
       fetchAutomate(form.client, form.lieu);
     }
-  }, [form.client, form.lieu, isAdmin]);
+  }, [fetchAutomate, form.client, form.lieu, isAdmin]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -212,10 +212,6 @@ export default function PannesPage() {
     }
   };
 
-  if (isLoading) return <p>Chargement...</p>;
-  if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
-  if (!isAdmin) return <p>Accès refusé.</p>;
-
   const filteredPannes = useMemo(() => {
     if (activeTab === "resolved") return pannes.filter((p) => p.date_fin);
     if (activeTab === "in_progress") return pannes.filter((p) => !p.date_fin);
@@ -226,6 +222,10 @@ export default function PannesPage() {
     () => TAB_OPTIONS.find((t) => t.key === activeTab)?.label || "Pannes existantes",
     [activeTab]
   );
+
+  if (isLoading) return <p>Chargement...</p>;
+  if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
+  if (!isAdmin) return <p>Accès refusé.</p>;
 
   return (
     <div className={styles.container}>

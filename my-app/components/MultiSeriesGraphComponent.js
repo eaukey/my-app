@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   LineChart as RechartsLineChart,
   Line,
@@ -66,7 +66,7 @@ const MultiSeriesGraphComponent = ({
   const isRecyclingRate = (endpoint && endpoint.includes('/taux_recyclage/')) ||
     (Array.isArray(seriesConfig) && seriesConfig.some(s => (s.key || s.label || '').toString().toLowerCase().includes('recycl')));
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -109,11 +109,11 @@ const MultiSeriesGraphComponent = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE, color, endpoint, isRecyclingRate, selectedMachine, selectedPeriod, seriesConfig]);
 
   useEffect(() => {
     fetchData();
-  }, [selectedPeriod, selectedMachine, endpoint, JSON.stringify(seriesConfig)]);
+  }, [fetchData]);
 
   const hasData =
     Array.isArray(data) &&
