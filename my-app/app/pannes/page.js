@@ -218,11 +218,6 @@ export default function PannesPage() {
     return pannes;
   }, [activeTab, pannes]);
 
-  const activeTabLabel = useMemo(
-    () => TAB_OPTIONS.find((t) => t.key === activeTab)?.label || "Pannes existantes",
-    [activeTab]
-  );
-
   if (isLoading) return <p>Chargement...</p>;
   if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
   if (!isAdmin) return <p>Accès refusé.</p>;
@@ -365,7 +360,6 @@ export default function PannesPage() {
 
       <div className={styles.section}>
         <div className={styles.titleRow}>
-          <div className={styles.title}>{activeTabLabel}</div>
           <div className={styles.tabs}>
             {TAB_OPTIONS.map((tab) => (
               <button
