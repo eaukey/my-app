@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Edit, Trash2 } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./Pannes.module.css";
@@ -445,12 +446,24 @@ export default function PannesPage() {
                     <td className={styles.td}>{p.created_by || "-"}</td>
                     <td className={styles.td}>{p.created_at ? new Date(p.created_at).toLocaleString() : "-"}</td>
                     <td className={`${styles.td} ${styles.tdActions}`}>
-                      <button className={`${styles.iconButton} ${styles.iconButtonEdit}`} onClick={() => handleEdit(p)} title="Modifier">
-                        ✏️
-                      </button>
-                      <button className={`${styles.iconButton} ${styles.iconButtonDelete}`} onClick={() => handleDelete(p.id)} title="Supprimer">
-                        🗑️
-                      </button>
+                      <div className={styles.actionGroup}>
+                        <button
+                          className={`${styles.iconButton} ${styles.primaryGhost}`}
+                          onClick={() => handleEdit(p)}
+                          data-tooltip="Modifier"
+                          aria-label="Modifier"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          className={`${styles.iconButton} ${styles.dangerGhost}`}
+                          onClick={() => handleDelete(p.id)}
+                          data-tooltip="Supprimer"
+                          aria-label="Supprimer"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
