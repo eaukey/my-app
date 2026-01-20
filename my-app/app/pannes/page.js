@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Edit, Trash2, Check, X } from "lucide-react";
+import { Edit, Trash2, Check, X, Loader2 } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./Pannes.module.css";
@@ -37,6 +37,7 @@ export default function PannesPage() {
   const [pannes, setPannes] = useState([]);
   const [activeTab, setActiveTab] = useState("in_progress");
   const [editingRowId, setEditingRowId] = useState(null);
+  const [rowSavingId, setRowSavingId] = useState(null);
   const [rowValues, setRowValues] = useState({
     panne: "",
     probleme: "",
@@ -243,7 +244,10 @@ export default function PannesPage() {
   };
 
   const handleRowSave = async (p) => {
-    if (!editingRowId || !p) return;
+    if (!p) return;
+    const targetId = editingRowId ?? p.id;
+    if (!targetId) return;
+    setError("");
     const panneValue = (rowValues.panne || "").trim();
     const problemeValue = (rowValues.probleme || "").trim();
     if (!panneValue || !problemeValue || !rowValues.date_debut) {
@@ -259,7 +263,8 @@ export default function PannesPage() {
       return;
     }
 
-    setLoading(true);
+    setEditingRowId(targetId);
+    setRowSavingId(targetId);
     try {
       const payload = {
         client: p.client,
@@ -270,7 +275,7 @@ export default function PannesPage() {
         date_debut: toIso(rowValues.date_debut),
         date_fin: rowValues.inProgress ? null : rowValues.date_fin ? toIso(rowValues.date_fin) : null,
       };
-      const res = await fetch(`${API_BASE}/pannes/${editingRowId}`, {
+      const res = await fetch(`${API_BASE}/pannes/${targetId}`, {
         method: "PUT",
         headers: baseHeaders,
         body: JSON.stringify(payload),
@@ -284,7 +289,7 @@ export default function PannesPage() {
     } catch (e) {
       setError(e.message || "Erreur lors de la mise à jour");
     } finally {
-      setLoading(false);
+      setRowSavingId(null);
     }
   };
 
@@ -542,18 +547,22 @@ export default function PannesPage() {
                           {rowIsEditing ? (
                             <>
                               <button
+                                type="button"
                                 className={`${styles.iconButton} ${styles.primaryGhost}`}
                                 onClick={() => handleRowSave(p)}
                                 data-tooltip="Enregistrer"
                                 aria-label="Enregistrer"
+                                disabled={rowSavingId === p.id}
                               >
-                                <Check size={16} />
+                                {rowSavingId === p.id ? <Loader2 size={16} className={styles.spin} /> : <Check size={16} />}
                               </button>
                               <button
+                                type="button"
                                 className={styles.iconButton}
                                 onClick={cancelRowEdit}
                                 data-tooltip="Annuler"
                                 aria-label="Annuler"
+                                disabled={rowSavingId === p.id}
                               >
                                 <X size={16} />
                               </button>
@@ -561,6 +570,7 @@ export default function PannesPage() {
                           ) : (
                             <>
                               <button
+                                type="button"
                                 className={`${styles.iconButton} ${styles.primaryGhost}`}
                                 onClick={() => startRowEdit(p)}
                                 data-tooltip="Modifier"
@@ -569,6 +579,7 @@ export default function PannesPage() {
                                 <Edit size={16} />
                               </button>
                               <button
+                                type="button"
                                 className={`${styles.iconButton} ${styles.dangerGhost}`}
                                 onClick={() => handleDelete(p.id)}
                                 data-tooltip="Supprimer"

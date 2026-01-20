@@ -33,4 +33,9 @@
 .buttonGhost { background: transparent; color: var(--text-primary); border: 1px solid var(--border-subtle); }
 .rowInput { width: 100%; padding: 8px 10px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: 8px; }
 .rowTextarea { width: 100%; min-height: 70px; padding: 8px 10px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: 8px; resize: vertical; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
