@@ -1541,6 +1541,11 @@ def maj_panne(panne_id: int, p: PanneIn, request: Request):
     }
 
 
+@app.options("/pannes/{panne_id}")
+def pannes_id_options():
+    return {}
+
+
 @app.delete("/pannes/{panne_id}")
 def supprimer_panne(panne_id: int, request: Request):
     _require_admin(request)
