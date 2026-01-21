@@ -27,11 +27,12 @@ Dashboard.displayName = 'DynamicDashboard';
 
 // Page de connexion affichée lorsqu'on n'est pas authentifié
 const LoginLanding = () => {
-  const { login, isLoading } = useAuth();
+  const { login, register, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [mode, setMode] = useState("login");
 
   if (isLoading) return <LoadingComponent />;
 
@@ -58,7 +59,8 @@ const LoginLanding = () => {
             setError("");
             setSubmitting(true);
             try {
-              await login(email, password);
+              if (mode === "register") await register(email, password);
+              else await login(email, password);
             } catch (err) {
               setError(err?.message || "Connexion impossible");
             } finally {
@@ -90,9 +92,24 @@ const LoginLanding = () => {
             disabled={submitting}
             className="w-full neon-btn px-8 py-3 bg-[var(--primary)] text-[#04131a] font-semibold rounded-lg transition relative overflow-hidden border border-[var(--primary-strong)] disabled:opacity-60"
           >
-            {submitting ? "Connexion..." : "Se connecter"}
+            {submitting
+              ? mode === "register" ? "Création..." : "Connexion..."
+              : mode === "register" ? "Créer un compte" : "Se connecter"}
           </button>
         </form>
+        <div className="mt-3 text-xs text-center text-[var(--text-muted)]">
+          {mode === "login" ? "Pas de compte ?" : "Déjà un compte ?"}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setError("");
+              setMode(mode === "login" ? "register" : "login");
+            }}
+            className="text-[var(--primary)] hover:underline"
+          >
+            {mode === "login" ? "Créer un compte" : "Se connecter"}
+          </button>
+        </div>
         <p className="text-[11px] text-[var(--text-muted)] mt-4 text-center">
           Authentification sécurisée interne.
         </p>
