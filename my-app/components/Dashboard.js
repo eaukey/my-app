@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import GraphComponent from "./GraphComponent";
 import MultiSeriesGraphComponent from "./MultiSeriesGraphComponent";
 import RealTimeData from "./RealTimeData";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth } from "../lib/auth";
 import styles from "./Dashboard.module.css";
 import { API_BASE } from "../lib/apiBase";
 
@@ -110,7 +110,7 @@ const chartGroups = {
 };
 
 const Dashboard = () => {
-  const { user, isAuthenticated, isLoading, loginWithRedirect, logout } = useAuth0();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   // Liste complète des automates récupérés depuis l'API
   const [allAutomates, setAllAutomates] = useState([]);
   // Mapping <id automate> ➜ libellé d'affichage (lieu ou client)
@@ -170,7 +170,7 @@ const Dashboard = () => {
     { label: "Année", value: "annee" }
   ];
 
-  const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
+  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
 
   // Récupérer les stations disponibles depuis les métadonnées utilisateur
   useEffect(() => {
@@ -270,14 +270,10 @@ const Dashboard = () => {
         </div>
         <div className={styles.authActions}>
           {isAuthenticated ? (
-            <button className={styles.primaryBtn} onClick={() => logout({ returnTo: window.location.origin })}>
+            <button className={styles.primaryBtn} onClick={() => logout()}>
               Déconnexion
             </button>
-          ) : (
-            <button className={styles.primaryBtn} onClick={() => loginWithRedirect()}>
-              Connexion
-            </button>
-          )}
+          ) : null}
         </div>
       </div>
 

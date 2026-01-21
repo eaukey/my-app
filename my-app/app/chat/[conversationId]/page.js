@@ -1,19 +1,17 @@
 "use client";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth } from "../../../lib/auth";
 import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import ChatConversation from "../../../components/ChatConversation";
 
 export default function ConversationPage() {
-  const { user, isAuthenticated } = useAuth0();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const params = useParams();
   const { conversationId } = params;
 
-  const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
-  const clientId =
-    user?.["https://app.com/client"] ||
-    (Array.isArray(user?.clients) ? user.clients[0] : user?.clients);
+  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
+  const clientId = user?.client_id || null;
 
   useEffect(() => {
     // Pour les clients → redirection directe vers leur conversation

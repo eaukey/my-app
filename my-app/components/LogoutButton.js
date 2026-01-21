@@ -1,12 +1,17 @@
 import React from "react";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../lib/auth";
 
 const LogoutButton = () => {
-  const { logout } = useAuth0();
+  const { logout } = useAuth();
+  const router = useRouter();
 
   return (
     <button
-      onClick={() => logout({ returnTo: "https://my-app-zeta-blue.vercel.app/" })}
+      onClick={() => {
+        logout();
+        router.push("/");
+      }}
       style={{
         padding: "8px 16px",
         backgroundColor: "var(--primary)",

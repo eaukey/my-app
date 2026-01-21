@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth } from "../../lib/auth";
 import { Edit, Save, X, Search, Plus, Loader2, Trash2, Check } from "lucide-react";
 import styles from "./AdminMobile.module.css";
 
@@ -24,7 +24,7 @@ const uniqueNonEmpty = (arr) => {
 };
 
 export default function AdminPage() {
-  const { user, isAuthenticated, isLoading } = useAuth0();
+  const { user, isAuthenticated, isLoading, authFetch } = useAuth();
   const [automates, setAutomates] = useState([]);
   const [form, setForm] = useState({ nom_automate: "", client: "", lieu: "", emails: [""] });
   const [error, setError] = useState("");
@@ -38,12 +38,12 @@ export default function AdminPage() {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
-  const isAdmin = user && (user["https://app.com/role"] || user.role) === "admin";
+  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
 
   const fetchAutomates = async () => {
     setIsLoadingList(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/recherche/automate_LCA`);
+      const res = await authFetch(`${BACKEND_URL}/recherche/automate_LCA`);
       const data = await res.json();
       setAutomates(Array.isArray(data) ? data : []);
     } catch (e) {
@@ -106,7 +106,7 @@ export default function AdminPage() {
       payload.email = e1;
       payload.email2 = e2 || "";
       payload.email3 = e3 || "";
-      const res = await fetch(`${BACKEND_URL}/automate`, {
+      const res = await authFetch(`${BACKEND_URL}/automate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -131,7 +131,7 @@ export default function AdminPage() {
     setDeletingId(pendingDelete);
     setError("");
     try {
-      const res = await fetch(`${BACKEND_URL}/automate/${pendingDelete}`, { method: "DELETE" });
+      const res = await authFetch(`${BACKEND_URL}/automate/${pendingDelete}`, { method: "DELETE" });
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.message);
       fetchAutomates();
@@ -171,7 +171,7 @@ export default function AdminPage() {
         email2: e2 || "",
         email3: e3 || "",
       };
-      const res = await fetch(`${BACKEND_URL}/automate/${encodeURIComponent(nom)}`, {
+      const res = await authFetch(`${BACKEND_URL}/automate/${encodeURIComponent(nom)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

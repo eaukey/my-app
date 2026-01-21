@@ -1,7 +1,7 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { Suspense, useState, useEffect } from 'react';
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth } from "../lib/auth";
 import Image from "next/image";
 
 // Composants séparés avec display names
@@ -27,7 +27,11 @@ Dashboard.displayName = 'DynamicDashboard';
 
 // Page de connexion affichée lorsqu'on n'est pas authentifié
 const LoginLanding = () => {
-  const { loginWithRedirect, isLoading } = useAuth0();
+  const { login, isLoading } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   if (isLoading) return <LoadingComponent />;
 
@@ -47,14 +51,50 @@ const LoginLanding = () => {
         <p className="text-sm text-[var(--text-secondary)] mb-6 text-center max-w-md">
           Visualisez vos données en temps réel, identifiez les usages, mesurez le recyclage.
         </p>
-        <button
-          onClick={() => loginWithRedirect()}
-          className="neon-btn px-8 py-3 bg-[var(--primary)] text-[#04131a] font-semibold rounded-lg transition relative overflow-hidden border border-[var(--primary-strong)]"
+        <form
+          className="w-full max-w-sm space-y-3"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setError("");
+            setSubmitting(true);
+            try {
+              await login(email, password);
+            } catch (err) {
+              setError(err?.message || "Connexion impossible");
+            } finally {
+              setSubmitting(false);
+            }
+          }}
         >
-          Se connecter
-        </button>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-input)] text-[var(--text-primary)]"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Mot de passe"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-input)] text-[var(--text-primary)]"
+            required
+          />
+          {error && (
+            <p className="text-xs text-[var(--critical)] text-center">{error}</p>
+          )}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full neon-btn px-8 py-3 bg-[var(--primary)] text-[#04131a] font-semibold rounded-lg transition relative overflow-hidden border border-[var(--primary-strong)] disabled:opacity-60"
+          >
+            {submitting ? "Connexion..." : "Se connecter"}
+          </button>
+        </form>
         <p className="text-[11px] text-[var(--text-muted)] mt-4 text-center">
-          Authentification sécurisée via Auth0.
+          Authentification sécurisée interne.
         </p>
       </div>
     </div>
@@ -64,7 +104,7 @@ const LoginLanding = () => {
 // Composant principal
 function Home() {
   const [mounted, setMounted] = useState(false);
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
     setMounted(true);

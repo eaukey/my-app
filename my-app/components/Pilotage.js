@@ -4,7 +4,7 @@ import { Home, BarChart2, Settings, MessageCircle, FileText, Table } from 'lucid
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '../lib/auth';
 import styles from './Pilotage.module.css';
 
 // Composant ToggleSwitch
@@ -40,8 +40,8 @@ const ToggleSwitch = ({ isOn, onToggle, label }) => {
 
 export default function PilotageDashboard() {
  const pathname = usePathname();
- const { user } = useAuth0();
- const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
+ const { user } = useAuth();
+ const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
  const [binaryControls, setBinaryControls] = useState({
    relevage: false,
    stopSwitchRelevage: false,

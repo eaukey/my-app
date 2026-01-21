@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth } from "../lib/auth";
 import { API_BASE } from "../lib/apiBase";
 import { usePathname } from "next/navigation";
 import styles from "./ConversationList.module.css";
@@ -15,13 +15,13 @@ import styles from "./ConversationList.module.css";
  *   onSelect?: (id: number) => void       // facultatif si on souhaite callback au lieu de navigation
  */
 export default function ConversationList({ onSelect }) {
-  const { user, isAuthenticated } = useAuth0();
+  const { user, isAuthenticated, authFetch } = useAuth();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadByClient, setUnreadByClient] = useState({});
   const pathname = usePathname();
 
-  const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
+  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) return;
@@ -29,7 +29,7 @@ export default function ConversationList({ onSelect }) {
     const fetchClients = async () => {
       try {
         const ts = Date.now();
-        const res = await fetch(`${API_BASE}/clients?is_admin=true&t=${ts}`);
+        const res = await authFetch(`${API_BASE}/clients?is_admin=true&t=${ts}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setClients(data);
@@ -41,7 +41,7 @@ export default function ConversationList({ onSelect }) {
     };
 
     fetchClients();
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, authFetch]);
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) return;
@@ -51,7 +51,7 @@ export default function ConversationList({ onSelect }) {
     const tick = async () => {
       try {
         const ts = Date.now();
-        const r = await fetch(`${API_BASE}/notifications/admin_all?t=${ts}`);
+        const r = await authFetch(`${API_BASE}/notifications/admin_all?t=${ts}`);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const byClient = (await r.json()) || {};
         setUnreadByClient(byClient);
@@ -61,7 +61,7 @@ export default function ConversationList({ onSelect }) {
     tick();
     intervalId = setInterval(tick, 30000);
     return () => clearInterval(intervalId);
-  }, [clients, isAuthenticated, isAdmin]);
+  }, [clients, isAuthenticated, isAdmin, authFetch]);
 
   const handleAdminOpenConversation = (clickedClientId) => {
     setUnreadByClient((prev) => ({ ...prev, [clickedClientId]: 0 }));

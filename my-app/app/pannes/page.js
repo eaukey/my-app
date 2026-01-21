@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Edit, Trash2, Check, X, Loader2 } from "lucide-react";
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./Pannes.module.css";
 
@@ -23,10 +23,8 @@ const TAB_OPTIONS = [
 ];
 
 export default function PannesPage() {
-  const { user, isAuthenticated, isLoading } = useAuth0();
-  const appRole = user?.["https://app.com/role"] || user?.role;
-  const roles = user?.["https://app.com/roles"] || user?.roles;
-  const isAdmin = appRole === "admin" || (Array.isArray(roles) && roles.includes("admin"));
+  const { user, isAuthenticated, isLoading, authFetch } = useAuth();
+  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
 
   const [form, setForm] = useState(emptyForm);
   const [clients, setClients] = useState([]);
@@ -51,17 +49,13 @@ export default function PannesPage() {
   const NEW_PANNE_VALUE = "__NEW_PANNE__";
 
   const baseHeaders = useMemo(
-    () => ({
-      "Content-Type": "application/json",
-      "x-user-role": isAdmin ? "admin" : "",
-      "x-user-email": user?.email || "",
-    }),
-    [isAdmin, user?.email]
+    () => ({ "Content-Type": "application/json" }),
+    []
   );
 
   const fetchPanneTypes = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/pannes/types`, { headers: baseHeaders });
+      const res = await authFetch(`${API_BASE}/pannes/types`, { headers: baseHeaders });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       const list = Array.isArray(data) ? data.filter(Boolean).map((s) => String(s).trim()).filter(Boolean) : [];
@@ -71,11 +65,11 @@ export default function PannesPage() {
     } catch (e) {
       setError(e.message || "Erreur lors du chargement des types de pannes");
     }
-  }, [baseHeaders]);
+  }, [baseHeaders, authFetch]);
 
   const fetchClients = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/pannes/clients`, { headers: baseHeaders });
+      const res = await authFetch(`${API_BASE}/pannes/clients`, { headers: baseHeaders });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setError("");
@@ -83,7 +77,7 @@ export default function PannesPage() {
     } catch (e) {
       setError(e.message || "Erreur lors du chargement des clients");
     }
-  }, [baseHeaders]);
+  }, [baseHeaders, authFetch]);
 
   const fetchStations = useCallback(async (client) => {
     if (!client) {
@@ -91,7 +85,7 @@ export default function PannesPage() {
       return;
     }
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `${API_BASE}/pannes/stations?client=${encodeURIComponent(client)}`,
         { headers: baseHeaders }
       );
@@ -102,12 +96,12 @@ export default function PannesPage() {
     } catch (e) {
       setError(e.message || "Erreur lors du chargement des stations");
     }
-  }, [baseHeaders]);
+  }, [baseHeaders, authFetch]);
 
   const fetchAutomate = useCallback(async (client, lieu) => {
     if (!client || !lieu) return;
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `${API_BASE}/pannes/automate?client=${encodeURIComponent(client)}&lieu=${encodeURIComponent(lieu)}`,
         { headers: baseHeaders }
       );
@@ -119,11 +113,11 @@ export default function PannesPage() {
       setError(e.message || "Automate introuvable");
       setForm((prev) => ({ ...prev, nom_automate: "" }));
     }
-  }, [baseHeaders]);
+  }, [baseHeaders, authFetch]);
 
   const fetchPannes = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/pannes`, { headers: baseHeaders });
+      const res = await authFetch(`${API_BASE}/pannes`, { headers: baseHeaders });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setError("");
@@ -131,7 +125,7 @@ export default function PannesPage() {
     } catch (e) {
       setError(e.message || "Erreur lors du chargement des pannes");
     }
-  }, [baseHeaders]);
+  }, [baseHeaders, authFetch]);
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) return;
@@ -188,7 +182,7 @@ export default function PannesPage() {
         date_debut: toIso(form.date_debut),
         date_fin: inProgress ? null : form.date_fin ? toIso(form.date_fin) : null,
       };
-      const res = await fetch(`${API_BASE}/pannes`, {
+      const res = await authFetch(`${API_BASE}/pannes`, {
         method: "POST",
         headers: baseHeaders,
         body: JSON.stringify(payload),
@@ -210,7 +204,7 @@ export default function PannesPage() {
   const handleDelete = async (id) => {
     if (!id) return;
     try {
-      const res = await fetch(`${API_BASE}/pannes/${id}`, {
+      const res = await authFetch(`${API_BASE}/pannes/${id}`, {
         method: "DELETE",
         headers: baseHeaders,
       });
@@ -275,7 +269,7 @@ export default function PannesPage() {
         date_debut: toIso(rowValues.date_debut),
         date_fin: rowValues.inProgress ? null : rowValues.date_fin ? toIso(rowValues.date_fin) : null,
       };
-      const res = await fetch(`${API_BASE}/pannes/${targetId}`, {
+      const res = await authFetch(`${API_BASE}/pannes/${targetId}`, {
         method: "PUT",
         headers: baseHeaders,
         body: JSON.stringify(payload),

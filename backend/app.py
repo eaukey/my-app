@@ -1,14 +1,39 @@
 from fastapi import FastAPI, Query, HTTPException, Request
 from typing import List, Tuple, Optional, Union
+from pydantic import BaseModel, Field
+import base64
+import hashlib
+import hmac
+import json
 import psycopg2
 from psycopg2.pool import SimpleConnectionPool
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import date, datetime
 import decimal
-import os 
+import os
+import secrets
+import time
+from pathlib import Path
 
 # Création de l'instance FastAPI
 app = FastAPI()
+
+
+def _load_env_file(path: Path) -> None:
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_env_file(Path(__file__).with_name(".env"))
 
 
 # Origines autorisées
@@ -1144,9 +1169,6 @@ def recherche_automate_lca(
 # ENDPOINTS CRUD SUR LA TABLE AUTOMATE (réservés aux admins côté front)
 # ---------------------------------------------------------------------------
 
-from pydantic import BaseModel, Field
-
-
 class AutomateIn(BaseModel):
     nom_automate: str
     client: str
@@ -1274,18 +1296,178 @@ def executer_requete_sql_one(query: str, params: tuple = ()):
 
 
 # ---------------------------------------------------------------------------
+# Auth locale (passwords + token signé HMAC)
+# ---------------------------------------------------------------------------
+_AUTH_SECRET = os.getenv("AUTH_SECRET", "")
+_AUTH_TTL_SECONDS = int(os.getenv("AUTH_TTL_SECONDS", "86400"))
+_PBKDF2_ITER = int(os.getenv("AUTH_PBKDF2_ITER", "260000"))
+
+
+def _b64url(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+
+def _b64url_decode(data: str) -> bytes:
+    padding = "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(data + padding)
+
+
+def _hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, _PBKDF2_ITER)
+    return f"pbkdf2_sha256${_PBKDF2_ITER}${_b64url(salt)}${_b64url(dk)}"
+
+
+def _verify_password(password: str, stored: str) -> bool:
+    try:
+        algo, iterations, salt_b64, hash_b64 = stored.split("$", 3)
+        if algo != "pbkdf2_sha256":
+            return False
+        iters = int(iterations)
+        salt = _b64url_decode(salt_b64)
+        expected = _b64url_decode(hash_b64)
+        dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iters)
+        return hmac.compare_digest(dk, expected)
+    except Exception:
+        return False
+
+
+def _sign_token(payload: dict) -> str:
+    if not _AUTH_SECRET:
+        raise HTTPException(status_code=500, detail="AUTH_SECRET manquant")
+    body = _b64url(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
+    sig = hmac.new(_AUTH_SECRET.encode("utf-8"), body.encode("utf-8"), hashlib.sha256).digest()
+    return f"{body}.{_b64url(sig)}"
+
+
+def _verify_token(token: str) -> dict:
+    if not _AUTH_SECRET:
+        raise HTTPException(status_code=500, detail="AUTH_SECRET manquant")
+    try:
+        body_b64, sig_b64 = token.split(".", 1)
+        expected = hmac.new(
+            _AUTH_SECRET.encode("utf-8"),
+            body_b64.encode("utf-8"),
+            hashlib.sha256,
+        ).digest()
+        if not hmac.compare_digest(_b64url(expected), sig_b64):
+            raise HTTPException(status_code=401, detail="Token invalide")
+        payload = json.loads(_b64url_decode(body_b64).decode("utf-8"))
+        exp = int(payload.get("exp", 0))
+        if exp and time.time() > exp:
+            raise HTTPException(status_code=401, detail="Token expiré")
+        return payload
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=401, detail="Token invalide")
+
+
+def _get_roles_for_user(user_id: int) -> list[str]:
+    rows = executer_requete_sql(
+        """
+        SELECT r.name
+        FROM user_roles ur
+        JOIN roles r ON r.id = ur.role_id
+        WHERE ur.user_id = %s
+        ORDER BY r.name;
+        """,
+        (user_id,),
+    )
+    return [r[0] for r in rows if r and r[0]]
+
+
+def _require_auth(request: Request) -> dict:
+    auth = request.headers.get("authorization") or ""
+    if not auth.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token manquant")
+    token = auth.split(" ", 1)[1].strip()
+    payload = _verify_token(token)
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Token invalide")
+    row = executer_requete_sql_one(
+        "SELECT id, email, is_active, client_id FROM users WHERE id = %s",
+        (user_id,),
+    )
+    if not row or not row[2]:
+        raise HTTPException(status_code=401, detail="Utilisateur inactif")
+    roles = _get_roles_for_user(row[0])
+    return {"id": row[0], "email": row[1], "roles": roles, "client_id": row[3]}
+
+
+class AuthRegisterIn(BaseModel):
+    email: str
+    password: str
+
+
+class AuthLoginIn(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/auth/register")
+def register(payload: AuthRegisterIn):
+    email = (payload.email or "").strip().lower()
+    if "@" not in email:
+        raise HTTPException(status_code=400, detail="Email invalide")
+    if len(payload.password or "") < 8:
+        raise HTTPException(status_code=400, detail="Mot de passe trop court")
+    exists = executer_requete_sql_one("SELECT id FROM users WHERE email = %s", (email,))
+    if exists:
+        raise HTTPException(status_code=409, detail="Email déjà utilisé")
+    pw_hash = _hash_password(payload.password)
+    row = executer_requete_sql_one(
+        "INSERT INTO users (email, password_hash) VALUES (%s, %s) RETURNING id, client_id",
+        (email, pw_hash),
+    )
+    if not row:
+        raise HTTPException(status_code=500, detail="Création utilisateur échouée")
+    role = executer_requete_sql_one("SELECT id FROM roles WHERE name = 'client'")
+    if role:
+        executer_requete_sql_one(
+            "INSERT INTO user_roles (user_id, role_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+            (row[0], role[0]),
+        )
+    roles = _get_roles_for_user(row[0])
+    token = _sign_token({"sub": row[0], "exp": int(time.time()) + _AUTH_TTL_SECONDS})
+    return {"token": token, "user": {"id": row[0], "email": email, "roles": roles, "client_id": row[1]}}
+
+
+@app.post("/auth/login")
+def login(payload: AuthLoginIn):
+    email = (payload.email or "").strip().lower()
+    row = executer_requete_sql_one(
+        "SELECT id, password_hash, is_active, client_id FROM users WHERE email = %s",
+        (email,),
+    )
+    if not row or not row[2]:
+        raise HTTPException(status_code=401, detail="Identifiants invalides")
+    if not _verify_password(payload.password or "", row[1] or ""):
+        raise HTTPException(status_code=401, detail="Identifiants invalides")
+    roles = _get_roles_for_user(row[0])
+    token = _sign_token({"sub": row[0], "exp": int(time.time()) + _AUTH_TTL_SECONDS})
+    return {"token": token, "user": {"id": row[0], "email": email, "roles": roles, "client_id": row[3]}}
+
+
+@app.get("/auth/me")
+def me(request: Request):
+    return _require_auth(request)
+
+
+# ---------------------------------------------------------------------------
 # Helpers accès admin (basé sur l'en-tête transmis par le front Auth0)
 # ---------------------------------------------------------------------------
 def _require_admin(request: Request) -> str:
     """
     Vérifie que l'appelant est admin.
-    Attend l'en-tête HTTP `x-user-role: admin`.
-    Retourne le champ email pour l'audit (peut être vide).
+    Attend un bearer token valide.
+    Retourne l'email pour l'audit.
     """
-    role = (request.headers.get("x-user-role") or "").lower()
-    if role != "admin":
+    user = _require_auth(request)
+    if "admin" not in [r.lower() for r in user.get("roles", [])]:
         raise HTTPException(status_code=403, detail="Accès réservé à l'admin")
-    return request.headers.get("x-user-email") or ""
+    return user.get("email") or ""
 
 
 # ---------------------------------------------------------------------------

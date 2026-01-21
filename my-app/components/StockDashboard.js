@@ -4,13 +4,13 @@ import { Home, BarChart2, Settings, MessageCircle, FileText, Table, PlusCircle, 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '../lib/auth';
 import styles from './StockDashboard.module.css';
 
 export default function StockDashboard() {
  const pathname = usePathname();
- const { user } = useAuth0();
- const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
+ const { user } = useAuth();
+ const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
  
  const [stocks, setStocks] = useState([
    { id: 1, name: 'Filtre 5 microns', quantity: 15 },

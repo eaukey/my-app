@@ -4,14 +4,14 @@ import { Home, BarChart2, Settings, MessageCircle, FileText, Table, Search, Down
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '../lib/auth';
 import styles from './DocumentLibrary.module.css';
 
 const DocumentLibrary = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const pathname = usePathname();
-  const { user } = useAuth0();
-  const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
+  const { user } = useAuth();
+  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
   
   const documents = [
     { id: 1, name: 'Guide d\'utilisation.pdf', type: 'pdf', size: '2,5 MB', date: '15/12/2024' },

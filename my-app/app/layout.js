@@ -1,10 +1,10 @@
 "use client";
 import React from "react";
-import { Auth0Provider } from "@auth0/auth0-react";
 import localFont from "next/font/local";
 import "./globals.css";
 import SideNav from "../components/SideNav";
 import styles from "./Layout.module.css";
+import { AuthProvider } from "../lib/auth";
 
 // Import des polices
 const geistSans = localFont({
@@ -24,21 +24,14 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Auth0Provider
-          domain="dev-403isex3agfwatlk.us.auth0.com"
-          clientId="TEAUBho90QHtubuZwg5qZh5juRSWBeVd"
-          authorizationParams={{
-            redirect_uri: "https://my-app-zeta-blue.vercel.app/",
-          }}
-          cacheLocation="localstorage"
-        >
+        <AuthProvider>
           <div className={styles.shell}>
             <SideNav />
             <div className={styles.content}>
               {children}
             </div>
           </div>
-        </Auth0Provider>
+        </AuthProvider>
       </body>
     </html>
   );

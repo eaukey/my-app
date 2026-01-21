@@ -4,19 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, MessageCircle, Table, AlertTriangle } from "lucide-react";
 import Image from "next/image";
-import { useAuth0 } from "@auth0/auth0-react";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./SideNav.module.css";
+import { useAuth } from "../lib/auth";
 
 export default function SideNav() {
   const pathname = usePathname();
-  const { user, isAuthenticated } = useAuth0();
-  const appRole = user?.["https://app.com/role"] || user?.role;
-  const roles = user?.["https://app.com/roles"] || user?.roles;
-  const isAdmin = appRole === "admin" || (Array.isArray(roles) && roles.includes("admin"));
-  const clientId =
-    user?.["https://app.com/client"] ||
-    (Array.isArray(user?.clients) ? user.clients[0] : user?.clients);
+  const { user, isAuthenticated, authFetch } = useAuth();
+  const roles = user?.roles || [];
+  const isAdmin = Array.isArray(roles) && roles.includes("admin");
+  const clientId = user?.client_id || null;
 
   const routeClientId = !isAdmin && typeof pathname === "string" && pathname.startsWith("/chat/")
     ? pathname.split("/").pop()
@@ -33,7 +30,7 @@ export default function SideNav() {
       if (!effectiveClientId) return;
       try {
         const ts = Date.now();
-        const res = await fetch(
+        const res = await authFetch(
           `${API_BASE}/notifications/client/${encodeURIComponent(effectiveClientId)}?t=${ts}`
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -48,12 +45,12 @@ export default function SideNav() {
     const fetchUnreadForAdmin = async () => {
       try {
         const ts = Date.now();
-        const resClients = await fetch(`${API_BASE}/clients?is_admin=true&t=${ts}`);
+        const resClients = await authFetch(`${API_BASE}/clients?is_admin=true&t=${ts}`);
         if (!resClients.ok) throw new Error(`HTTP ${resClients.status}`);
         const clients = await resClients.json();
         if (!Array.isArray(clients)) return;
 
-        const resCounts = await fetch(`${API_BASE}/notifications/admin_all?t=${ts}`);
+        const resCounts = await authFetch(`${API_BASE}/notifications/admin_all?t=${ts}`);
         if (!resCounts.ok) throw new Error(`HTTP ${resCounts.status}`);
         const byClient = (await resCounts.json()) || {};
 
@@ -75,7 +72,7 @@ export default function SideNav() {
     tick();
     intervalId = setInterval(tick, 30000);
     return () => clearInterval(intervalId);
-  }, [isAuthenticated, isAdmin, effectiveClientId, pathname]);
+  }, [isAuthenticated, isAdmin, effectiveClientId, pathname, authFetch]);
 
   // Reset optimiste du badge côté client quand la conversation s'ouvre
   useEffect(() => {
@@ -93,7 +90,7 @@ export default function SideNav() {
       if (!openedClientId) return;
       try {
         const ts = Date.now();
-        const r = await fetch(`${API_BASE}/notifications/admin/${encodeURIComponent(openedClientId)}?t=${ts}`);
+        const r = await authFetch(`${API_BASE}/notifications/admin/${encodeURIComponent(openedClientId)}?t=${ts}`);
         if (!r.ok) return;
         const d = await r.json();
         const delta = Number(d?.count || 0);
@@ -144,6 +141,9 @@ export default function SideNav() {
           </Link>
         ))}
       </div>
+    </div>
+  );
+} 
     </div>
   );
 } 
