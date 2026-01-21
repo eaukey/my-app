@@ -29,8 +29,10 @@ export default function ConversationPage() {
   if (!conversationId) return <p>Client introuvable.</p>;
 
   return (
-    <div className="p-0">
-      <ChatConversation clientId={conversationId} />
+    <div className="min-h-screen bg-[var(--bg-base)]">
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <ChatConversation clientId={conversationId} />
+      </div>
     </div>
   );
 } 

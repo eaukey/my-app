@@ -26,9 +26,22 @@ export default function ChatPage() {
 
   if (isAdmin) {
     return (
-      <div className="p-8 text-[var(--text-primary)] bg-[var(--bg-base)] min-h-screen">
-        <h1 className="text-xl font-semibold mb-4">Conversations clients</h1>
-        <ConversationList />
+      <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
+        <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
+          <div className="flex flex-col gap-2">
+            <span className="text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              Support
+            </span>
+            <h1 className="text-2xl font-semibold">Conversations clients</h1>
+            <p className="text-[var(--text-secondary)]">
+              Retrouvez en un coup d’œil les demandes en attente et accédez aux échanges.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 shadow-[var(--shadow-soft)] backdrop-blur">
+            <ConversationList />
+          </div>
+        </div>
       </div>
     );
   }

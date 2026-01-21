@@ -12,7 +12,7 @@ export default function PrivateRoute({ children }) {
   }
 
   if (!isAuthenticated) {
-    router.push("/login"); // Redirige vers la page de connexion
+    router.push("/"); // Redirige vers la page de connexion
     return null;
   }
 

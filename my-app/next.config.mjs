@@ -14,11 +14,13 @@ const isMock =
 const nextConfig = {
   reactStrictMode: true,
   webpack: (config) => {
-    config.resolve.alias["@auth0/auth0-react"] = path.join(
-      process.cwd(),
-      "lib",
-      "auth-client.js"
-    );
+    if (isMock) {
+      config.resolve.alias["@auth0/auth0-react"] = path.join(
+        process.cwd(),
+        "mocks",
+        "auth0-react.js"
+      );
+    }
     return config;
   },
 };

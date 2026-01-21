@@ -1,3 +1,28 @@
+.container {
+  padding: 4px;
+  background: linear-gradient(145deg, rgba(12, 22, 38, 0.9), rgba(7, 13, 26, 0.96));
+  box-shadow: var(--shadow-soft);
+  border-radius: 16px;
+}
+
+.item {
+  transition: background-color 120ms ease, transform 120ms ease;
+}
+
+.item:hover {
+  background: var(--bg-highlight);
+  transform: translateY(-1px);
+}
+
+.name {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.badge {
+  box-shadow: 0 8px 20px rgba(248, 113, 113, 0.32);
+}
+
 /* Mobile-only styles for ConversationList */
 @media screen and (max-width: 768px) {
   .container { width: 100%; max-width: none; border-radius: 0; }

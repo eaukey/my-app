@@ -74,6 +74,8 @@ export default function ChatConversation({ clientId }) {
   const displayName =
     user?.["https://app.com/display_name"] || user?.name || (isAdmin ? "Support" : user?.["https://app.com/client"]);
   const otherName = isAdmin ? clientId : "Support";
+  const conversationLabel = isAdmin ? `Client ${clientId}` : "Support Eaukey";
+  const messageCount = messages.length;
 
   // Événement: conversation ouverte → mise à jour optimiste des badges
   useEffect(() => {
@@ -168,6 +170,25 @@ export default function ChatConversation({ clientId }) {
     <div
       className={`flex flex-col h-full bg-[var(--bg-base)] text-[var(--text-primary)] ${styles.container || ""}`}
     >
+      <div className={styles.header || ""}>
+        <div>
+          <p className={styles.kicker || ""}>Canal de support</p>
+          <h2 className={styles.title || ""}>{conversationLabel}</h2>
+          <p className={styles.subtitle || ""}>
+            Historique complet et réponses rapides dans une interface unifiée.
+          </p>
+        </div>
+        <div className={styles.headerMeta || ""}>
+          <span className={styles.status || ""}>
+            <span className={styles.statusDot || ""} />
+            En ligne
+          </span>
+          <span className={styles.badge || ""}>
+            {messageCount || "–"} {messageCount > 1 ? "messages" : "message"}
+          </span>
+        </div>
+      </div>
+
       {/* Zone messages */}
       <div
         className={`flex-1 overflow-y-auto p-4 flex flex-col justify-end bg-[var(--bg-base)] ${styles.messages || ""}`}
@@ -193,11 +214,7 @@ export default function ChatConversation({ clientId }) {
                 {/* Bulle */}
                 <div className={`flex-1 flex ${isMe ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`p-3 rounded-xl max-w-[70%] shadow-sm ${styles.bubble || ''}`}
-                    style={{
-                      backgroundColor: isMe ? "var(--primary-ghost)" : "var(--bg-elevated)",
-                      border: `1px solid var(--border-subtle)`,
-                    }}
+                    className={`p-3 rounded-xl max-w-[70%] shadow-sm ${styles.bubble || ''} ${isMe ? styles.me || '' : styles.them || ''}`}
                   >
                     <div className="text-xs text-[var(--text-muted)] mb-1">
                       {isMe ? displayName : otherName}
@@ -233,23 +250,25 @@ export default function ChatConversation({ clientId }) {
 
       {/* Input */}
       <div
-        className={`border-t px-4 py-3 flex items-center gap-3 bg-[var(--bg-elevated)] border-[var(--border-strong)] ${styles.inputBar || ""}`}
+        className={`border-t px-4 py-3 bg-[var(--bg-elevated)] border-[var(--border-strong)] ${styles.inputBar || ""}`}
       >
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Écrivez votre message…"
-          className={`flex-1 focus:outline-none bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-subtle)] rounded-xl px-3 py-2 ${styles.inputField || ""}`}
-        />
-        <button
-          onClick={handleSend}
-          disabled={!newMessage.trim()}
-          className="text-[var(--primary)] disabled:opacity-50"
-        >
-          <Send className="w-5 h-5" />
-        </button>
+        <div className={`${styles.inputShell || ""}`}>
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Écrivez votre message…"
+            className={`flex-1 focus:outline-none bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-subtle)] rounded-xl px-3 py-2 ${styles.inputField || ""}`}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!newMessage.trim()}
+            className={`text-[var(--primary)] disabled:opacity-50 ${styles.sendBtn || ""}`}
+          >
+            <Send className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
   );
