@@ -22,9 +22,6 @@ export default function SuperAdminPage() {
   const [orgUserEmail, setOrgUserEmail] = useState("");
   const [orgUserRole, setOrgUserRole] = useState("employee");
   const [orgAutomates, setOrgAutomates] = useState([]);
-  const [selectedAutomate, setSelectedAutomate] = useState("");
-  const [automateAccess, setAutomateAccess] = useState([]);
-  const [accessEmails, setAccessEmails] = useState("");
   const toArray = (v, key) => (Array.isArray(v) ? v : Array.isArray(v?.[key]) ? v[key] : []);
   const isAdminOrSuper = useMemo(
     () => Array.isArray(user?.roles) && (user.roles.includes("super_admin") || user.roles.includes("admin")),
@@ -71,22 +68,6 @@ export default function SuperAdminPage() {
     };
     loadOrg();
   }, [isAuthenticated, isAdminOrSuper, selectedOrgId, authFetch]);
-
-  useEffect(() => {
-    if (!isAuthenticated || !isAdminOrSuper || !selectedAutomate) return;
-    const loadAccess = async () => {
-      try {
-        const res = await authFetch(`${API_BASE}/automates/${encodeURIComponent(selectedAutomate)}/access`);
-        if (!res.ok) throw new Error(await res.text());
-        const list = toArray(await res.json(), "access");
-        setAutomateAccess(list);
-        setAccessEmails(list.map((u) => u.email).join(", "));
-      } catch (e) {
-        setError(e?.message || "Erreur chargement accès automate");
-      }
-    };
-    loadAccess();
-  }, [isAuthenticated, isAdminOrSuper, selectedAutomate, authFetch]);
 
   if (isLoading) return <p>Chargement...</p>;
   if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
@@ -254,9 +235,6 @@ export default function SuperAdminPage() {
               value={selectedOrgId}
               onChange={(e) => {
                 setSelectedOrgId(e.target.value);
-                setSelectedAutomate("");
-                setAutomateAccess([]);
-                setAccessEmails("");
               }}
               className={styles.input}
             >
@@ -344,84 +322,6 @@ export default function SuperAdminPage() {
                     </button>
                   </div>
                 ))}
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className={styles.card}>
-          <div className={styles.cardTitle}>Accès automates</div>
-          <div className={styles.list}>
-            {!selectedOrgId && <div className={styles.empty}>Choisir une organisation</div>}
-            {selectedOrgId && (
-              <>
-                <select
-                  value={selectedAutomate}
-                  onChange={(e) => setSelectedAutomate(e.target.value)}
-                  className={styles.input}
-                >
-                  <option value="">Choisir un automate</option>
-                  {orgAutomates.map((a) => (
-                    <option key={a.nom_automate} value={a.nom_automate}>
-                      {a.nom_automate} {a.lieu ? `• ${a.lieu}` : ""}
-                    </option>
-                  ))}
-                </select>
-
-                {selectedAutomate && (
-                  <>
-                    <input
-                      className={styles.input}
-                      placeholder="Emails employés (séparés par ,)"
-                      value={accessEmails}
-                      onChange={(e) => setAccessEmails(e.target.value)}
-                    />
-                    <button
-                      className={styles.button}
-                      disabled={!accessEmails || saving}
-                      onClick={async () => {
-                        try {
-                          setSaving(true);
-                          setError("");
-                          const emails = accessEmails
-                            .replace(/;/g, ",")
-                            .split(",")
-                            .map((e) => e.trim().toLowerCase())
-                            .filter(Boolean);
-                          const res = await authFetch(
-                            `${API_BASE}/automates/${encodeURIComponent(selectedAutomate)}/access`,
-                            {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ emails }),
-                            }
-                          );
-                          if (!res.ok) throw new Error(await res.text());
-                          const resAcc = await authFetch(
-                            `${API_BASE}/automates/${encodeURIComponent(selectedAutomate)}/access`
-                          );
-                          if (!resAcc.ok) throw new Error(await resAcc.text());
-                          setAutomateAccess(await resAcc.json());
-                        } catch (e) {
-                          setError(e?.message || "Erreur accès automate");
-                        } finally {
-                          setSaving(false);
-                        }
-                      }}
-                    >
-                      Appliquer
-                    </button>
-
-                    <div className={styles.list}>
-                      {(automateAccess || []).length === 0 && <div className={styles.empty}>Aucun accès</div>}
-                      {(automateAccess || []).map((u) => (
-                        <div key={u.id} className={styles.pill}>
-                          {u.email}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
               </>
             )}
           </div>
