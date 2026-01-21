@@ -168,7 +168,7 @@ export default function ChatConversation({ clientId }) {
 
   return (
     <div
-      className={`flex flex-col h-full bg-[var(--bg-base)] text-[var(--text-primary)] ${styles.container || ""}`}
+      className={`flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] ${styles.container || ""}`}
     >
       <div className={styles.header || ""}>
         <div>
