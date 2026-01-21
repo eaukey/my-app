@@ -1,5 +1,8 @@
 /* Conteneur principal */
 .container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 120px);
   min-height: 70vh;
   border: 1px solid var(--border-subtle);
   border-radius: 18px;
@@ -9,12 +12,16 @@
 }
 
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
   display: flex;
   justify-content: space-between;
   gap: 16px;
   padding: 18px 20px;
   border-bottom: 1px solid var(--border-subtle);
-  background: linear-gradient(120deg, rgba(65, 174, 173, 0.1), rgba(7, 13, 26, 0.4));
+  background: linear-gradient(120deg, rgba(65, 174, 173, 0.12), rgba(7, 13, 26, 0.75));
+  backdrop-filter: blur(8px);
 }
 
 .kicker {
@@ -105,6 +112,11 @@
 }
 
 .inputBar {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--border-strong);
 }
@@ -156,7 +168,7 @@
 
 /* Styles mobile-only pour ChatConversation */
 @media screen and (max-width: 768px) {
-  .container { height: calc(100vh - 56px); display: flex; flex-direction: column; border-radius: 0; border-left: none; border-right: none; }
+  .container { height: calc(100vh - 56px); max-height: none; border-radius: 0; border-left: none; border-right: none; }
   .header { flex-direction: column; align-items: flex-start; gap: 8px; }
   .messages { padding: 0.5rem; }
   .bubble { max-width: 85%; }
