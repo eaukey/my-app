@@ -94,6 +94,11 @@ export default function SuperAdminPage() {
 
   return (
     <div className={styles.page}>
+      <datalist id="user-emails">
+        {users.map((u) => (
+          <option key={u.id} value={u.email} />
+        ))}
+      </datalist>
       <div className={styles.header}>
         <div>
           <div className={styles.title}>Gestion des accès</div>
@@ -179,6 +184,12 @@ export default function SuperAdminPage() {
                     }),
                   });
                   if (!res.ok) throw new Error(await res.text());
+                  const resUsers2 = await authFetch(`${API_BASE}/access/users`);
+                  if (resUsers2.ok) setUsers(toArray(await resUsers2.json(), "users"));
+                  if (selectedOrgId) {
+                    const resOrgUsers2 = await authFetch(`${API_BASE}/orgs/${selectedOrgId}/users`);
+                    if (resOrgUsers2.ok) setOrgUsers(toArray(await resOrgUsers2.json(), "users"));
+                  }
                 } catch (e) {
                   setError(e?.message || "Erreur sauvegarde");
                 } finally {
@@ -206,6 +217,7 @@ export default function SuperAdminPage() {
                 placeholder="Email admin"
                 value={orgAdminEmail}
                 onChange={(e) => setOrgAdminEmail(e.target.value)}
+                list="user-emails"
               />
               <button
                 className={styles.button}
@@ -270,6 +282,7 @@ export default function SuperAdminPage() {
                     placeholder="Email employé"
                     value={orgUserEmail}
                     onChange={(e) => setOrgUserEmail(e.target.value)}
+                    list="user-emails"
                   />
                   <select
                     className={styles.input}

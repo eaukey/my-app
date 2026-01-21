@@ -20,17 +20,7 @@ const chartPalette = {
   slate: "#cbd5f5",
 };
 
-const normalizeEmailList = (...values) => {
-  const seen = new Set();
-  const out = [];
-  values.flat().forEach((v) => {
-    const e = (v || "").toString().trim().toLowerCase();
-    if (!e || seen.has(e)) return;
-    seen.add(e);
-    out.push(e);
-  });
-  return out;
-};
+ 
 
 // Le mapping station <-> nom est désormais récupéré dynamiquement depuis l'API
 // via l'endpoint /recherche/automate_LCA (sans paramètre).
@@ -110,7 +100,7 @@ const chartGroups = {
 };
 
 const Dashboard = () => {
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { isAuthenticated, isLoading, logout, authFetch } = useAuth();
   // Liste complète des automates récupérés depuis l'API
   const [allAutomates, setAllAutomates] = useState([]);
   // Mapping <id automate> ➜ libellé d'affichage (lieu ou client)
@@ -170,25 +160,25 @@ const Dashboard = () => {
     { label: "Année", value: "annee" }
   ];
 
-  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
-
   // Récupérer les stations disponibles depuis les métadonnées utilisateur
   useEffect(() => {
     // 1️⃣ Récupère le mapping complet depuis l'API au premier rendu
     const fetchStationMapping = async () => {
+      if (!isAuthenticated) return;
       try {
-        const res = await fetch(`${API_BASE}/recherche/automate_LCA`);
+        const res = await authFetch(`${API_BASE}/my/automates`);
         if (!res.ok) {
           throw new Error(`Erreur serveur: ${res.status}`);
         }
         const list = await res.json(); // [{ nom_automate, client, lieu }, ...]
+        const safeList = Array.isArray(list) ? list : [];
 
         // Sauvegarde brute
-        setAllAutomates(list);
+        setAllAutomates(safeList);
 
         // Prépare un mapping id ➜ libellé (utilisé pour l'affichage)
         const map = {};
-        list.forEach((item) => {
+        safeList.forEach((item) => {
           map[item.nom_automate] = item.lieu || item.client || item.nom_automate;
         });
         setStationMapping(map);
@@ -198,31 +188,19 @@ const Dashboard = () => {
     };
 
     fetchStationMapping();
-  }, []);
+  }, [isAuthenticated, authFetch]);
 
   // 2️⃣ Dès que l'utilisateur est chargé, construit la liste des machines qu'il peut voir
   useEffect(() => {
-    if (!isAuthenticated || !user) {
+    if (!isAuthenticated) {
       return;
     }
 
-    // Filtrage non-admin : userEmail doit être dans email/email2/email3
-    const userEmail = (user?.email || "").toLowerCase();
-    const filtered = isAdmin
-      ? allAutomates
-      : allAutomates.filter((auto) => {
-          const emails = normalizeEmailList(auto.email, auto.email2, auto.email3, auto.emails || []);
-          return emails.includes(userEmail);
-        });
-
     // Construire la liste pour la <select>
-    const mappedStations = filtered.map((auto) => ({
+    const mappedStations = allAutomates.map((auto) => ({
       id: String(auto.nom_automate),
       name: `${auto.client || "Inconnu"} – ${auto.lieu || auto.nom_automate}`,
     }));
-
-    console.log("DEBUG - filtered automates count:", filtered.length);
-    console.log("DEBUG - mappedStations:", mappedStations);
 
     setAvailableMachines(mappedStations);
 
@@ -242,7 +220,7 @@ const Dashboard = () => {
         return mappedStations[0].id;
       });
     }
-  }, [isAuthenticated, user, stationMapping, allAutomates, isAdmin]);
+  }, [isAuthenticated, stationMapping, allAutomates]);
 
   const filteredGraphs = chartGroups[activeDataCategory] || [];
 
