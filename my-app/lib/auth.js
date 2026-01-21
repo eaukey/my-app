@@ -68,6 +68,7 @@ export function AuthProvider({ children }) {
   }, [loadMe]);
 
   const login = useCallback(async (email, password) => {
+    setIsLoading(true);
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -76,12 +77,13 @@ export function AuthProvider({ children }) {
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
     setToken(data.token);
-    setUser(data.user);
     writeToken(data.token);
+    await loadMe(data.token);
     return data.user;
-  }, []);
+  }, [loadMe]);
 
   const register = useCallback(async (email, password) => {
+    setIsLoading(true);
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -90,10 +92,10 @@ export function AuthProvider({ children }) {
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
     setToken(data.token);
-    setUser(data.user);
     writeToken(data.token);
+    await loadMe(data.token);
     return data.user;
-  }, []);
+  }, [loadMe]);
 
   const value = useMemo(
     () => ({
