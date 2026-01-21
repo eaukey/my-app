@@ -466,23 +466,22 @@ export default function PannesPage() {
                 <th className={styles.th}>Fin</th>
                 <th className={styles.th}>Problème</th>
                 <th className={styles.th}>Créé par</th>
-                <th className={styles.th}>Créé le</th>
                 <th className={styles.th}>Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredPannes.length === 0 ? (
                 <tr>
-                  <td className={styles.td} colSpan={10}>Aucune panne</td>
+                  <td className={styles.td} colSpan={9}>Aucune panne</td>
                 </tr>
               ) : (
                 filteredPannes.map((p) => {
                   const rowIsEditing = editingRowId === p.id;
                   return (
-                    <tr key={p.id}>
-                      <td className={styles.td}>{p.client}</td>
-                      <td className={styles.td}>{p.lieu}</td>
-                      <td className={styles.td}>{p.nom_automate}</td>
+                  <tr key={p.id}>
+                    <td className={styles.td}>{p.client}</td>
+                    <td className={styles.td}>{p.lieu}</td>
+                    <td className={styles.td}>{p.nom_automate}</td>
                       <td className={styles.td}>
                         {rowIsEditing ? (
                           <input
@@ -540,9 +539,8 @@ export default function PannesPage() {
                           p.probleme
                         )}
                       </td>
-                      <td className={styles.td}>{p.created_by || "-"}</td>
-                      <td className={styles.td}>{p.created_at ? new Date(p.created_at).toLocaleString() : "-"}</td>
-                      <td className={`${styles.td} ${styles.tdActions}`}>
+                    <td className={styles.td}>{p.created_by || "-"}</td>
+                    <td className={`${styles.td} ${styles.tdActions}`}>
                         <div className={styles.actionGroup}>
                           {rowIsEditing ? (
                             <>
@@ -590,8 +588,8 @@ export default function PannesPage() {
                             </>
                           )}
                         </div>
-                      </td>
-                    </tr>
+                    </td>
+                  </tr>
                   );
                 })
               )}

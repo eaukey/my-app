@@ -1420,9 +1420,9 @@ def lister_pannes(request: Request):
     _require_admin(request)
     rows = executer_requete_sql(
         """
-        SELECT id, client, lieu, nom_automate, panne, probleme, date_debut, date_fin, created_by, created_at
+        SELECT id, client, lieu, nom_automate, panne, probleme, date_debut, date_fin, created_by
         FROM pannes
-        ORDER BY created_at DESC;
+        ORDER BY id DESC;
         """
     )
     def _fmt(dt_val):
@@ -1439,7 +1439,6 @@ def lister_pannes(request: Request):
             "date_debut": _fmt(r[6]),
             "date_fin": _fmt(r[7]),
             "created_by": r[8],
-            "created_at": _fmt(r[9]),
         }
         for r in rows
     ]
@@ -1458,7 +1457,7 @@ def creer_panne(p: PanneIn, request: Request):
         """
         INSERT INTO pannes (client, lieu, nom_automate, panne, probleme, date_debut, date_fin, created_by)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        RETURNING id, created_at;
+        RETURNING id;
         """,
         (
             p.client,
@@ -1484,7 +1483,6 @@ def creer_panne(p: PanneIn, request: Request):
         "date_debut": p.date_debut.isoformat(),
         "date_fin": p.date_fin.isoformat() if p.date_fin else None,
         "created_by": email or "",
-        "created_at": row[1].isoformat() if hasattr(row[1], "isoformat") else row[1],
     }
 
 
@@ -1508,7 +1506,7 @@ def maj_panne(panne_id: int, p: PanneIn, request: Request):
             date_debut = %s,
             date_fin = %s
         WHERE id = %s
-        RETURNING id, client, lieu, nom_automate, panne, probleme, date_debut, date_fin, created_by, created_at;
+        RETURNING id, client, lieu, nom_automate, panne, probleme, date_debut, date_fin, created_by;
         """,
         (
             p.client,
@@ -1537,7 +1535,6 @@ def maj_panne(panne_id: int, p: PanneIn, request: Request):
         "date_debut": _fmt(row[6]),
         "date_fin": _fmt(row[7]),
         "created_by": row[8],
-        "created_at": _fmt(row[9]),
     }
 
 
