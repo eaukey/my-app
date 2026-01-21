@@ -143,7 +143,4 @@ export default function SideNav() {
       </div>
     </div>
   );
-} 
-    </div>
-  );
-} 
+}
