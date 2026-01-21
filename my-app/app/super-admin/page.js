@@ -25,6 +25,7 @@ export default function SuperAdminPage() {
   const [selectedAutomate, setSelectedAutomate] = useState("");
   const [automateAccess, setAutomateAccess] = useState([]);
   const [accessEmails, setAccessEmails] = useState("");
+  const toArray = (v, key) => (Array.isArray(v) ? v : Array.isArray(v?.[key]) ? v[key] : []);
   const isAdminOrSuper = useMemo(
     () => Array.isArray(user?.roles) && (user.roles.includes("super_admin") || user.roles.includes("admin")),
     [user?.roles]
@@ -41,9 +42,10 @@ export default function SuperAdminPage() {
         ]);
         if (!resUsers.ok) throw new Error(await resUsers.text());
         if (!resRoles.ok) throw new Error(await resRoles.text());
-        setUsers(await resUsers.json());
-        setRoles(await resRoles.json());
-        setOrgs(await resOrgs.json());
+        if (!resOrgs.ok) throw new Error(await resOrgs.text());
+        setUsers(toArray(await resUsers.json(), "users"));
+        setRoles(toArray(await resRoles.json(), "roles"));
+        setOrgs(toArray(await resOrgs.json(), "orgs"));
       } catch (e) {
         setError(e?.message || "Erreur chargement");
       }
@@ -61,8 +63,8 @@ export default function SuperAdminPage() {
         ]);
         if (!resUsers.ok) throw new Error(await resUsers.text());
         if (!resAutomates.ok) throw new Error(await resAutomates.text());
-        setOrgUsers(await resUsers.json());
-        setOrgAutomates(await resAutomates.json());
+        setOrgUsers(toArray(await resUsers.json(), "users"));
+        setOrgAutomates(toArray(await resAutomates.json(), "automates"));
       } catch (e) {
         setError(e?.message || "Erreur chargement organisation");
       }
@@ -76,9 +78,9 @@ export default function SuperAdminPage() {
       try {
         const res = await authFetch(`${API_BASE}/automates/${encodeURIComponent(selectedAutomate)}/access`);
         if (!res.ok) throw new Error(await res.text());
-        const json = await res.json();
-        setAutomateAccess(json);
-        setAccessEmails(json.map((u) => u.email).join(", "));
+        const list = toArray(await res.json(), "access");
+        setAutomateAccess(list);
+        setAccessEmails(list.map((u) => u.email).join(", "));
       } catch (e) {
         setError(e?.message || "Erreur chargement accès automate");
       }
