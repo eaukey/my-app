@@ -1,15 +1,17 @@
 "use client";
-import { useAuth } from "../../lib/auth";
+import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ConversationList from "../../components/ConversationList";
 
 export default function ChatPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth0();
   const router = useRouter();
 
-  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
-  const clientId = user?.client_id || null;
+  const isAdmin = (user?.["https://app.com/role"] || user?.role) === "admin";
+  const clientId =
+    user?.["https://app.com/client"] ||
+    (Array.isArray(user?.clients) ? user.clients[0] : user?.clients);
 
   useEffect(() => {
     console.log("user =", user);

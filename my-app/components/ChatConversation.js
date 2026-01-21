@@ -1,13 +1,13 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { Send, Check } from "lucide-react";
-import { useAuth } from "../lib/auth";
+import { useAuth0 } from "@auth0/auth0-react";
 import { getCachedAdminSenderIds, discoverAdminSenderIds } from "./chatRoleUtils";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./ChatConversation.module.css";
 
 export default function ChatConversation({ clientId }) {
-  const { user, isAuthenticated, authFetch } = useAuth();
+  const { user, isAuthenticated } = useAuth0();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,7 @@ export default function ChatConversation({ clientId }) {
     let intervalId;
     const fetchMessages = async () => {
       try {
-        const res = await authFetch(
+        const res = await fetch(
           `${API_BASE}/messages/${clientId}`
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -60,18 +60,19 @@ export default function ChatConversation({ clientId }) {
     intervalId = setInterval(fetchMessages, 30000);
 
     return () => clearInterval(intervalId);
-  }, [isAuthenticated, clientId, authFetch]);
+  }, [isAuthenticated, clientId]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const roles = user?.roles || [];
-  const isAdmin = Array.isArray(roles) && roles.includes("admin");
+  const appRole = user?.["https://app.com/role"] || user?.role;
+  const roles = user?.["https://app.com/roles"] || user?.roles;
+  const isAdmin = appRole === "admin" || (Array.isArray(roles) && roles.includes("admin"));
   const senderId = isAdmin ? 0 : 1;
   const displayName =
-    user?.name || user?.email || (isAdmin ? "Support" : user?.client_id) || "Utilisateur";
+    user?.["https://app.com/display_name"] || user?.name || (isAdmin ? "Support" : user?.["https://app.com/client"]);
   const otherName = isAdmin ? clientId : "Support";
   const conversationLabel = isAdmin ? `Client ${clientId}` : "Support Eaukey";
   const messageCount = messages.length;
@@ -91,7 +92,7 @@ export default function ChatConversation({ clientId }) {
 
     const markAdminMessagesAsRead = async () => {
       try {
-        await authFetch(
+        await fetch(
           `${API_BASE}/messages_client/${clientId}/marquer_non_lu`,
           {
             method: "POST",
@@ -103,7 +104,7 @@ export default function ChatConversation({ clientId }) {
     };
 
     markAdminMessagesAsRead();
-  }, [isAuthenticated, isAdmin, clientId, authFetch]);
+  }, [isAuthenticated, isAdmin, clientId]);
 
   // Marquer les messages du client comme lus lorsqu'un admin ouvre la conversation
   useEffect(() => {
@@ -112,7 +113,7 @@ export default function ChatConversation({ clientId }) {
 
     const markClientMessagesAsRead = async () => {
       try {
-        await authFetch(
+        await fetch(
           `${API_BASE}/messages_admin/${clientId}/marquer_non_lu`,
           {
             method: "POST",
@@ -124,7 +125,7 @@ export default function ChatConversation({ clientId }) {
     };
 
     markClientMessagesAsRead();
-  }, [isAuthenticated, isAdmin, clientId, authFetch]);
+  }, [isAuthenticated, isAdmin, clientId]);
 
   const handleSend = async () => {
     const txt = newMessage.trim();
@@ -148,7 +149,7 @@ export default function ChatConversation({ clientId }) {
     try {
       // Log de vérification du payload
       console.log("SEND payload =", { isAdmin, sender_id: senderId, content: txt });
-      await authFetch(
+      await fetch(
         `${API_BASE}/messages/${clientId}`,
         {
           method: "POST",
@@ -167,7 +168,7 @@ export default function ChatConversation({ clientId }) {
 
   return (
     <div
-      className={`flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] ${styles.container || ""}`}
+      className={`flex flex-col h-full bg-[var(--bg-base)] text-[var(--text-primary)] ${styles.container || ""}`}
     >
       <div className={styles.header || ""}>
         <div>
