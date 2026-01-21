@@ -385,15 +385,30 @@ def auth_login(payload: LoginIn, response: Response):
     return _serialize_user(user)
 
 
+@app.options("/auth/login")
+def auth_login_options():
+    return {}
+
+
 @app.post("/auth/logout")
 def auth_logout(response: Response):
     _clear_auth_cookies(response)
     return {"status": "logged_out"}
 
 
+@app.options("/auth/logout")
+def auth_logout_options():
+    return {}
+
+
 @app.get("/auth/me")
 def auth_me(user: UserOut = Depends(require_auth)):
     return _serialize_user(user)
+
+
+@app.options("/auth/me")
+def auth_me_options():
+    return {}
 
 
 @app.post("/auth/refresh")
@@ -410,6 +425,11 @@ def auth_refresh(response: Response, request: Request):
     access_token, refresh_token = _issue_tokens(user)
     _set_auth_cookies(response, access_token, refresh_token)
     return _serialize_user(user)
+
+
+@app.options("/auth/refresh")
+def auth_refresh_options():
+    return {}
 
 # Fonction pour calculer la consommation
 def calculer_consommation_par_intervalle(resultat_sql: List[Tuple], timeframe: str = "jour") -> dict:
