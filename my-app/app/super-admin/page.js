@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./SuperAdmin.module.css";
 
 export default function SuperAdminPage() {
   const { isAuthenticated, isLoading, user, authFetch } = useAuth();
-  const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -15,41 +14,88 @@ export default function SuperAdminPage() {
   const [selectedRoles, setSelectedRoles] = useState([]);
   const [selectedOrg, setSelectedOrg] = useState("");
   const [saving, setSaving] = useState(false);
-
-  const isSuperAdmin = Array.isArray(user?.roles) && user.roles.includes("super_admin");
+  const [orgs, setOrgs] = useState([]);
+  const [orgName, setOrgName] = useState("");
+  const [orgAdminEmail, setOrgAdminEmail] = useState("");
+  const [selectedOrgId, setSelectedOrgId] = useState("");
+  const [orgUsers, setOrgUsers] = useState([]);
+  const [orgUserEmail, setOrgUserEmail] = useState("");
+  const [orgUserRole, setOrgUserRole] = useState("employee");
+  const [orgAutomates, setOrgAutomates] = useState([]);
+  const [selectedAutomate, setSelectedAutomate] = useState("");
+  const [automateAccess, setAutomateAccess] = useState([]);
+  const [accessEmails, setAccessEmails] = useState("");
+  const isAdminOrSuper = useMemo(
+    () => Array.isArray(user?.roles) && (user.roles.includes("super_admin") || user.roles.includes("admin")),
+    [user?.roles]
+  );
 
   useEffect(() => {
-    if (!isAuthenticated || !isSuperAdmin) return;
+    if (!isAuthenticated || !isAdminOrSuper) return;
     const load = async () => {
       try {
-        const [resOverview, resUsers, resRoles] = await Promise.all([
-          authFetch(`${API_BASE}/super_admin/overview`),
+        const [resUsers, resRoles, resOrgs] = await Promise.all([
           authFetch(`${API_BASE}/access/users`),
           authFetch(`${API_BASE}/access/roles`),
+          authFetch(`${API_BASE}/orgs`),
         ]);
-        if (!resOverview.ok) throw new Error(await resOverview.text());
         if (!resUsers.ok) throw new Error(await resUsers.text());
         if (!resRoles.ok) throw new Error(await resRoles.text());
-        setData(await resOverview.json());
         setUsers(await resUsers.json());
         setRoles(await resRoles.json());
+        setOrgs(await resOrgs.json());
       } catch (e) {
         setError(e?.message || "Erreur chargement");
       }
     };
     load();
-  }, [isAuthenticated, isSuperAdmin, authFetch]);
+  }, [isAuthenticated, isAdminOrSuper, authFetch]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isAdminOrSuper || !selectedOrgId) return;
+    const loadOrg = async () => {
+      try {
+        const [resUsers, resAutomates] = await Promise.all([
+          authFetch(`${API_BASE}/orgs/${selectedOrgId}/users`),
+          authFetch(`${API_BASE}/orgs/${selectedOrgId}/automates`),
+        ]);
+        if (!resUsers.ok) throw new Error(await resUsers.text());
+        if (!resAutomates.ok) throw new Error(await resAutomates.text());
+        setOrgUsers(await resUsers.json());
+        setOrgAutomates(await resAutomates.json());
+      } catch (e) {
+        setError(e?.message || "Erreur chargement organisation");
+      }
+    };
+    loadOrg();
+  }, [isAuthenticated, isAdminOrSuper, selectedOrgId, authFetch]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isAdminOrSuper || !selectedAutomate) return;
+    const loadAccess = async () => {
+      try {
+        const res = await authFetch(`${API_BASE}/automates/${encodeURIComponent(selectedAutomate)}/access`);
+        if (!res.ok) throw new Error(await res.text());
+        const json = await res.json();
+        setAutomateAccess(json);
+        setAccessEmails(json.map((u) => u.email).join(", "));
+      } catch (e) {
+        setError(e?.message || "Erreur chargement accès automate");
+      }
+    };
+    loadAccess();
+  }, [isAuthenticated, isAdminOrSuper, selectedAutomate, authFetch]);
 
   if (isLoading) return <p>Chargement...</p>;
   if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
-  if (!isSuperAdmin) return <p>Accès refusé.</p>;
+  if (!isAdminOrSuper) return <p>Accès refusé.</p>;
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <div className={styles.title}>Super admin</div>
-          <div className={styles.subtitle}>Vue globale de l’architecture</div>
+          <div className={styles.title}>Gestion des accès</div>
+          <div className={styles.subtitle}>Rôles, organisations et automates</div>
         </div>
       </div>
 
@@ -57,7 +103,7 @@ export default function SuperAdminPage() {
 
       <div className={styles.grid}>
         <div className={styles.card}>
-          <div className={styles.cardTitle}>Gestion des accès</div>
+          <div className={styles.cardTitle}>Rôles globaux</div>
           <div className={styles.list}>
             <select
               value={selectedUserId}
@@ -99,23 +145,23 @@ export default function SuperAdminPage() {
             </div>
 
             <div>
-              <div className={styles.cardTitle}>Organisation</div>
+              <div className={styles.cardTitle}>Organisation (legacy)</div>
               <select
                 value={selectedOrg}
                 onChange={(e) => setSelectedOrg(e.target.value)}
-                className={styles.pill}
+                className={styles.input}
               >
                 <option value="">Aucune</option>
-                {(data?.clients || []).map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {orgs.map((o) => (
+                  <option key={o.id} value={o.name}>
+                    {o.name}
                   </option>
                 ))}
               </select>
             </div>
 
             <button
-              className={styles.pill}
+              className={styles.button}
               disabled={!selectedUserId || saving}
               onClick={async () => {
                 try {
@@ -142,73 +188,227 @@ export default function SuperAdminPage() {
             </button>
           </div>
         </div>
-        <div className={styles.card}>
-          <div className={styles.cardTitle}>Super admins</div>
-          <div className={styles.list}>
-            {(data?.super_admins || []).length === 0 && (
-              <div className={styles.empty}>Aucun super admin</div>
-            )}
-            {(data?.super_admins || []).map((u) => (
-              <div key={u.id} className={styles.pill}>
-                {u.email}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.card}>
-          <div className={styles.cardTitle}>Admins</div>
-          <div className={styles.list}>
-            {(data?.admins || []).length === 0 && (
-              <div className={styles.empty}>Aucun admin</div>
-            )}
-            {(data?.admins || []).map((u) => (
-              <div key={u.id} className={styles.pill}>
-                {u.email}
-              </div>
-            ))}
-          </div>
-        </div>
 
         <div className={styles.card}>
           <div className={styles.cardTitle}>Organisations</div>
           <div className={styles.list}>
-            {(data?.organizations || []).length === 0 && (
-              <div className={styles.empty}>Aucune organisation</div>
-            )}
-            {(data?.organizations || []).map((o) => (
-              <div key={o} className={styles.pill}>
-                {o}
-              </div>
-            ))}
+            <div className={styles.sectionRow}>
+              <input
+                className={styles.input}
+                placeholder="Nom de l’organisation"
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+              />
+              <input
+                className={styles.input}
+                placeholder="Email admin"
+                value={orgAdminEmail}
+                onChange={(e) => setOrgAdminEmail(e.target.value)}
+              />
+              <button
+                className={styles.button}
+                disabled={!orgName || !orgAdminEmail || saving}
+                onClick={async () => {
+                  try {
+                    setSaving(true);
+                    setError("");
+                    const res = await authFetch(`${API_BASE}/orgs`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ name: orgName, admin_email: orgAdminEmail }),
+                    });
+                    if (!res.ok) throw new Error(await res.text());
+                    const created = await res.json();
+                    const resOrgs = await authFetch(`${API_BASE}/orgs`);
+                    if (!resOrgs.ok) throw new Error(await resOrgs.text());
+                    setOrgs(await resOrgs.json());
+                    setSelectedOrgId(String(created.id));
+                    setOrgName("");
+                    setOrgAdminEmail("");
+                  } catch (e) {
+                    setError(e?.message || "Erreur création organisation");
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+              >
+                Créer
+              </button>
+            </div>
+
+            <select
+              value={selectedOrgId}
+              onChange={(e) => {
+                setSelectedOrgId(e.target.value);
+                setSelectedAutomate("");
+                setAutomateAccess([]);
+                setAccessEmails("");
+              }}
+              className={styles.input}
+            >
+              <option value="">Choisir une organisation</option>
+              {orgs.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
         <div className={styles.card}>
-          <div className={styles.cardTitle}>Comptes (employés)</div>
+          <div className={styles.cardTitle}>Membres de l’organisation</div>
           <div className={styles.list}>
-            {(data?.accounts || []).length === 0 && (
-              <div className={styles.empty}>Aucun compte</div>
+            {!selectedOrgId && <div className={styles.empty}>Choisir une organisation</div>}
+            {selectedOrgId && (
+              <>
+                <div className={styles.sectionRow}>
+                  <input
+                    className={styles.input}
+                    placeholder="Email employé"
+                    value={orgUserEmail}
+                    onChange={(e) => setOrgUserEmail(e.target.value)}
+                  />
+                  <select
+                    className={styles.input}
+                    value={orgUserRole}
+                    onChange={(e) => setOrgUserRole(e.target.value)}
+                  >
+                    <option value="employee">employee</option>
+                    <option value="org_admin">org_admin</option>
+                  </select>
+                  <button
+                    className={styles.button}
+                    disabled={!orgUserEmail || saving}
+                    onClick={async () => {
+                      try {
+                        setSaving(true);
+                        setError("");
+                        const res = await authFetch(`${API_BASE}/orgs/${selectedOrgId}/users`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ email: orgUserEmail, org_role: orgUserRole }),
+                        });
+                        if (!res.ok) throw new Error(await res.text());
+                        const resUsers = await authFetch(`${API_BASE}/orgs/${selectedOrgId}/users`);
+                        if (!resUsers.ok) throw new Error(await resUsers.text());
+                        setOrgUsers(await resUsers.json());
+                        setOrgUserEmail("");
+                      } catch (e) {
+                        setError(e?.message || "Erreur ajout membre");
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                  >
+                    Ajouter
+                  </button>
+                </div>
+
+                {(orgUsers || []).length === 0 && <div className={styles.empty}>Aucun membre</div>}
+                {(orgUsers || []).map((u) => (
+                  <div key={u.id} className={styles.row}>
+                    <span>{u.email}</span>
+                    <span className={styles.badge}>{u.org_role}</span>
+                    <button
+                      className={styles.danger}
+                      onClick={async () => {
+                        try {
+                          setError("");
+                          const res = await authFetch(`${API_BASE}/orgs/${selectedOrgId}/users/${u.id}`, {
+                            method: "DELETE",
+                          });
+                          if (!res.ok) throw new Error(await res.text());
+                          setOrgUsers((prev) => prev.filter((x) => x.id !== u.id));
+                        } catch (e) {
+                          setError(e?.message || "Erreur suppression");
+                        }
+                      }}
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                ))}
+              </>
             )}
-            {(data?.accounts || []).map((u) => (
-              <div key={u.id} className={styles.pill}>
-                {u.email} {u.client_id ? `• ${u.client_id}` : ""}
-              </div>
-            ))}
           </div>
         </div>
 
         <div className={styles.card}>
-          <div className={styles.cardTitle}>Comptes clients</div>
+          <div className={styles.cardTitle}>Accès automates</div>
           <div className={styles.list}>
-            {(data?.clients || []).length === 0 && (
-              <div className={styles.empty}>Aucun client</div>
+            {!selectedOrgId && <div className={styles.empty}>Choisir une organisation</div>}
+            {selectedOrgId && (
+              <>
+                <select
+                  value={selectedAutomate}
+                  onChange={(e) => setSelectedAutomate(e.target.value)}
+                  className={styles.input}
+                >
+                  <option value="">Choisir un automate</option>
+                  {orgAutomates.map((a) => (
+                    <option key={a.nom_automate} value={a.nom_automate}>
+                      {a.nom_automate} {a.lieu ? `• ${a.lieu}` : ""}
+                    </option>
+                  ))}
+                </select>
+
+                {selectedAutomate && (
+                  <>
+                    <input
+                      className={styles.input}
+                      placeholder="Emails employés (séparés par ,)"
+                      value={accessEmails}
+                      onChange={(e) => setAccessEmails(e.target.value)}
+                    />
+                    <button
+                      className={styles.button}
+                      disabled={!accessEmails || saving}
+                      onClick={async () => {
+                        try {
+                          setSaving(true);
+                          setError("");
+                          const emails = accessEmails
+                            .replace(/;/g, ",")
+                            .split(",")
+                            .map((e) => e.trim().toLowerCase())
+                            .filter(Boolean);
+                          const res = await authFetch(
+                            `${API_BASE}/automates/${encodeURIComponent(selectedAutomate)}/access`,
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ emails }),
+                            }
+                          );
+                          if (!res.ok) throw new Error(await res.text());
+                          const resAcc = await authFetch(
+                            `${API_BASE}/automates/${encodeURIComponent(selectedAutomate)}/access`
+                          );
+                          if (!resAcc.ok) throw new Error(await resAcc.text());
+                          setAutomateAccess(await resAcc.json());
+                        } catch (e) {
+                          setError(e?.message || "Erreur accès automate");
+                        } finally {
+                          setSaving(false);
+                        }
+                      }}
+                    >
+                      Appliquer
+                    </button>
+
+                    <div className={styles.list}>
+                      {(automateAccess || []).length === 0 && <div className={styles.empty}>Aucun accès</div>}
+                      {(automateAccess || []).map((u) => (
+                        <div key={u.id} className={styles.pill}>
+                          {u.email}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
             )}
-            {(data?.clients || []).map((c) => (
-              <div key={c} className={styles.pill}>
-                {c}
-              </div>
-            ))}
           </div>
         </div>
       </div>
