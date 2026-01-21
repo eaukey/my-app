@@ -9,9 +9,7 @@
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(12, 22, 38, 0.95), rgba(7, 13, 26, 0.98));
   box-shadow: var(--shadow-soft);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  overflow: hidden; /* le scroll se fait sur .messages pour figer header/footer */
 }
 
 .header {
