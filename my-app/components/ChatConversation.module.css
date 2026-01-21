@@ -81,6 +81,8 @@
 }
 
 .messages {
+  flex: 1;
+  min-height: 0;
   background:
     radial-gradient(140% 140% at 10% 10%, rgba(65, 174, 173, 0.06), transparent 40%),
     radial-gradient(120% 120% at 90% 20%, rgba(65, 174, 173, 0.04), transparent 42%),
