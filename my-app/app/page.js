@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { Suspense, useState, useEffect } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 // Composants séparés avec display names
 const LoadingComponent = function() {
@@ -27,7 +28,8 @@ Dashboard.displayName = 'DynamicDashboard';
 
 // Page de connexion affichée lorsqu'on n'est pas authentifié
 const LoginLanding = () => {
-  const { loginWithRedirect, isLoading } = useAuth0();
+  const { isLoading } = useAuth0();
+  const router = useRouter();
 
   if (isLoading) return <LoadingComponent />;
 
@@ -48,7 +50,7 @@ const LoginLanding = () => {
           Visualisez vos données en temps réel, identifiez les usages, mesurez le recyclage.
         </p>
         <button
-          onClick={() => loginWithRedirect()}
+          onClick={() => router.push("/login")}
           className="neon-btn px-8 py-3 bg-[var(--primary)] text-[#04131a] font-semibold rounded-lg transition relative overflow-hidden border border-[var(--primary-strong)]"
         >
           Se connecter

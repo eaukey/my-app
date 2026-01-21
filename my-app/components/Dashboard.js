@@ -270,11 +270,11 @@ const Dashboard = () => {
         </div>
         <div className={styles.authActions}>
           {isAuthenticated ? (
-            <button className={styles.primaryBtn} onClick={() => logout({ returnTo: window.location.origin })}>
+            <button className={styles.primaryBtn} onClick={() => logout()}>
               Déconnexion
             </button>
           ) : (
-            <button className={styles.primaryBtn} onClick={() => loginWithRedirect()}>
+            <button className={styles.primaryBtn} onClick={() => { if (typeof window !== "undefined") window.location.href = "/login"; }}>
               Connexion
             </button>
           )}

@@ -61,7 +61,7 @@ export default function PannesPage() {
 
   const fetchPanneTypes = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/pannes/types`, { headers: baseHeaders });
+      const res = await fetch(`${API_BASE}/pannes/types`, { headers: baseHeaders, credentials: "include" });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       const list = Array.isArray(data) ? data.filter(Boolean).map((s) => String(s).trim()).filter(Boolean) : [];
@@ -75,7 +75,7 @@ export default function PannesPage() {
 
   const fetchClients = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/pannes/clients`, { headers: baseHeaders });
+      const res = await fetch(`${API_BASE}/pannes/clients`, { headers: baseHeaders, credentials: "include" });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setError("");
@@ -93,7 +93,7 @@ export default function PannesPage() {
     try {
       const res = await fetch(
         `${API_BASE}/pannes/stations?client=${encodeURIComponent(client)}`,
-        { headers: baseHeaders }
+        { headers: baseHeaders, credentials: "include" }
       );
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -109,7 +109,7 @@ export default function PannesPage() {
     try {
       const res = await fetch(
         `${API_BASE}/pannes/automate?client=${encodeURIComponent(client)}&lieu=${encodeURIComponent(lieu)}`,
-        { headers: baseHeaders }
+        { headers: baseHeaders, credentials: "include" }
       );
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -123,7 +123,7 @@ export default function PannesPage() {
 
   const fetchPannes = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/pannes`, { headers: baseHeaders });
+      const res = await fetch(`${API_BASE}/pannes`, { headers: baseHeaders, credentials: "include" });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setError("");
@@ -191,6 +191,7 @@ export default function PannesPage() {
       const res = await fetch(`${API_BASE}/pannes`, {
         method: "POST",
         headers: baseHeaders,
+        credentials: "include",
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -213,6 +214,7 @@ export default function PannesPage() {
       const res = await fetch(`${API_BASE}/pannes/${id}`, {
         method: "DELETE",
         headers: baseHeaders,
+        credentials: "include",
       });
       if (!res.ok) throw new Error(await res.text());
       setError("");

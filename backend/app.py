@@ -1,11 +1,16 @@
-from fastapi import FastAPI, Query, HTTPException, Request
-from typing import List, Tuple, Optional, Union
+from fastapi import FastAPI, Query, HTTPException, Request, Response, Depends
+from typing import List, Tuple, Optional, Union, Dict
 import psycopg2
 from psycopg2.pool import SimpleConnectionPool
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import decimal
 import os 
+import hashlib
+import hmac
+import base64
+import json
+import secrets
 
 # Création de l'instance FastAPI
 app = FastAPI()
@@ -42,6 +47,86 @@ async def _force_cors_headers(request, call_next):
         resp.headers.setdefault("Vary", "Origin")
     return resp
 
+# -----------------------------------------------------------------------------
+# Auth config (JWT-like HMAC tokens in HttpOnly cookies)
+# -----------------------------------------------------------------------------
+_AUTH_SECRET = os.getenv("AUTH_SECRET", "change-me-in-prod")
+_ACCESS_TTL_SECONDS = int(os.getenv("AUTH_ACCESS_TTL_SECONDS", "900"))  # 15 min
+_REFRESH_TTL_SECONDS = int(os.getenv("AUTH_REFRESH_TTL_SECONDS", "2592000"))  # 30 j
+_COOKIE_SECURE = os.getenv("AUTH_COOKIE_SECURE", "true").lower() != "false"
+_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "lax")
+_COOKIE_DOMAIN = os.getenv("AUTH_COOKIE_DOMAIN") or None
+_ACCESS_COOKIE_NAME = "access_token"
+_REFRESH_COOKIE_NAME = "refresh_token"
+
+_HASH_ITERATIONS = 120_000
+
+
+def _b64url(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+
+def _b64url_decode(data: str) -> bytes:
+    padding = "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(data + padding)
+
+
+def _sign(payload: dict, ttl_seconds: int) -> str:
+    header = {"alg": "HS256", "typ": "JWT"}
+    now = int(datetime.utcnow().timestamp())
+    payload = dict(payload or {})
+    payload["iat"] = now
+    payload["exp"] = now + ttl_seconds
+    header_b64 = _b64url(json.dumps(header, separators=(",", ":")).encode())
+    payload_b64 = _b64url(json.dumps(payload, separators=(",", ":")).encode())
+    signing_input = f"{header_b64}.{payload_b64}".encode()
+    signature = hmac.new(_AUTH_SECRET.encode(), signing_input, hashlib.sha256).digest()
+    return f"{header_b64}.{payload_b64}.{_b64url(signature)}"
+
+
+def _verify(token: str, *, verify_exp: bool = True) -> dict:
+    if not token or token.count(".") != 2:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    header_b64, payload_b64, sig_b64 = token.split(".")
+    signing_input = f"{header_b64}.{payload_b64}".encode()
+    expected_sig = hmac.new(_AUTH_SECRET.encode(), signing_input, hashlib.sha256).digest()
+    try:
+        given_sig = _b64url_decode(sig_b64)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    if not hmac.compare_digest(expected_sig, given_sig):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+    try:
+        payload = json.loads(_b64url_decode(payload_b64))
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid payload")
+    if verify_exp:
+        exp = payload.get("exp")
+        if exp is None or not isinstance(exp, (int, float)) or int(exp) < int(datetime.utcnow().timestamp()):
+            raise HTTPException(status_code=401, detail="Token expired")
+    return payload
+
+
+def _hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), _HASH_ITERATIONS)
+    return f"pbkdf2_sha256${_HASH_ITERATIONS}${salt}${dk.hex()}"
+
+
+def _verify_password(password: str, stored: str) -> bool:
+    try:
+        scheme, iterations, salt, digest = stored.split("$", 3)
+        if scheme != "pbkdf2_sha256":
+            return False
+        iterations = int(iterations)
+    except Exception:
+        return False
+    try:
+        dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), iterations)
+    except Exception:
+        return False
+    return hmac.compare_digest(dk.hex(), digest)
+
 _DB_DSN = {
     "dbname": os.getenv("DB_NAME", "EaukeyCloudSQLv1"),
     "user": os.getenv("DB_USER", "romain"),
@@ -73,6 +158,12 @@ def _release_connection(conn):
             conn.close()
         except Exception:
             pass
+
+
+def _fetch_one(query: str, params: tuple = ()) -> Optional[Tuple]:
+    rows = executer_requete_sql(query, params)
+    return rows[0] if rows else None
+
 
 def executer_requete_sql(requete_sql: str, params: tuple = None) -> List[Tuple]:
     """
@@ -132,6 +223,193 @@ def _normalize_emails(raw: Optional[Union[str, List[str]]]) -> tuple[list[str], 
 def _split_emails(raw: Optional[Union[str, List[str]]]) -> list[str]:
     """Retourne uniquement la liste normalisée."""
     return _normalize_emails(raw)[0]
+
+
+class UserOut(BaseModel):
+    id: str
+    role: str
+    first_name: str
+    last_name: str
+    email: str
+    is_active: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    last_login_at: Optional[datetime] = None
+
+
+def _user_from_row(row: Tuple) -> Optional[UserOut]:
+    if not row:
+        return None
+    return UserOut(
+        id=str(row[0]),
+        role=row[1],
+        first_name=row[2],
+        last_name=row[3],
+        email=row[4],
+        is_active=bool(row[6]),
+        created_at=row[7],
+        updated_at=row[8],
+        last_login_at=row[9],
+    )
+
+
+def _get_user_by_email(email: str) -> Optional[UserOut]:
+    row = _fetch_one(
+        """
+        SELECT id, role, first_name, last_name, email, password_hash, is_active, created_at, updated_at, last_login_at
+        FROM utilisateurs WHERE email = %s LIMIT 1;
+        """,
+        (email.lower().strip(),),
+    )
+    if not row:
+        return None
+    return _user_from_row(row)
+
+
+def _get_user_with_hash(email: str) -> Optional[Tuple]:
+    row = _fetch_one(
+        """
+        SELECT id, role, first_name, last_name, email, password_hash, is_active, created_at, updated_at, last_login_at
+        FROM utilisateurs WHERE email = %s LIMIT 1;
+        """,
+        (email.lower().strip(),),
+    )
+    return row
+
+
+def _get_user_by_id(user_id: str) -> Optional[UserOut]:
+    row = _fetch_one(
+        """
+        SELECT id, role, first_name, last_name, email, password_hash, is_active, created_at, updated_at, last_login_at
+        FROM utilisateurs WHERE id = %s LIMIT 1;
+        """,
+        (user_id,),
+    )
+    if not row:
+        return None
+    return _user_from_row(row)
+
+
+class LoginIn(BaseModel):
+    email: str
+    password: str
+
+
+def _serialize_user(user: UserOut) -> dict:
+    return {
+        "id": user.id,
+        "role": user.role,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.email,
+        "is_active": user.is_active,
+        "created_at": user.created_at,
+        "updated_at": user.updated_at,
+        "last_login_at": user.last_login_at,
+    }
+
+
+def _set_auth_cookies(response: Response, access_token: str, refresh_token: Optional[str] = None):
+    response.set_cookie(
+        key=_ACCESS_COOKIE_NAME,
+        value=access_token,
+        httponly=True,
+        secure=_COOKIE_SECURE,
+        samesite=_COOKIE_SAMESITE,
+        domain=_COOKIE_DOMAIN,
+        max_age=_ACCESS_TTL_SECONDS,
+        path="/",
+    )
+    if refresh_token:
+        response.set_cookie(
+            key=_REFRESH_COOKIE_NAME,
+            value=refresh_token,
+            httponly=True,
+            secure=_COOKIE_SECURE,
+            samesite=_COOKIE_SAMESITE,
+            domain=_COOKIE_DOMAIN,
+            max_age=_REFRESH_TTL_SECONDS,
+            path="/",
+        )
+
+
+def _clear_auth_cookies(response: Response):
+    response.delete_cookie(_ACCESS_COOKIE_NAME, domain=_COOKIE_DOMAIN, path="/")
+    response.delete_cookie(_REFRESH_COOKIE_NAME, domain=_COOKIE_DOMAIN, path="/")
+
+
+def _issue_tokens(user: UserOut) -> tuple[str, str]:
+    access_token = _sign({"sub": user.id, "role": user.role, "email": user.email}, _ACCESS_TTL_SECONDS)
+    refresh_token = _sign({"sub": user.id, "type": "refresh"}, _REFRESH_TTL_SECONDS)
+    return access_token, refresh_token
+
+
+def require_auth(request: Request) -> UserOut:
+    token = request.cookies.get(_ACCESS_COOKIE_NAME)
+    if not token:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    payload = _verify(token, verify_exp=True)
+    user = _get_user_by_id(payload.get("sub"))
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="Utilisateur inactif ou introuvable")
+    request.state.user = user
+    return user
+
+
+def require_role(request: Request, roles: list[str]) -> UserOut:
+    user = require_auth(request)
+    if user.role not in roles:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    return user
+
+
+@app.post("/auth/login")
+def auth_login(payload: LoginIn, response: Response):
+    row = _get_user_with_hash(payload.email)
+    if not row:
+        raise HTTPException(status_code=401, detail="Email ou mot de passe invalide")
+    user = _user_from_row(row)
+    stored_hash = row[5]
+    if not user or not user.is_active or not stored_hash or not _verify_password(payload.password, stored_hash):
+        raise HTTPException(status_code=401, detail="Email ou mot de passe invalide")
+
+    access_token, refresh_token = _issue_tokens(user)
+    _set_auth_cookies(response, access_token, refresh_token)
+    try:
+        executer_requete_sql(
+            "UPDATE utilisateurs SET last_login_at = NOW(), updated_at = NOW() WHERE id = %s;",
+            (user.id,),
+        )
+    except Exception:
+        pass
+    return _serialize_user(user)
+
+
+@app.post("/auth/logout")
+def auth_logout(response: Response):
+    _clear_auth_cookies(response)
+    return {"status": "logged_out"}
+
+
+@app.get("/auth/me")
+def auth_me(user: UserOut = Depends(require_auth)):
+    return _serialize_user(user)
+
+
+@app.post("/auth/refresh")
+def auth_refresh(response: Response, request: Request):
+    token = request.cookies.get(_REFRESH_COOKIE_NAME)
+    if not token:
+        raise HTTPException(status_code=401, detail="Non authentifié")
+    payload = _verify(token, verify_exp=True)
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Token invalide")
+    user = _get_user_by_id(payload.get("sub"))
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="Utilisateur inactif ou introuvable")
+    access_token, refresh_token = _issue_tokens(user)
+    _set_auth_cookies(response, access_token, refresh_token)
+    return _serialize_user(user)
 
 # Fonction pour calculer la consommation
 def calculer_consommation_par_intervalle(resultat_sql: List[Tuple], timeframe: str = "jour") -> dict:
@@ -805,7 +1083,7 @@ def temperature_jour(nom_automate: str = Query(..., description="Nom de l'automa
     result = executer_requete_sql(query, (nom_automate,))
     return {
         "labels": [row[0].strftime("%H:%M") for row in result],
-        "data": [row[1] for row in result],
+        "data": [float(row[1] or 0) / 10 for row in result],  # valeur en °C
     }
 
 @app.get("/temperature/semaine")
@@ -875,7 +1153,7 @@ def ph_jour(nom_automate: str = Query(..., description="Nom de l'automate")):
     result = executer_requete_sql(query, (nom_automate,))
     return {
         "labels": [row[0].strftime("%H:%M") for row in result],
-        "data": [row[1] for row in result],
+        "data": [float(row[1] or 0) / 100 for row in result],  # valeur en pH
     }
 
 @app.get("/ph/semaine")
@@ -1274,18 +1552,15 @@ def executer_requete_sql_one(query: str, params: tuple = ()):
 
 
 # ---------------------------------------------------------------------------
-# Helpers accès admin (basé sur l'en-tête transmis par le front Auth0)
+# Helpers accès admin (désormais via cookies Jwt)
 # ---------------------------------------------------------------------------
 def _require_admin(request: Request) -> str:
     """
-    Vérifie que l'appelant est admin.
-    Attend l'en-tête HTTP `x-user-role: admin`.
-    Retourne le champ email pour l'audit (peut être vide).
+    Vérifie que l'appelant est Admin/SuperAdmin (cookie auth).
+    Retourne l'email pour l'audit.
     """
-    role = (request.headers.get("x-user-role") or "").lower()
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Accès réservé à l'admin")
-    return request.headers.get("x-user-email") or ""
+    user = require_role(request, ["Admin", "SuperAdmin"])
+    return user.email
 
 
 # ---------------------------------------------------------------------------
