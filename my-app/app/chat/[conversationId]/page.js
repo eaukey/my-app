@@ -30,7 +30,7 @@ export default function ConversationPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-3 md:px-5 pt-3 md:pt-4 pb-3">
         <ChatConversation clientId={conversationId} />
       </div>
     </div>

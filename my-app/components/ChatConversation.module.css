@@ -2,7 +2,8 @@
 .container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px);
+  height: calc(100vh - 32px);
+  max-height: calc(100vh - 32px);
   min-height: 70vh;
   border: 1px solid var(--border-subtle);
   border-radius: 18px;
