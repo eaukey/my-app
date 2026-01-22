@@ -168,8 +168,9 @@ export default function SuperAdminPage() {
         </div>
 
         <div className={styles.card}>
-          <div className={styles.cardTitle}>Organisations</div>
+          <div className={styles.cardTitle}>Gestion des organisations</div>
           <div className={styles.list}>
+            <div className={styles.cardTitle}>Créer une organisation</div>
             <div className={styles.sectionRow}>
               <input
                 className={styles.input}
@@ -215,6 +216,7 @@ export default function SuperAdminPage() {
               </button>
             </div>
 
+            <div className={styles.cardTitle}>Gestion des membres de l’organisation</div>
             <select
               value={selectedOrgId}
               onChange={(e) => {
@@ -229,12 +231,7 @@ export default function SuperAdminPage() {
                 </option>
               ))}
             </select>
-          </div>
-        </div>
 
-        <div className={styles.card}>
-          <div className={styles.cardTitle}>Membres de l’organisation</div>
-          <div className={styles.list}>
             {!selectedOrgId && <div className={styles.empty}>Choisir une organisation</div>}
             {selectedOrgId && (
               <>
