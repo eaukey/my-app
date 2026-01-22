@@ -43,19 +43,19 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
 
 .list {
   display: grid;
-  gap: 14px;
+  gap: 18px;
   font-size: 14px;
 }
 
 .sectionRow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .row {
