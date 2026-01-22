@@ -12,6 +12,13 @@
   background: var(--bg-base);
 }
 
+.contentNoNav {
+  flex: 1;
+  margin-left: 0;
+  padding-bottom: 0;
+  background: var(--bg-base);
+}
+
 /* --- Responsive --- */
 /* Sur mobile, la barre lat 1arale devient une barre du bas :
    - on retire le d e9calage gauche
