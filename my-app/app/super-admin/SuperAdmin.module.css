@@ -48,14 +48,14 @@
 
 .list {
   display: grid;
-  gap: 8px;
+  gap: 14px;
   font-size: 14px;
 }
 
 .sectionRow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 8px;
+  gap: 12px;
 }
 
 .row {
