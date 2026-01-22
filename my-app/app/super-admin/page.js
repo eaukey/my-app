@@ -91,7 +91,7 @@ export default function SuperAdminPage() {
 
       <div className={styles.grid}>
         <div className={styles.card}>
-          <div className={styles.cardTitle}>Rôles globaux</div>
+          <div className={styles.cardTitle}>Gestion des admins</div>
           <div className={styles.list}>
             <select
               value={selectedUserId}
@@ -99,7 +99,7 @@ export default function SuperAdminPage() {
                 const id = e.target.value;
                 setSelectedUserId(id);
                 const found = users.find((u) => String(u.id) === id);
-                setSelectedRoles(found?.roles || []);
+                setSelectedRoles((found?.roles || []).filter((r) => r !== "client"));
                 setSelectedOrg(found?.client_id || "");
               }}
               className={styles.pill}
@@ -115,7 +115,7 @@ export default function SuperAdminPage() {
             <div>
               <div className={styles.cardTitle}>Rôles</div>
               <div className={styles.list}>
-                {roles.map((r) => (
+                {roles.filter((r) => r !== "client").map((r) => (
                   <label key={r} className={styles.pill}>
                     <input
                       type="checkbox"
@@ -130,22 +130,6 @@ export default function SuperAdminPage() {
                   </label>
                 ))}
               </div>
-            </div>
-
-            <div>
-              <div className={styles.cardTitle}>Organisation (legacy)</div>
-              <select
-                value={selectedOrg}
-                onChange={(e) => setSelectedOrg(e.target.value)}
-                className={styles.input}
-              >
-                <option value="">Aucune</option>
-                {orgs.map((o) => (
-                  <option key={o.id} value={o.name}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
             </div>
 
             <button
