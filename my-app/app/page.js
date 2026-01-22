@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { Suspense, useState, useEffect } from 'react';
 import { useAuth } from "../lib/auth";
 import Image from "next/image";
+import { Eye, EyeOff } from "lucide-react";
 
 // Composants séparés avec display names
 const LoadingComponent = function() {
@@ -33,6 +34,7 @@ const LoginLanding = () => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [mode, setMode] = useState("login");
+  const [showPassword, setShowPassword] = useState(false);
 
   if (isLoading) return <LoadingComponent />;
 
@@ -76,14 +78,24 @@ const LoginLanding = () => {
             className="w-full px-3 py-2 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-input)] text-[var(--text-primary)]"
             required
           />
-          <input
-            type="password"
-            placeholder="Mot de passe"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-input)] text-[var(--text-primary)]"
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Mot de passe"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-3 py-2 pr-10 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-input)] text-[var(--text-primary)]"
+              required
+            />
+            <button
+              type="button"
+              aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute inset-y-0 right-2 flex items-center text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
           {error && (
             <p className="text-xs text-[var(--critical)] text-center">{error}</p>
           )}
