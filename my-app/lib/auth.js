@@ -69,32 +69,49 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     setIsLoading(true);
-    const res = await fetch(`${API_BASE}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json();
-    setToken(data.token);
-    writeToken(data.token);
-    await loadMe(data.token);
-    return data.user;
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        const message =
+          res.status === 404
+            ? "Il n'existe pas de compte associé à cette adresse email."
+            : res.status === 401
+              ? "Mot de passe incorrect."
+              : text || "Connexion impossible";
+        throw new Error(message);
+      }
+      const data = await res.json();
+      setToken(data.token);
+      writeToken(data.token);
+      await loadMe(data.token);
+      return data.user;
+    } finally {
+      setIsLoading(false);
+    }
   }, [loadMe]);
 
   const register = useCallback(async (email, password) => {
     setIsLoading(true);
-    const res = await fetch(`${API_BASE}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) throw new Error(await res.text());
-    const data = await res.json();
-    setToken(data.token);
-    writeToken(data.token);
-    await loadMe(data.token);
-    return data.user;
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setToken(data.token);
+      writeToken(data.token);
+      await loadMe(data.token);
+      return data.user;
+    } finally {
+      setIsLoading(false);
+    }
   }, [loadMe]);
 
   const value = useMemo(
