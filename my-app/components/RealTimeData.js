@@ -7,6 +7,7 @@ import KpiCard from "./KpiCard";
 import styles from "./RealTimeData.module.css";
 
 const statusWeight = { ok: 0, watch: 1, critical: 2, neutral: 0 };
+const SHOW_RECYCLING_KPI = false;
 
 const formatTime = (value) => {
   if (!value) return null;
@@ -256,7 +257,7 @@ const RealTimeData = ({ selectedMachine, selectedPeriod, siteLabel }) => {
   };
 
   const kpis = [
-    buildKpi("taux_recyclage", "Taux de recyclage", "%"),
+    ...(SHOW_RECYCLING_KPI ? [buildKpi("taux_recyclage", "Taux de recyclage", "%")] : []),
     buildKpi("hauteur_cuve_traitement", "Cuve de traitement", "%"),
     buildKpi("hauteur_cuve_disconnection", "Cuve de renvoi", "%"),
     buildKpi("volume_renvoi", "Volume de renvoi", "m³"),
@@ -292,7 +293,7 @@ const RealTimeData = ({ selectedMachine, selectedPeriod, siteLabel }) => {
       <ExecutiveSummaryBar siteName={siteLabel} status={worstKpi.kpi?.status || "ok"} lastUpdate={lastUpdateText} insight={insight} />
       <div className={styles.kpiGrid}>
         {loading
-          ? Array.from({ length: 4 }).map((_, idx) => <div key={idx} className={styles.kpiSkeleton} />)
+          ? Array.from({ length: kpis.length }).map((_, idx) => <div key={idx} className={styles.kpiSkeleton} />)
           : kpis.map((kpi) => (
               <KpiCard
                 key={kpi.key}

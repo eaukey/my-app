@@ -20,6 +20,8 @@ const chartPalette = {
   slate: "#cbd5f5",
 };
 
+const SHOW_RECYCLING_CHART = true;
+
  
 
 // Le mapping station <-> nom est désormais récupéré dynamiquement depuis l'API
@@ -54,11 +56,15 @@ const chartGroups = {
       color: chartPalette.orange,
       endpoint: (period) => `/relevage/${period}`,
     },
-    {
-      title: "Taux de recyclage (%)",
-      color: chartPalette.teal,
-      endpoint: (period) => `/taux_recyclage/${period}`,
-    },
+    ...(SHOW_RECYCLING_CHART
+      ? [
+          {
+            title: "Taux de recyclage (%)",
+            color: chartPalette.teal,
+            endpoint: (period) => `/taux_recyclage/${period}`,
+          },
+        ]
+      : []),
     {
       title: "Consommation électrique (kWh)",
       color: chartPalette.blueSoft,
