@@ -20,7 +20,8 @@ const chartPalette = {
   slate: "#cbd5f5",
 };
 
-const SHOW_RECYCLING_CHART = true;
+const SHOW_RECYCLING_CHART = false;
+const SHOW_DISINFECTION_CHART = false;
 
  
 
@@ -70,11 +71,15 @@ const chartGroups = {
       color: chartPalette.blueSoft,
       endpoint: (period) => `/compteur_elec/${period}`,
     },
-    {
-      title: "Taux désinfection (%)",
-      color: chartPalette.violet,
-      endpoint: (period) => `/taux_desinfection/${period}`,
-    },
+    ...(SHOW_DISINFECTION_CHART
+      ? [
+          {
+            title: "Taux désinfection (%)",
+            color: chartPalette.violet,
+            endpoint: (period) => `/taux_desinfection/${period}`,
+          },
+        ]
+      : []),
     {
       title: "Pression (mbar)",
       color: chartPalette.primary,
