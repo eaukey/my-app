@@ -17,8 +17,21 @@
 
 /* Zone logo (masquée en mobile pour gagner de l'espace) */
 .logo {
-  padding-top: 1rem;
-  padding-bottom: 1rem; /* équiv. py-4 */
+  width: 100%;
+  padding: 1rem 0.75rem; /* équiv. py-4 px-3 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(165deg, var(--primary) 0%, rgba(65, 174, 173, 0.92) 70%, rgba(45, 143, 142, 0.9) 100%);
+  border-bottom: 1px solid rgba(4, 19, 26, 0.14);
+  box-shadow: 0 8px 18px rgba(65, 174, 173, 0.24);
+}
+
+.logo :global(img) {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.28));
 }
 
 /* Liste des liens (pile verticale en desktop) */
