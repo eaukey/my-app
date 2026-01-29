@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../lib/auth";
 import { Edit, Save, X, Search, Plus, Loader2, Trash2, Check } from "lucide-react";
 import styles from "./AdminMobile.module.css";
-
-const BACKEND_URL = "https://backend-eaukey.duckdns.org";
+import { API_BASE } from "../../lib/apiBase";
 
 const normalizeEmail = (val) => {
   const e = (val || "").trim().toLowerCase();
@@ -43,7 +42,7 @@ export default function AdminPage() {
   const fetchAutomates = async () => {
     setIsLoadingList(true);
     try {
-      const res = await authFetch(`${BACKEND_URL}/recherche/automate_LCA`);
+      const res = await authFetch(`${API_BASE}/recherche/automate_LCA`);
       const data = await res.json();
       setAutomates(Array.isArray(data) ? data : []);
     } catch (e) {
