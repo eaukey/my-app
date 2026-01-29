@@ -42,7 +42,7 @@ const LoginLanding = () => {
     <div className="login-gradient-bg flex items-center justify-center min-h-screen">
       <div className="flex flex-col items-center bg-[var(--bg-elevated)] border border-[var(--border-strong)] p-10 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur">
         <Image
-          src="/images/eaukey-logo.svg.png"
+          src="/images/Logo Eaukey.png"
           alt="Eaukey Logo"
           width={120}
           height={120}

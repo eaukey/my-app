@@ -33,7 +33,7 @@ const DocumentLibrary = () => {
         {/* Logo Eaukey */}
         <div className="py-4">
         <Image 
-            src="/images/eaukey-logo.svg.png" 
+            src="/images/Logo Eaukey.png" 
             alt="Eaukey Logo"
             width={48}
             height={48}

@@ -1,14 +1,14 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Home, MessageCircle, Table, AlertTriangle, Shield } from "lucide-react";
-import Image from "next/image";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./SideNav.module.css";
 import { useAuth } from "../lib/auth";
 
-export default function SideNav() {
+export default function SideNav({ collapsed = false }) {
   const pathname = usePathname();
   const { user, isAuthenticated, authFetch } = useAuth();
   const roles = user?.roles || [];
@@ -115,17 +115,26 @@ export default function SideNav() {
     // { icon: FileText, href: "/documents", title: "Documents" }, // Masqué du menu (conservé côté routes)
   ];
 
+  const navClassName = collapsed ? `${styles.root} ${styles.collapsed}` : styles.root;
+
   return (
-    <div className={styles.root}>
-      <div className={styles.logo}>
+    <div className={navClassName}>
+      <Link
+        href="/"
+        className={styles.brand}
+        aria-label="Accueil Eaukey"
+        title="Accueil Eaukey"
+      >
         <Image
-          src="/images/eaukey-logo.svg.png"
-          alt="Eaukey Logo"
-          width={48}
-          height={48}
+          src="/images/Logo Eaukey.png"
+          alt="Logo Eaukey"
+          width={32}
+          height={32}
+          className={styles.brandMark}
           priority
         />
-      </div>
+        <span className={styles.brandText}>Eaukey</span>
+      </Link>
       <div className={styles.links}>
         {links.map(({ icon: Icon, href, title }) => (
           <Link

@@ -15,23 +15,74 @@
   z-index: 50; /* s'assure d'être au-dessus du contenu */
 }
 
-/* Zone logo (masquée en mobile pour gagner de l'espace) */
-.logo {
+/* Zone brand/header */
+.brand {
   width: 100%;
-  padding: 1rem 0.75rem; /* équiv. py-4 px-3 */
+  height: 56px;
+  min-height: 52px;
+  padding: 0.45rem 0.85rem;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   justify-content: center;
-  background: linear-gradient(165deg, var(--primary) 0%, rgba(65, 174, 173, 0.92) 70%, rgba(45, 143, 142, 0.9) 100%);
-  border-bottom: 1px solid rgba(4, 19, 26, 0.14);
-  box-shadow: 0 8px 18px rgba(65, 174, 173, 0.24);
+  gap: 0.3rem;
+  text-decoration: none;
+  color: #e3eef2;
+  position: relative;
+  overflow: hidden;
+  background: none;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
-.logo :global(img) {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.28));
+.brand::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(4, 19, 26, 0) 0%, rgba(65, 174, 173, 0.08) 100%);
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.brand:hover {
+  color: #f3f9fb;
+}
+
+.brand:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.brandMark {
+  width: 28px;
+  height: 28px;
+  color: rgba(227, 238, 242, 0.92);
+  transition: inherit;
+}
+
+.brandMark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.brandText {
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: rgba(227, 238, 242, 0.92);
+  line-height: 1.1;
+  transition: color 0.18s ease, opacity 0.18s ease;
+}
+
+.collapsed .brand {
+  background-color: transparent;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.collapsed .brandText {
+  display: none;
 }
 
 /* Liste des liens (pile verticale en desktop) */
@@ -41,7 +92,7 @@
   align-items: center;
   flex-grow: 1;
   row-gap: 1.5rem; /* équiv. space-y-6 */
-  margin-top: 1.5rem; /* équiv. mt-6 */
+  margin-top: 1.25rem; /* rapproché pour aligner avec header compact */
 }
 
 /* Bouton de lien */
@@ -56,6 +107,19 @@
   transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
+.link::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(65, 174, 173, 0.02) 0%, rgba(65, 174, 173, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
 /* Effet hover en desktop */
 .link:hover {
   background-color: var(--primary-ghost);
@@ -63,8 +127,12 @@
 
 /* Lien actif */
 .active {
-  background-color: var(--primary);
-  box-shadow: var(--card-glow);
+  background-color: rgba(65, 174, 173, 0.08);
+  box-shadow: none;
+}
+
+.active::before {
+  opacity: 1;
 }
 
 /* Couleur de l'icône (monochrome par défaut, couleur marque si actif) */
@@ -72,7 +140,7 @@
   color: var(--text-muted);
 }
 .active .icon {
-  color: #04131a;
+  color: #cfe8e7;
 }
 
 /* Badge de notification */
@@ -115,7 +183,7 @@
     box-shadow: 0 -2px 16px rgba(0,0,0,0.25); /* ombre douce */
   }
 
-  .logo {
+  .brand {
     display: none; /* Sur mobile, on cache le logo pour libérer de la place */
   }
 
