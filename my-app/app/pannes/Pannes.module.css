@@ -18,6 +18,9 @@
 .checkboxLabel { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-secondary); }
 .checkboxLabel input { width: 16px; height: 16px; }
 .titleRow { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.searchBox { display: flex; align-items: center; gap: 8px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 8px 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+.searchInput { background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 14px; min-width: 220px; }
+.searchInput::placeholder { color: var(--text-secondary); }
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 .tabButton { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-subtle); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 700; letter-spacing: 0.2px; min-width: 150px; text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,0.15); transition: transform 0.1s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
 .tabButton:hover { transform: translateY(-1px); border-color: var(--primary); }

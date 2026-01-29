@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Edit, Trash2, Check, X, Loader2 } from "lucide-react";
+import { Edit, Trash2, Check, X, Loader2, Search } from "lucide-react";
 import { useAuth } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./Pannes.module.css";
@@ -43,6 +43,7 @@ export default function PannesPage() {
     date_fin: "",
     inProgress: false,
   });
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -288,10 +289,18 @@ export default function PannesPage() {
   };
 
   const filteredPannes = useMemo(() => {
-    if (activeTab === "resolved") return pannes.filter((p) => p.date_fin);
-    if (activeTab === "in_progress") return pannes.filter((p) => !p.date_fin);
-    return pannes;
-  }, [activeTab, pannes]);
+    const baseList = (() => {
+      if (activeTab === "resolved") return pannes.filter((p) => p.date_fin);
+      if (activeTab === "in_progress") return pannes.filter((p) => !p.date_fin);
+      return pannes;
+    })();
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return baseList;
+    return baseList.filter((p) =>
+      [p.client, p.lieu, p.nom_automate, p.panne, p.probleme, p.created_by]
+        .some((v) => String(v || "").toLowerCase().includes(term))
+    );
+  }, [activeTab, pannes, searchTerm]);
 
   if (isLoading) return <p>Chargement...</p>;
   if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
@@ -435,6 +444,15 @@ export default function PannesPage() {
 
       <div className={styles.section}>
         <div className={styles.titleRow}>
+          <div className={styles.searchBox}>
+            <Search size={16} />
+            <input
+              className={styles.searchInput}
+              placeholder="Rechercher (nom, client, lieu, panne)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
           <div className={styles.tabs}>
             {TAB_OPTIONS.map((tab) => (
               <button
