@@ -128,8 +128,8 @@ export default function SideNav({ collapsed = false }) {
         <Image
           src="/images/Logo Eaukey.png"
           alt="Logo Eaukey"
-          width={40}
-          height={40}
+          width={44}
+          height={56}
           className={styles.brandMark}
           priority
         />
