@@ -128,12 +128,11 @@ export default function SideNav({ collapsed = false }) {
         <Image
           src="/images/Logo Eaukey.png"
           alt="Logo Eaukey"
-          width={32}
-          height={32}
+          width={40}
+          height={40}
           className={styles.brandMark}
           priority
         />
-        <span className={styles.brandText}>Eaukey</span>
       </Link>
       <div className={styles.links}>
         {links.map(({ icon: Icon, href, title }) => (
