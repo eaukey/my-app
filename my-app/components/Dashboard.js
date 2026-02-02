@@ -127,6 +127,7 @@ const Dashboard = () => {
   });
   const [activeDataCategory, setActiveDataCategory] = useState("performance");
   const [availableMachines, setAvailableMachines] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fonction utilitaire pour comparer des IDs (gère "2023004" vs "2023004.0")
   const idsEqual = (a, b) => {
@@ -136,6 +137,17 @@ const Dashboard = () => {
     const na = Number(sa);
     const nb = Number(sb);
     return !Number.isNaN(na) && !Number.isNaN(nb) && na === nb;
+  };
+
+  const persistSelection = (value) => {
+    setSelectedMachine(value);
+    try {
+      if (value) {
+        typeof window !== "undefined" && window.localStorage.setItem(LOCAL_STORAGE_KEY_SELECTED_MACHINE, value);
+      }
+    } catch (err) {
+      console.warn("localStorage inaccessible pour écriture:", err);
+    }
   };
 
   // Clé de stockage local pour mémoriser la station sélectionnée
@@ -217,7 +229,7 @@ const Dashboard = () => {
 
     // Si des stations sont disponibles, déterminer la sélection sans écraser une valeur restaurée
     if (mappedStations.length > 0) {
-      setSelectedMachine((prev) => {
+        setSelectedMachine((prev) => {
         const saved = typeof window !== "undefined" ? window.localStorage.getItem(LOCAL_STORAGE_KEY_SELECTED_MACHINE) : null;
         // 1) Si la valeur courante est valide, on la garde
         if (prev && mappedStations.some((s) => idsEqual(s.id, prev))) {
@@ -234,6 +246,16 @@ const Dashboard = () => {
   }, [isAuthenticated, stationMapping, allAutomates]);
 
   const filteredGraphs = chartGroups[activeDataCategory] || [];
+
+  const filteredSuggestions = searchQuery.trim()
+    ? availableMachines.filter((station) => {
+        const q = searchQuery.trim().toLowerCase();
+        return (
+          station.name.toLowerCase().includes(q) ||
+          String(station.id || "").toLowerCase().includes(q)
+        );
+      }).slice(0, 6)
+    : [];
 
   const handleFallbackPeriod = () => {
     setSelectedPeriod((prev) => {
@@ -268,34 +290,57 @@ const Dashboard = () => {
 
       <div className={styles.selectorCard}>
         <div className={styles.selectorLabel}>Site</div>
-        <select
-          value={selectedMachine}
-          onChange={(e) => {
-            const value = e.target.value;
-            setSelectedMachine(value);
-            try {
-              typeof window !== "undefined" && window.localStorage.setItem(LOCAL_STORAGE_KEY_SELECTED_MACHINE, value);
-            } catch (err) {
-              console.warn("localStorage inaccessible pour écriture (onChange):", err);
-            }
-          }}
-          className={styles.selector}
-        >
-          <option value="">Sélectionnez une station</option>
-          {availableMachines.length > 0 ? (
-            availableMachines.map((station, index) => (
-              <option key={index} value={station.id}>
-                {station.name}
-              </option>
-            ))
-          ) : (
-            <>
-              <option value="2022911.0">Herblay</option>
-              <option value="2023004.0">Marseille</option>
-              <option value="2022912.0">Lyon</option>
-            </>
-          )}
-        </select>
+        <div className={styles.selectorControls}>
+          <select
+            value={selectedMachine}
+            onChange={(e) => persistSelection(e.target.value)}
+            className={styles.selector}
+            aria-label="Sélectionner une station"
+          >
+            <option value="">Sélectionnez une station</option>
+            {availableMachines.length > 0 ? (
+              availableMachines.map((station, index) => (
+                <option key={index} value={station.id}>
+                  {station.name}
+                </option>
+              ))
+            ) : (
+              <>
+                <option value="2022911.0">Herblay</option>
+                <option value="2023004.0">Marseille</option>
+                <option value="2022912.0">Lyon</option>
+              </>
+            )}
+          </select>
+
+          <div className={styles.searchBox}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rechercher (nom, client, lieu)"
+              className={styles.searchInput}
+              aria-label="Rechercher une station"
+            />
+            {searchQuery && filteredSuggestions.length > 0 && (
+              <div className={styles.suggestions}>
+                {filteredSuggestions.map((station) => (
+                  <button
+                    key={station.id}
+                    type="button"
+                    className={styles.suggestionItem}
+                    onClick={() => {
+                      persistSelection(station.id);
+                      setSearchQuery("");
+                    }}
+                  >
+                    {station.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {selectedMachine && (

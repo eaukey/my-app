@@ -76,6 +76,55 @@
   color: var(--text-primary);
 }
 
+.selectorControls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.searchBox {
+  position: relative;
+  width: min(420px, 100%);
+}
+
+.searchInput {
+  width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  z-index: 10;
+}
+
+.suggestionItem {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.suggestionItem:hover {
+  background: var(--bg-surface);
+}
+
 .tabsRow {
   display: flex;
   gap: 0.5rem;
