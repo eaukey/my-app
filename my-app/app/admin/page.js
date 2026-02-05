@@ -105,7 +105,7 @@ export default function AdminPage() {
       payload.email = e1;
       payload.email2 = e2 || "";
       payload.email3 = e3 || "";
-      const res = await authFetch(`${BACKEND_URL}/automate`, {
+      const res = await authFetch(`${API_BASE}/automate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -130,7 +130,7 @@ export default function AdminPage() {
     setDeletingId(pendingDelete);
     setError("");
     try {
-      const res = await authFetch(`${BACKEND_URL}/automate/${pendingDelete}`, { method: "DELETE" });
+      const res = await authFetch(`${API_BASE}/automate/${pendingDelete}`, { method: "DELETE" });
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.message);
       fetchAutomates();
@@ -170,7 +170,7 @@ export default function AdminPage() {
         email2: e2 || "",
         email3: e3 || "",
       };
-      const res = await authFetch(`${BACKEND_URL}/automate/${encodeURIComponent(nom)}`, {
+      const res = await authFetch(`${API_BASE}/automate/${encodeURIComponent(nom)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
