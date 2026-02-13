@@ -136,3 +136,9 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
+
+export const hasRole = (user, role) =>
+  Array.isArray(user?.roles) && user.roles.includes(role);
+
+export const isAdmin = (user) => hasRole(user, "admin");
+export const isSuperAdmin = (user) => hasRole(user, "super_admin");

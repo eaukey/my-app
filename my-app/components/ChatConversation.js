@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { Send, Check } from "lucide-react";
-import { useAuth } from "../lib/auth";
+import { useAuth, isAdmin as checkAdmin } from "../lib/auth";
 import { getCachedAdminSenderIds, discoverAdminSenderIds } from "./chatRoleUtils";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./ChatConversation.module.css";
@@ -67,8 +67,7 @@ export default function ChatConversation({ clientId }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const roles = user?.roles || [];
-  const isAdmin = Array.isArray(roles) && roles.includes("admin");
+  const isAdmin = checkAdmin(user);
   const senderId = isAdmin ? 0 : 1;
   const displayName =
     user?.name || user?.email || (isAdmin ? "Support" : user?.client_id) || "Utilisateur";
@@ -146,8 +145,6 @@ export default function ChatConversation({ clientId }) {
     ]);
 
     try {
-      // Log de vérification du payload
-      console.log("SEND payload =", { isAdmin, sender_id: senderId, content: txt });
       await authFetch(
         `${API_BASE}/messages/${clientId}`,
         {

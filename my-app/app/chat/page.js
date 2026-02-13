@@ -1,5 +1,5 @@
 "use client";
-import { useAuth } from "../../lib/auth";
+import { useAuth, isAdmin as checkAdmin } from "../../lib/auth";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ConversationList from "../../components/ConversationList";
@@ -8,12 +8,10 @@ export default function ChatPage() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
 
-  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
+  const isAdmin = checkAdmin(user);
   const clientId = user?.client_id || null;
 
   useEffect(() => {
-    console.log("user =", user);
-    console.log("isAdmin =", isAdmin, "clientId =", clientId);
     // Pour les clients → redirection directe vers leur conversation
     if (isAuthenticated && !isAdmin && clientId) {
       router.replace(`/chat/${clientId}`);

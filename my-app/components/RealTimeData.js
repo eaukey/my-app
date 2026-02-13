@@ -7,7 +7,7 @@ import KpiCard from "./KpiCard";
 import styles from "./RealTimeData.module.css";
 
 const statusWeight = { ok: 0, watch: 1, critical: 2, neutral: 0 };
-const SHOW_RECYCLING_KPI = false;
+const SHOW_RECYCLING_KPI = true;
 
 const formatTime = (value) => {
   if (!value) return null;
@@ -106,61 +106,21 @@ const RealTimeData = ({ selectedMachine, selectedPeriod, siteLabel }) => {
 
         for (const endpoint of endpoints) {
           try {
-            if (endpoint === "taux_recyclage") {
-              let value = null;
-              let lastUpdate = null;
-              const url1 = `${API_BASE}/temps_reel/taux_recyclage?nom_automate=${selectedMachine}`;
-              const res1 = await fetch(url1);
-              if (res1.ok) {
-                const json1 = await res1.json();
-                const raw = json1.valeur !== undefined ? json1.valeur : json1.value;
-                if (raw !== undefined && raw !== null && !isNaN(parseFloat(raw))) {
-                  let v = parseFloat(raw);
-                  if (v >= 0 && v <= 1) v = v * 100;
-                  value = v;
-                }
-                lastUpdate = json1.horodatage ? new Date(json1.horodatage) : null;
-              } else {
-                const url2 = `${API_BASE}/taux_recyclage/jour?nom_automate=${selectedMachine}`;
-                const res2 = await fetch(url2);
-                if (res2.ok) {
-                  const json2 = await res2.json();
-                  const arr = Array.isArray(json2) ? json2 : json2.data || json2.valeurs || json2.values || [];
-                  for (let i = arr.length - 1; i >= 0; i--) {
-                    const item = arr[i];
-                    const rawItem =
-                      typeof item === "number"
-                        ? item
-                        : item && typeof item === "object"
-                        ? item.valeur ?? item.value ?? item.v
-                        : null;
-                    if (rawItem !== undefined && rawItem !== null && !isNaN(parseFloat(rawItem))) {
-                      let v = parseFloat(rawItem);
-                      if (v >= 0 && v <= 1) v = v * 100;
-                      value = v;
-                      if (item && typeof item === "object") {
-                        const ts = item.horodatage ?? item.timestamp ?? item.date;
-                        if (ts) lastUpdate = new Date(ts);
-                      }
-                      break;
-                    }
-                  }
-                }
-              }
-              newData[endpoint] = { value, lastUpdate };
-            } else {
-              const url = `${API_BASE}/temps_reel/${endpoint}?nom_automate=${selectedMachine}`;
-              const response = await fetch(url);
+            const url = `${API_BASE}/temps_reel/${endpoint}?nom_automate=${selectedMachine}`;
+            const response = await fetch(url);
 
-              if (response.ok) {
-                const result = await response.json();
-                newData[endpoint] = {
-                  value: result.valeur !== undefined ? result.valeur : null,
-                  lastUpdate: result.horodatage ? new Date(result.horodatage) : null,
-                };
-              } else {
-                newData[endpoint] = { value: null, lastUpdate: null };
+            if (response.ok) {
+              const result = await response.json();
+              let value = result.valeur !== undefined ? result.valeur : null;
+              if (endpoint === "taux_recyclage" && value !== null && value >= 0 && value <= 1) {
+                value = value * 100;
               }
+              newData[endpoint] = {
+                value,
+                lastUpdate: result.horodatage ? new Date(result.horodatage) : null,
+              };
+            } else {
+              newData[endpoint] = { value: null, lastUpdate: null };
             }
           } catch (err) {
             newData[endpoint] = { value: null, lastUpdate: null };
@@ -188,8 +148,6 @@ const RealTimeData = ({ selectedMachine, selectedPeriod, siteLabel }) => {
       }
       setDeltaLoading(true);
       const deltaEndpoints = {
-        taux_recyclage: (p) => `/taux_recyclage/${p}`,
-        volume_renvoi: (p) => `/renvoi/${p}`,
         compteur_electrique: (p) => `/compteur_elec/${p}`,
       };
       const nextDelta = {};

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useAuth } from "../lib/auth";
+import { useAuth, isAdmin as checkAdmin } from "../lib/auth";
 import { API_BASE } from "../lib/apiBase";
 import { usePathname } from "next/navigation";
 import styles from "./ConversationList.module.css";
@@ -21,7 +21,7 @@ export default function ConversationList({ onSelect }) {
   const [unreadByClient, setUnreadByClient] = useState({});
   const pathname = usePathname();
 
-  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
+  const isAdmin = checkAdmin(user);
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) return;

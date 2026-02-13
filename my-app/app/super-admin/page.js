@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../../lib/auth";
+import { useAuth, hasRole } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./SuperAdmin.module.css";
 
@@ -24,7 +24,7 @@ export default function SuperAdminPage() {
   const [orgAutomates, setOrgAutomates] = useState([]);
   const toArray = (v, key) => (Array.isArray(v) ? v : Array.isArray(v?.[key]) ? v[key] : []);
   const isAdminOrSuper = useMemo(
-    () => Array.isArray(user?.roles) && (user.roles.includes("super_admin") || user.roles.includes("admin")),
+    () => hasRole(user, "super_admin") || hasRole(user, "admin"),
     [user?.roles]
   );
 

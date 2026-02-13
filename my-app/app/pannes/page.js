@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Edit, Trash2, Check, X, Loader2, Search } from "lucide-react";
-import { useAuth } from "../../lib/auth";
+import { useAuth, isAdmin as checkAdmin } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./Pannes.module.css";
 
@@ -24,7 +24,7 @@ const TAB_OPTIONS = [
 
 export default function PannesPage() {
   const { user, isAuthenticated, isLoading, authFetch } = useAuth();
-  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
+  const isAdmin = checkAdmin(user);
 
   const [form, setForm] = useState(emptyForm);
   const [clients, setClients] = useState([]);

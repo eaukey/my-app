@@ -6,14 +6,13 @@ import { usePathname } from "next/navigation";
 import { Home, MessageCircle, Table, AlertTriangle, Shield } from "lucide-react";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./SideNav.module.css";
-import { useAuth } from "../lib/auth";
+import { useAuth, isAdmin as checkAdmin, isSuperAdmin as checkSuperAdmin } from "../lib/auth";
 
 export default function SideNav({ collapsed = false }) {
   const pathname = usePathname();
   const { user, isAuthenticated, authFetch } = useAuth();
-  const roles = user?.roles || [];
-  const isAdmin = Array.isArray(roles) && roles.includes("admin");
-  const isSuperAdmin = Array.isArray(roles) && roles.includes("super_admin");
+  const isAdmin = checkAdmin(user);
+  const isSuperAdmin = checkSuperAdmin(user);
   const clientId = user?.client_id || null;
 
   const routeClientId = !isAdmin && typeof pathname === "string" && pathname.startsWith("/chat/")
@@ -104,15 +103,12 @@ export default function SideNav({ collapsed = false }) {
 
   const links = [
     { icon: Home, href: "/", title: "Accueil" },
-    // { icon: BarChart2, href: "/stock", title: "Stock" }, // Masqué du menu (conservé côté routes)
-    // { icon: Settings, href: "/pilotage", title: "Pilotage" }, // Masqué du menu (conservé côté routes)
     ...(isSuperAdmin ? [{ icon: Shield, href: "/super-admin", title: "Super admin" }] : []),
     ...(isAdmin ? [
       { icon: Table, href: "/admin", title: "Automates" },
       { icon: AlertTriangle, href: "/pannes", title: "Pannes" },
     ] : []),
     { icon: MessageCircle, href: "/chat", title: "Chat" },
-    // { icon: FileText, href: "/documents", title: "Documents" }, // Masqué du menu (conservé côté routes)
   ];
 
   const navClassName = collapsed ? `${styles.root} ${styles.collapsed}` : styles.root;

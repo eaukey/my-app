@@ -574,13 +574,13 @@ WITH heures AS (
 ),
 mediane AS (
     SELECT
-        date_trunc('hour', rounded_timestamp) AS heure_ts,
-        percentile_cont(0.5) WITHIN GROUP (ORDER BY avg_chlore / 3.0)
+        date_trunc('hour', horodatage) AS heure_ts,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY (chlore_mv / 3.0))
             AS taux_med
-    FROM   moyenne
+    FROM   mesures
     WHERE  nom_automate      = %s
-      AND  rounded_timestamp >= NOW() - INTERVAL '24 hours'
-      AND  rounded_timestamp <  NOW()
+      AND  horodatage        >= NOW() - INTERVAL '24 hours'
+      AND  horodatage        <  NOW()
     GROUP  BY heure_ts
 )
 SELECT

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../../lib/auth";
+import { useAuth, isAdmin as checkAdmin } from "../../lib/auth";
 import { Edit, Save, X, Search, Plus, Loader2, Trash2, Check } from "lucide-react";
 import styles from "./AdminMobile.module.css";
 import { API_BASE } from "../../lib/apiBase";
@@ -37,7 +37,7 @@ export default function AdminPage() {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
-  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
+  const isAdmin = checkAdmin(user);
 
   const fetchAutomates = async () => {
     setIsLoadingList(true);

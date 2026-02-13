@@ -1,5 +1,5 @@
 "use client";
-import { useAuth } from "../../../lib/auth";
+import { useAuth, isAdmin as checkAdmin } from "../../../lib/auth";
 import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import ChatConversation from "../../../components/ChatConversation";
@@ -10,7 +10,7 @@ export default function ConversationPage() {
   const params = useParams();
   const { conversationId } = params;
 
-  const isAdmin = Array.isArray(user?.roles) && user.roles.includes("admin");
+  const isAdmin = checkAdmin(user);
   const clientId = user?.client_id || null;
 
   useEffect(() => {

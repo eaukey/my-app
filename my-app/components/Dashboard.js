@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import GraphComponent from "./GraphComponent";
-import MultiSeriesGraphComponent from "./MultiSeriesGraphComponent";
+import Chart from "./Chart";
 import RealTimeData from "./RealTimeData";
 import { useAuth } from "../lib/auth";
 import styles from "./Dashboard.module.css";
@@ -20,7 +19,7 @@ const chartPalette = {
   slate: "#cbd5f5",
 };
 
-const SHOW_RECYCLING_CHART = true;
+const SHOW_RECYCLING_CHART = false;
 const SHOW_DISINFECTION_CHART = true;
 
  
@@ -41,9 +40,19 @@ const chartGroups = {
       ],
     },
     {
-      title: "Détail – Renvoi (m³)",
+      title: "Volume renvoi (m³)",
       color: chartPalette.primary,
       endpoint: (period) => `/renvoi/${period}`,
+    },
+    {
+      title: "Volume adoucie (m³)",
+      color: chartPalette.green,
+      endpoint: (period) => `/adoucie/${period}`,
+    },
+    {
+      title: "Volume relevage (m³)",
+      color: chartPalette.orange,
+      endpoint: (period) => `/relevage/${period}`,
     },
   ],
   technical: [
@@ -379,30 +388,18 @@ const Dashboard = () => {
       </div>
 
       <div className={styles.chartsGrid}>
-        {filteredGraphs.map((cfg) =>
-          cfg.seriesConfig ? (
-            <MultiSeriesGraphComponent
-              key={cfg.title}
-              title={cfg.title}
-              color={cfg.color}
-              selectedPeriod={selectedPeriod}
-              selectedMachine={selectedMachine}
-              endpoint={cfg.endpoint(selectedPeriod)}
-              seriesConfig={typeof cfg.seriesConfig === "function" ? cfg.seriesConfig(selectedPeriod) : cfg.seriesConfig}
-              onRequestFallback={handleFallbackPeriod}
-            />
-          ) : (
-            <GraphComponent
-              key={cfg.title}
-              title={cfg.title}
-              color={cfg.color}
-              selectedPeriod={selectedPeriod}
-              selectedMachine={selectedMachine}
-              endpoint={cfg.endpoint(selectedPeriod)}
-              onRequestFallback={handleFallbackPeriod}
-            />
-          )
-        )}
+        {filteredGraphs.map((cfg) => (
+          <Chart
+            key={cfg.title}
+            title={cfg.title}
+            color={cfg.color}
+            selectedPeriod={selectedPeriod}
+            selectedMachine={selectedMachine}
+            endpoint={cfg.endpoint(selectedPeriod)}
+            seriesConfig={typeof cfg.seriesConfig === "function" ? cfg.seriesConfig(selectedPeriod) : cfg.seriesConfig}
+            onRequestFallback={handleFallbackPeriod}
+          />
+        ))}
       </div>
     </div>
   );
