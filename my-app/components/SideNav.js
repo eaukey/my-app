@@ -3,16 +3,17 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, MessageCircle, Table, AlertTriangle, Shield } from "lucide-react";
+import { Home, MessageCircle, Table, AlertTriangle, Shield, Users } from "lucide-react";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./SideNav.module.css";
-import { useAuth, isAdmin as checkAdmin, isSuperAdmin as checkSuperAdmin } from "../lib/auth";
+import { useAuth, isAdmin as checkAdmin, isSuperAdmin as checkSuperAdmin, isOrgAdmin as checkOrgAdmin } from "../lib/auth";
 
 export default function SideNav({ collapsed = false }) {
   const pathname = usePathname();
   const { user, isAuthenticated, authFetch } = useAuth();
   const isAdmin = checkAdmin(user);
   const isSuperAdmin = checkSuperAdmin(user);
+  const isOrgAdmin = checkOrgAdmin(user);
   const clientId = user?.client_id || null;
 
   const routeClientId = !isAdmin && typeof pathname === "string" && pathname.startsWith("/chat/")
@@ -104,6 +105,7 @@ export default function SideNav({ collapsed = false }) {
   const links = [
     { icon: Home, href: "/", title: "Accueil" },
     ...(isSuperAdmin ? [{ icon: Shield, href: "/super-admin", title: "Super admin" }] : []),
+    ...(isOrgAdmin ? [{ icon: Users, href: "/org-admin", title: "Gestion stations" }] : []),
     ...(isAdmin ? [
       { icon: Table, href: "/admin", title: "Automates" },
       { icon: AlertTriangle, href: "/pannes", title: "Pannes" },
