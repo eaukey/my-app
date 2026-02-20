@@ -136,6 +136,7 @@ const Dashboard = () => {
   });
   const [activeDataCategory, setActiveDataCategory] = useState("performance");
   const [availableMachines, setAvailableMachines] = useState([]);
+  const [stationsLoading, setStationsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fonction utilitaire pour comparer des IDs (gère "2023004" vs "2023004.0")
@@ -216,6 +217,8 @@ const Dashboard = () => {
         setStationMapping(map);
       } catch (err) {
         console.error("Erreur lors de la récupération du mapping des stations:", err);
+      } finally {
+        setStationsLoading(false);
       }
     };
 
@@ -233,6 +236,8 @@ const Dashboard = () => {
       id: String(auto.nom_automate),
       name: `${auto.client || "Inconnu"} – ${auto.lieu || auto.nom_automate}`,
     }));
+
+    mappedStations.sort((a, b) => a.name.localeCompare(b.name, "fr"));
 
     setAvailableMachines(mappedStations);
 
@@ -306,20 +311,14 @@ const Dashboard = () => {
             className={styles.selector}
             aria-label="Sélectionner une station"
           >
-            <option value="">Sélectionnez une station</option>
-            {availableMachines.length > 0 ? (
-              availableMachines.map((station, index) => (
-                <option key={index} value={station.id}>
-                  {station.name}
-                </option>
-              ))
-            ) : (
-              <>
-                <option value="2022911.0">Herblay</option>
-                <option value="2023004.0">Marseille</option>
-                <option value="2022912.0">Lyon</option>
-              </>
-            )}
+            <option value="">
+              {stationsLoading ? "Chargement des stations…" : "Sélectionnez une station"}
+            </option>
+            {availableMachines.map((station, index) => (
+              <option key={index} value={station.id}>
+                {station.name}
+              </option>
+            ))}
           </select>
 
           <div className={styles.searchBox}>
