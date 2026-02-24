@@ -2,11 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { API_BASE } from "../lib/apiBase";
-import ExecutiveSummaryBar from "./ExecutiveSummaryBar";
 import KpiCard from "./KpiCard";
 import styles from "./RealTimeData.module.css";
 
-const statusWeight = { ok: 0, watch: 1, critical: 2, neutral: 0 };
 const SHOW_RECYCLING_KPI = true;
 
 const formatTime = (value) => {
@@ -69,7 +67,7 @@ const getInterpretation = (key, status, deltaDirection) => {
   return "En observation";
 };
 
-const RealTimeData = ({ selectedMachine, selectedPeriod, siteLabel }) => {
+const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
   const [data, setData] = useState({
     taux_recyclage: { value: null, lastUpdate: null },
     hauteur_cuve_traitement: { value: null, lastUpdate: null },
@@ -221,34 +219,8 @@ const RealTimeData = ({ selectedMachine, selectedPeriod, siteLabel }) => {
     buildKpi("volume_renvoi", "Volume de renvoi", "m³"),
   ];
 
-  const worstKpi = kpis.reduce(
-    (acc, kpi) => {
-      const weight = statusWeight[kpi.status] ?? 0;
-      if (weight > acc.weight) return { weight, kpi };
-      return acc;
-    },
-    { weight: -1, kpi: null }
-  );
-
-  const insight =
-    worstKpi.kpi?.key === "taux_recyclage"
-      ? null
-      : worstKpi.weight > 1
-      ? `Zone critique sur ${worstKpi.kpi?.label}`
-      : worstKpi.weight === 1
-      ? `Vigilance : ${worstKpi.kpi?.label}`
-      : "Système stable";
-
-  const lastUpdateText = formatTime(
-    kpis
-      .map((k) => data[k.key]?.lastUpdate)
-      .filter(Boolean)
-      .sort((a, b) => new Date(b) - new Date(a))[0]
-  );
-
   return (
     <div className={styles.container}>
-      <ExecutiveSummaryBar siteName={siteLabel} status={worstKpi.kpi?.status || "ok"} lastUpdate={lastUpdateText} insight={insight} />
       <div className={styles.kpiGrid}>
         {loading
           ? Array.from({ length: kpis.length }).map((_, idx) => <div key={idx} className={styles.kpiSkeleton} />)
