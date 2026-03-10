@@ -117,6 +117,32 @@ const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
                 value,
                 lastUpdate: result.horodatage ? new Date(result.horodatage) : null,
               };
+            } else if (endpoint === "taux_recyclage") {
+              // Fallback: utilise /taux_recyclage/semaine si /temps_reel/taux_recyclage n'est pas disponible
+              try {
+                const fallbackUrl = `${API_BASE}/taux_recyclage/semaine?nom_automate=${selectedMachine}`;
+                const fallbackRes = await fetch(fallbackUrl);
+                if (fallbackRes.ok) {
+                  const fallbackJson = await fallbackRes.json();
+                  const series = Array.isArray(fallbackJson?.data) ? fallbackJson.data : [];
+                  // Prendre la derniere valeur non nulle
+                  let lastVal = null;
+                  for (let i = series.length - 1; i >= 0; i--) {
+                    if (series[i] !== null && series[i] !== undefined && Number.isFinite(series[i])) {
+                      lastVal = series[i];
+                      break;
+                    }
+                  }
+                  if (lastVal !== null && lastVal >= 0 && lastVal <= 1) {
+                    lastVal = lastVal * 100;
+                  }
+                  newData[endpoint] = { value: lastVal, lastUpdate: new Date() };
+                } else {
+                  newData[endpoint] = { value: null, lastUpdate: null };
+                }
+              } catch (_) {
+                newData[endpoint] = { value: null, lastUpdate: null };
+              }
             } else {
               newData[endpoint] = { value: null, lastUpdate: null };
             }
