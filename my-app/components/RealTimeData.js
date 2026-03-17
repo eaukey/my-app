@@ -251,7 +251,7 @@ const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
       deltaDirection,
       interpretation,
       status,
-      lastUpdate: key === "taux_recyclage" ? "toutes les heures" : formatTime(data[key]?.lastUpdate),
+      lastUpdate: key === "taux_recyclage" ? "par heure" : formatTime(data[key]?.lastUpdate),
     };
   };
 
