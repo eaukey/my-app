@@ -110,12 +110,12 @@
   background: var(--bg-elevated);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-16);
-  padding: var(--space-16);
+  padding: 10px 14px;
   box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-height: 170px;
+  gap: 4px;
+  min-height: 0;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -191,7 +191,7 @@
 .neutralKpi { border-top: 3px solid var(--border-strong); }
 
 .kpiSkeleton {
-  height: 170px;
+  height: 100px;
   border-radius: var(--radius-16);
   background: linear-gradient(90deg, #1b2537 25%, #0f1828 50%, #1b2537 75%);
   background-size: 200% 100%;
