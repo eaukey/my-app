@@ -6,17 +6,17 @@ import { API_BASE } from "../../lib/apiBase";
 import styles from "./Export.module.css";
 
 const COLUMN_OPTIONS = [
-  { key: "vol_renvoi_m3", label: "Volume renvoi (m\u00b3)" },
-  { key: "vol_adoucie_m3", label: "Volume adoucie (m\u00b3)" },
-  { key: "vol_relevage_m3", label: "Volume relevage (m\u00b3)" },
+  { key: "vol_renvoi_m3", label: "Volume renvoi (m³)" },
+  { key: "vol_adoucie_m3", label: "Volume adoucie (m³)" },
+  { key: "vol_relevage_m3", label: "Volume relevage (m³)" },
   { key: "taux_recyclage", label: "Rendement recycleur" },
-  { key: "taux_desinfection_avg", label: "Taux d\u00e9sinfection (moy)" },
+  { key: "taux_desinfection_avg", label: "Taux désinfection (moy)" },
   { key: "p1_mbar", label: "Pression 1 (mbar)" },
   { key: "p2_mbar", label: "Pression 2 (mbar)" },
   { key: "p3_mbar", label: "Pression 3 (mbar)" },
   { key: "p4_mbar", label: "Pression 4 (mbar)" },
   { key: "p5_mbar", label: "Pression 5 (mbar)" },
-  { key: "temp_moy_c", label: "Temp\u00e9rature moy (\u00b0C)" },
+  { key: "temp_moy_c", label: "Température moy (°C)" },
   { key: "chlore_moy_mg_l", label: "Chlore moy (mg/L)" },
   { key: "ph_moyen", label: "pH moyen" },
   { key: "conso_kwh", label: "Consommation (kWh)" },
@@ -111,7 +111,7 @@ export default function ExportPage() {
   };
 
   if (isLoading) return <div className={styles.container}>Chargement...</div>;
-  if (!isAuthenticated || !isAdmin) return <div className={styles.container}><p>Acc\u00e8s r\u00e9serv\u00e9 aux administrateurs.</p></div>;
+  if (!isAuthenticated || !isAdmin) return <div className={styles.container}><p>Accès réservé aux administrateurs.</p></div>;
 
   const filteredStations = stationSearch.trim()
     ? stations.filter((s) => {
@@ -127,8 +127,8 @@ export default function ExportPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Export de donn\u00e9es</h1>
-        <p className={styles.subtitle}>S\u00e9lectionnez les stations, donn\u00e9es et p\u00e9riode puis exportez en CSV</p>
+        <h1 className={styles.title}>Export de données</h1>
+        <p className={styles.subtitle}>Sélectionnez les stations, données et période puis exportez en CSV</p>
       </div>
 
       <div className={styles.grid}>
@@ -138,8 +138,8 @@ export default function ExportPage() {
             <h2 className={styles.sectionTitle}>Stations</h2>
             <button type="button" className={styles.selectAllBtn} onClick={selectAllStations}>
               {filteredStations.length > 0 && filteredStations.every((s) => selectedStations.includes(s.nom_automate))
-                ? "D\u00e9s\u00e9lectionner tout"
-                : "Tout s\u00e9lectionner"}
+                ? "Désélectionner tout"
+                : "Tout sélectionner"}
             </button>
           </div>
           <input
@@ -168,7 +168,7 @@ export default function ExportPage() {
 
         {/* Colonnes */}
         <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>Donn\u00e9es \u00e0 exporter</h2>
+          <h2 className={styles.sectionTitle}>Données à exporter</h2>
           <div className={styles.checkboxList}>
             {COLUMN_OPTIONS.map((col) => (
               <label key={col.key} className={styles.checkboxItem}>
@@ -183,9 +183,9 @@ export default function ExportPage() {
           </div>
         </div>
 
-        {/* Granularite + Periode */}
+        {/* Granularité + Période */}
         <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>Granularit\u00e9</h2>
+          <h2 className={styles.sectionTitle}>Granularité</h2>
           <div className={styles.radioGroup}>
             {SOURCE_OPTIONS.map((opt) => (
               <label key={opt.key} className={styles.radioItem}>
@@ -201,7 +201,7 @@ export default function ExportPage() {
             ))}
           </div>
 
-          <h2 className={styles.sectionTitle} style={{ marginTop: "16px" }}>P\u00e9riode</h2>
+          <h2 className={styles.sectionTitle} style={{ marginTop: "16px" }}>Période</h2>
           <div className={styles.dateRow}>
             <div className={styles.dateField}>
               <label className={styles.dateLabel}>Du</label>
@@ -222,7 +222,7 @@ export default function ExportPage() {
               />
             </div>
           </div>
-          <p className={styles.hint}>Laissez vide pour exporter toutes les donn\u00e9es disponibles</p>
+          <p className={styles.hint}>Laissez vide pour exporter toutes les données disponibles</p>
         </div>
       </div>
 
@@ -231,7 +231,7 @@ export default function ExportPage() {
         onClick={handleExport}
         disabled={exporting || selectedStations.length === 0 || selectedColumns.length === 0}
       >
-        {exporting ? "Export en cours..." : "T\u00e9l\u00e9charger le CSV"}
+        {exporting ? "Export en cours..." : "Télécharger le CSV"}
       </button>
     </div>
   );
