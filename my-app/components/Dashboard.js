@@ -327,7 +327,7 @@ const Dashboard = () => {
           </span>
           <div>
             <div className={styles.totalLabel}>
-              d&apos;eau recyclée depuis {totalRecycle.depuis || "—"}
+              d&apos;eau recyclée depuis la mise en route
             </div>
             <div className={styles.totalSub}>
               {totalRecycle.nb_stations} station{totalRecycle.nb_stations > 1 ? "s" : ""}
