@@ -138,6 +138,7 @@ const Dashboard = () => {
   const [availableMachines, setAvailableMachines] = useState([]);
   const [stationsLoading, setStationsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [totalRecycle, setTotalRecycle] = useState(null);
 
   // Fonction utilitaire pour comparer des IDs (gère "2023004" vs "2023004.0")
   const idsEqual = (a, b) => {
@@ -225,6 +226,23 @@ const Dashboard = () => {
     fetchStationMapping();
   }, [isAuthenticated, authFetch]);
 
+  // Récupère le total m3 recyclés (toutes stations accessibles)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchTotal = async () => {
+      try {
+        const res = await authFetch(`${API_BASE}/volumes/total`);
+        if (res.ok) {
+          const data = await res.json();
+          setTotalRecycle(data);
+        }
+      } catch (err) {
+        console.error("Erreur lors de la récupération du total recyclé:", err);
+      }
+    };
+    fetchTotal();
+  }, [isAuthenticated, authFetch]);
+
   // 2️⃣ Dès que l'utilisateur est chargé, construit la liste des machines qu'il peut voir
   useEffect(() => {
     if (!isAuthenticated) {
@@ -301,6 +319,20 @@ const Dashboard = () => {
           ) : null}
         </div>
       </div>
+
+      {totalRecycle && totalRecycle.total_recycle_m3 > 0 && (
+        <div className={styles.totalBanner}>
+          <div className={styles.totalValue}>
+            {Math.round(totalRecycle.total_recycle_m3).toLocaleString("fr-FR")} m³
+          </div>
+          <div className={styles.totalLabel}>
+            Total d&apos;eau recyclée depuis {totalRecycle.depuis || "—"}
+          </div>
+          <div className={styles.totalSub}>
+            {totalRecycle.nb_stations} station{totalRecycle.nb_stations > 1 ? "s" : ""}
+          </div>
+        </div>
+      )}
 
       <div className={styles.selectorCard}>
         <div className={styles.selectorLabel}>Site</div>
