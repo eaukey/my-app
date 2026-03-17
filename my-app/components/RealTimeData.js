@@ -80,6 +80,7 @@ const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
   const [deltaLoading, setDeltaLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Fetch des données temps réel (toutes les 60s) SAUF taux_recyclage
   useEffect(() => {
     const fetchRealTimeData = async () => {
       if (!selectedMachine) return;
@@ -87,20 +88,13 @@ const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
       setLoading(true);
       try {
         const endpoints = [
-          "taux_recyclage",
           "hauteur_cuve_traitement",
           "hauteur_cuve_disconnection",
           "volume_renvoi",
           "compteur_electrique",
         ];
 
-        const newData = {
-          taux_recyclage: { value: null, lastUpdate: null },
-          hauteur_cuve_traitement: { value: null, lastUpdate: null },
-          hauteur_cuve_disconnection: { value: null, lastUpdate: null },
-          volume_renvoi: { value: null, lastUpdate: null },
-          compteur_electrique: { value: null, lastUpdate: null },
-        };
+        const newData = {};
 
         for (const endpoint of endpoints) {
           try {
@@ -109,40 +103,11 @@ const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
 
             if (response.ok) {
               const result = await response.json();
-              let value = result.valeur !== undefined ? result.valeur : null;
-              if (endpoint === "taux_recyclage" && value !== null && value >= 0 && value <= 1) {
-                value = value * 100;
-              }
+              const value = result.valeur !== undefined ? result.valeur : null;
               newData[endpoint] = {
                 value,
                 lastUpdate: result.horodatage ? new Date(result.horodatage) : null,
               };
-            } else if (endpoint === "taux_recyclage") {
-              // Fallback: utilise /taux_recyclage/semaine si /temps_reel/taux_recyclage n'est pas disponible
-              try {
-                const fallbackUrl = `${API_BASE}/taux_recyclage/semaine?nom_automate=${selectedMachine}`;
-                const fallbackRes = await fetch(fallbackUrl);
-                if (fallbackRes.ok) {
-                  const fallbackJson = await fallbackRes.json();
-                  const series = Array.isArray(fallbackJson?.data) ? fallbackJson.data : [];
-                  // Prendre la derniere valeur non nulle
-                  let lastVal = null;
-                  for (let i = series.length - 1; i >= 0; i--) {
-                    if (series[i] !== null && series[i] !== undefined && Number.isFinite(series[i])) {
-                      lastVal = series[i];
-                      break;
-                    }
-                  }
-                  if (lastVal !== null && lastVal >= 0 && lastVal <= 1) {
-                    lastVal = lastVal * 100;
-                  }
-                  newData[endpoint] = { value: lastVal, lastUpdate: new Date() };
-                } else {
-                  newData[endpoint] = { value: null, lastUpdate: null };
-                }
-              } catch (_) {
-                newData[endpoint] = { value: null, lastUpdate: null };
-              }
             } else {
               newData[endpoint] = { value: null, lastUpdate: null };
             }
@@ -151,7 +116,7 @@ const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
           }
         }
 
-        setData(newData);
+        setData((prev) => ({ ...prev, ...newData }));
       } catch (err) {
         setError("Impossible de récupérer les données en temps réel");
       } finally {
@@ -161,6 +126,58 @@ const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
 
     fetchRealTimeData();
     const interval = setInterval(fetchRealTimeData, 60000);
+    return () => clearInterval(interval);
+  }, [selectedMachine]);
+
+  // Fetch du rendement recycleur (toutes les heures)
+  useEffect(() => {
+    const fetchRecyclage = async () => {
+      if (!selectedMachine) return;
+      try {
+        const url = `${API_BASE}/temps_reel/taux_recyclage?nom_automate=${selectedMachine}`;
+        const response = await fetch(url);
+
+        if (response.ok) {
+          const result = await response.json();
+          let value = result.valeur !== undefined ? result.valeur : null;
+          if (value !== null && value >= 0 && value <= 1) {
+            value = value * 100;
+          }
+          setData((prev) => ({
+            ...prev,
+            taux_recyclage: { value, lastUpdate: result.horodatage ? new Date(result.horodatage) : null },
+          }));
+        } else {
+          // Fallback: utilise /taux_recyclage/semaine
+          try {
+            const fallbackUrl = `${API_BASE}/taux_recyclage/semaine?nom_automate=${selectedMachine}`;
+            const fallbackRes = await fetch(fallbackUrl);
+            if (fallbackRes.ok) {
+              const fallbackJson = await fallbackRes.json();
+              const series = Array.isArray(fallbackJson?.data) ? fallbackJson.data : [];
+              let lastVal = null;
+              for (let i = series.length - 1; i >= 0; i--) {
+                if (series[i] !== null && series[i] !== undefined && Number.isFinite(series[i])) {
+                  lastVal = series[i];
+                  break;
+                }
+              }
+              if (lastVal !== null && lastVal >= 0 && lastVal <= 1) {
+                lastVal = lastVal * 100;
+              }
+              setData((prev) => ({ ...prev, taux_recyclage: { value: lastVal, lastUpdate: new Date() } }));
+            }
+          } catch (_) {
+            // silencieux
+          }
+        }
+      } catch (_) {
+        // silencieux
+      }
+    };
+
+    fetchRecyclage();
+    const interval = setInterval(fetchRecyclage, 3600000); // 1 heure
     return () => clearInterval(interval);
   }, [selectedMachine]);
 

@@ -29,15 +29,13 @@ const KpiCard = ({
         <span className={styles.kpiValue}>{formatDisplayValue(value)}</span>
         {unit && <span className={styles.kpiUnit}>{unit}</span>}
       </div>
-      <div className={styles.kpiDeltaRow}>
-        {deltaLabel ? (
+      {deltaLabel && (
+        <div className={styles.kpiDeltaRow}>
           <span className={`${styles.delta} ${styles[deltaDirection]}`}>
             {deltaLabel}
           </span>
-        ) : (
-          <span className={styles.deltaMuted}>—</span>
-        )}
-      </div>
+        </div>
+      )}
       <div className={styles.kpiInterpretation}>{interpretation}</div>
     </div>
   );

@@ -322,14 +322,16 @@ const Dashboard = () => {
 
       {totalRecycle && totalRecycle.total_recycle_m3 > 0 && (
         <div className={styles.totalBanner}>
-          <div className={styles.totalValue}>
+          <span className={styles.totalValue}>
             {Math.round(totalRecycle.total_recycle_m3).toLocaleString("fr-FR")} m³
-          </div>
-          <div className={styles.totalLabel}>
-            Total d&apos;eau recyclée depuis {totalRecycle.depuis || "—"}
-          </div>
-          <div className={styles.totalSub}>
-            {totalRecycle.nb_stations} station{totalRecycle.nb_stations > 1 ? "s" : ""}
+          </span>
+          <div>
+            <div className={styles.totalLabel}>
+              d&apos;eau recyclée depuis {totalRecycle.depuis || "—"}
+            </div>
+            <div className={styles.totalSub}>
+              {totalRecycle.nb_stations} station{totalRecycle.nb_stations > 1 ? "s" : ""}
+            </div>
           </div>
         </div>
       )}
