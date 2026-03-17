@@ -54,7 +54,7 @@ const getInterpretation = (key, status, deltaDirection) => {
   }
   if (status === "watch") {
     if (key === "hauteur_cuve_traitement" || key === "hauteur_cuve_disconnection") return "Niveau moyen";
-    if (key === "taux_recyclage") return "À surveiller : recyclage faible";
+    if (key === "taux_recyclage") return "À surveiller : rendement recycleur faible";
     return "Zone de vigilance";
   }
   if (status === "ok") {
@@ -239,7 +239,7 @@ const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
   };
 
   const kpis = [
-    ...(SHOW_RECYCLING_KPI ? [buildKpi("taux_recyclage", "Taux de recyclage", "%")] : []),
+    ...(SHOW_RECYCLING_KPI ? [buildKpi("taux_recyclage", "Rendement recycleur", "%")] : []),
     buildKpi("hauteur_cuve_traitement", "Cuve de traitement", "%"),
     buildKpi("hauteur_cuve_disconnection", "Cuve de renvoi", "%"),
     buildKpi("volume_renvoi", "Volume de renvoi", "m³"),

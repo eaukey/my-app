@@ -69,7 +69,7 @@ const chartGroups = {
     ...(SHOW_RECYCLING_CHART
       ? [
           {
-            title: "Taux de recyclage (%)",
+            title: "Rendement recycleur (%)",
             color: chartPalette.teal,
             endpoint: (period) => `/taux_recyclage/${period}`,
           },
