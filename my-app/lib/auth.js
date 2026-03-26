@@ -142,4 +142,6 @@ export const hasRole = (user, role) =>
 
 export const isAdmin = (user) => hasRole(user, "admin");
 export const isSuperAdmin = (user) => hasRole(user, "super_admin");
-export const isOrgAdmin = (user) => user?.org_role === "org_admin";
+export const isOrgAdmin = (user) =>
+  user?.org_role === "org_admin" ||
+  (Array.isArray(user?.organizations) && user.organizations.some((o) => o.org_role === "org_admin"));

@@ -22,7 +22,6 @@ export default function SuperAdminPage() {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [editRoles, setEditRoles] = useState([]);
-  const [editClientId, setEditClientId] = useState("");
   const [saving, setSaving] = useState(false);
 
   // --- Onglet Organisations ---
@@ -110,11 +109,13 @@ export default function SuperAdminPage() {
     setSuccess("");
   };
 
+  const [editOrgs, setEditOrgs] = useState([]);
+
   const enterEditMode = () => {
     const u = selectedUser;
     if (!u) return;
     setEditRoles((u.roles || []).filter((r) => r !== "client"));
-    setEditClientId(u.client_id || "");
+    setEditOrgs((u.organizations || []).map((o) => o.org_name));
     setEditMode(true);
     setError("");
     setSuccess("");
@@ -158,7 +159,7 @@ export default function SuperAdminPage() {
         body: JSON.stringify({
           user_id: selectedUserId,
           roles: editRoles,
-          client_id: editClientId || null,
+          organization_names: editOrgs,
         }),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -281,19 +282,21 @@ export default function SuperAdminPage() {
 
         <hr className={styles.divider} />
 
-        {/* Organisation */}
+        {/* Organisations */}
         <div className={styles.section}>
-          <div className={styles.sectionTitle}>Organisation</div>
-          {u.org_name ? (
-            <div className={styles.orgInfo}>
-              <span className={styles.orgInfoName}>{u.org_name}</span>
-              <span className={styles.badge}>{u.org_role || "employee"}</span>
-            </div>
+          <div className={styles.sectionTitle}>Organisations</div>
+          {(u.organizations || []).length > 0 ? (
+            (u.organizations || []).map((org, idx) => (
+              <div key={idx} className={styles.orgInfo} style={{ marginBottom: 6 }}>
+                <span className={styles.orgInfoName}>{org.org_name}</span>
+                <span className={styles.badge}>{org.org_role || "employee"}</span>
+              </div>
+            ))
           ) : (
             <div className={styles.ficheMuted}>Aucune organisation</div>
           )}
           <div className={styles.ficheMuted}>
-            {"Pour modifier l'organisation, utilisez l'onglet Organisations."}
+            {"Pour modifier les organisations, utilisez l'onglet Organisations."}
           </div>
         </div>
 
@@ -341,19 +344,27 @@ export default function SuperAdminPage() {
 
       <hr className={styles.divider} />
 
-      {/* Organisation (select) */}
+      {/* Organisations (checkboxes multi-select) */}
       <div className={styles.section}>
-        <div className={styles.sectionTitle}>Organisation</div>
-        <select
-          className={styles.input}
-          value={editClientId}
-          onChange={(e) => setEditClientId(e.target.value)}
-        >
-          <option value="">Aucune organisation</option>
-          {orgs.map((o) => (
-            <option key={o.id} value={o.name}>{o.name}</option>
-          ))}
-        </select>
+        <div className={styles.sectionTitle}>Organisations</div>
+        <div className={styles.rolesGrid}>
+          {orgs.map((o) => {
+            const active = editOrgs.includes(o.name);
+            return (
+              <div
+                key={o.id}
+                className={`${styles.rolePill} ${active ? styles.rolePillActive : styles.rolePillInactive} ${styles.rolePillClickable}`}
+                onClick={() => {
+                  setEditOrgs((prev) =>
+                    active ? prev.filter((x) => x !== o.name) : [...prev, o.name]
+                  );
+                }}
+              >
+                {o.name}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Boutons */}
@@ -436,7 +447,7 @@ export default function SuperAdminPage() {
                     <div className={styles.itemSub}>
                       {[
                         ...(u.roles || []).filter((r) => r !== "client"),
-                        ...(u.org_role ? [u.org_role] : []),
+                        ...((u.organizations || []).map((o) => o.org_name)),
                       ].join(", ") || "aucun rôle"}
                     </div>
                   </div>

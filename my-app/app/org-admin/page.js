@@ -15,18 +15,40 @@ export default function OrgAdminPage() {
   const [memberAccess, setMemberAccess] = useState(new Set());
   const [initialAccess, setInitialAccess] = useState(new Set());
   const [saving, setSaving] = useState(false);
+  const [adminOrgs, setAdminOrgs] = useState([]);
+  const [selectedOrgId, setSelectedOrgId] = useState(null);
 
   const isOrg = checkOrgAdmin(user);
 
-  // Charger membres et automates de l'organisation
+  // Charger les organisations de l'org_admin
   useEffect(() => {
     if (!isAuthenticated || !isOrg) return;
+    const loadOrgs = async () => {
+      try {
+        const res = await authFetch(`${API_BASE}/org-admin/organizations`);
+        if (!res.ok) throw new Error(await res.text());
+        const orgs = await res.json();
+        setAdminOrgs(orgs);
+        if (orgs.length > 0 && !selectedOrgId) setSelectedOrgId(orgs[0].id);
+      } catch (e) {
+        setError(e?.message || "Erreur chargement organisations");
+      }
+    };
+    loadOrgs();
+  }, [isAuthenticated, isOrg, authFetch]);
+
+  // Charger membres et automates de l'organisation sélectionnée
+  useEffect(() => {
+    if (!isAuthenticated || !isOrg || !selectedOrgId) return;
+    setSelectedMemberId(null);
+    setMemberAccess(new Set());
+    setInitialAccess(new Set());
     const load = async () => {
       try {
         setError("");
         const [resMembers, resAutomates] = await Promise.all([
-          authFetch(`${API_BASE}/org-admin/members`),
-          authFetch(`${API_BASE}/org-admin/automates`),
+          authFetch(`${API_BASE}/org-admin/members?org_id=${selectedOrgId}`),
+          authFetch(`${API_BASE}/org-admin/automates?org_id=${selectedOrgId}`),
         ]);
         if (!resMembers.ok) throw new Error(await resMembers.text());
         if (!resAutomates.ok) throw new Error(await resAutomates.text());
@@ -37,7 +59,7 @@ export default function OrgAdminPage() {
       }
     };
     load();
-  }, [isAuthenticated, isOrg, authFetch]);
+  }, [isAuthenticated, isOrg, selectedOrgId, authFetch]);
 
   // Charger les accès du membre sélectionné
   const loadMemberAccess = useCallback(
@@ -45,7 +67,8 @@ export default function OrgAdminPage() {
       try {
         setError("");
         setSuccess("");
-        const res = await authFetch(`${API_BASE}/org-admin/member/${memberId}/automates`);
+        const orgParam = selectedOrgId ? `?org_id=${selectedOrgId}` : "";
+        const res = await authFetch(`${API_BASE}/org-admin/member/${memberId}/automates${orgParam}`);
         if (!res.ok) throw new Error(await res.text());
         const noms = await res.json();
         const s = new Set(noms);
@@ -55,7 +78,7 @@ export default function OrgAdminPage() {
         setError(e?.message || "Erreur chargement accès");
       }
     },
-    [authFetch]
+    [authFetch, selectedOrgId]
   );
 
   useEffect(() => {
@@ -89,7 +112,8 @@ export default function OrgAdminPage() {
       setSaving(true);
       setError("");
       setSuccess("");
-      const res = await authFetch(`${API_BASE}/org-admin/member/${selectedMemberId}/automates`, {
+      const orgParam = selectedOrgId ? `?org_id=${selectedOrgId}` : "";
+      const res = await authFetch(`${API_BASE}/org-admin/member/${selectedMemberId}/automates${orgParam}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ automate_noms: [...memberAccess] }),
@@ -125,9 +149,19 @@ export default function OrgAdminPage() {
           <div className={styles.subtitle}>
             Gérez les accès de vos employés aux stations
           </div>
-          {user?.organization_name && (
-            <div className={styles.orgName}>{user.organization_name}</div>
-          )}
+          {adminOrgs.length > 1 ? (
+            <select
+              className={styles.orgSelect}
+              value={selectedOrgId || ""}
+              onChange={(e) => setSelectedOrgId(Number(e.target.value))}
+            >
+              {adminOrgs.map((o) => (
+                <option key={o.id} value={o.id}>{o.name}</option>
+              ))}
+            </select>
+          ) : adminOrgs.length === 1 ? (
+            <div className={styles.orgName}>{adminOrgs[0].name}</div>
+          ) : null}
         </div>
       </div>
 
