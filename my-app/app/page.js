@@ -231,24 +231,11 @@ const LoginLanding = () => {
           transition={{ duration: 0.8, ease: 'easeOut' }}
           className="relative z-20 flex flex-col items-center"
         >
-          <motion.div
-            whileHover={{ scale: 1.08, rotate: 3 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
-            <Image
-              src="/images/Logo Eaukey.png"
-              alt="Eaukey Logo"
-              width={160}
-              height={160}
-              priority
-              className="drop-shadow-[0_0_30px_rgba(65,174,173,0.4)]"
-            />
-          </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
-            className="text-5xl xl:text-6xl font-extrabold mt-8 tracking-tight"
+            className="text-5xl xl:text-6xl font-extrabold tracking-tight"
             style={{
               background: 'linear-gradient(135deg, #41AEAD 0%, #6dd5d4 50%, #41AEAD 100%)',
               WebkitBackgroundClip: 'text',
