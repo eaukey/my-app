@@ -19,7 +19,7 @@ const chartPalette = {
   slate: "#cbd5f5",
 };
 
-const SHOW_RECYCLING_CHART = false;
+const SHOW_RECYCLING_CHART = true;
 const SHOW_DISINFECTION_CHART = true;
 
  
@@ -53,6 +53,11 @@ const chartGroups = {
       title: "Volume relevage (m³)",
       color: chartPalette.orange,
       endpoint: (period) => `/relevage/${period}`,
+    },
+    {
+      title: "Rendement recycleur (%)",
+      color: chartPalette.teal,
+      endpoint: (period) => `/taux_recyclage/${period}`,
     },
   ],
   technical: [
