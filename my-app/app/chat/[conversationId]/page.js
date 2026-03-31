@@ -20,7 +20,7 @@ export default function ConversationPage() {
     }
   }, [isAuthenticated, isAdmin, clientId, router]);
 
-  if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
+  if (!isAuthenticated) { router.replace("/"); return null; }
 
   // Pas de redirection pour admin : on montre la conversation demandée
 

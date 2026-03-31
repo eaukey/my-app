@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Edit, Trash2, Check, X, Loader2, Search } from "lucide-react";
 import { useAuth, isAdmin as checkAdmin } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
@@ -23,6 +24,7 @@ const TAB_OPTIONS = [
 ];
 
 export default function PannesPage() {
+  const router = useRouter();
   const { user, isAuthenticated, isLoading, authFetch } = useAuth();
   const isAdmin = checkAdmin(user);
 
@@ -303,7 +305,7 @@ export default function PannesPage() {
   }, [activeTab, pannes, searchTerm]);
 
   if (isLoading) return <p>Chargement...</p>;
-  if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
+  if (!isAuthenticated) { router.replace("/"); return null; }
   if (!isAdmin) return <p>Accès refusé.</p>;
 
   return (

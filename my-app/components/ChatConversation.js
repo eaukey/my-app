@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Send, Check } from "lucide-react";
 import { useAuth, isAdmin as checkAdmin } from "../lib/auth";
 import { getCachedAdminSenderIds, discoverAdminSenderIds } from "./chatRoleUtils";
@@ -7,6 +8,7 @@ import { API_BASE } from "../lib/apiBase";
 import styles from "./ChatConversation.module.css";
 
 export default function ChatConversation({ clientId }) {
+  const router = useRouter();
   const { user, isAuthenticated, authFetch } = useAuth();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -159,7 +161,7 @@ export default function ChatConversation({ clientId }) {
     }
   };
 
-  if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
+  if (!isAuthenticated) { router.replace("/"); return null; }
   if (loading) return <p>Chargement…</p>;
 
   return (

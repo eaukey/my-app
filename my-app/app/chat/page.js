@@ -18,7 +18,7 @@ export default function ChatPage() {
     }
   }, [isAuthenticated, isAdmin, clientId, router]);
 
-  if (!isAuthenticated) return <p>Veuillez vous connecter…</p>;
+  if (!isAuthenticated) { router.replace("/"); return null; }
 
   if (isAdmin) {
     return (

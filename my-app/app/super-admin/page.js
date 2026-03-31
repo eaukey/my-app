@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth, hasRole } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./SuperAdmin.module.css";
 
 export default function SuperAdminPage() {
+  const router = useRouter();
   const { isAuthenticated, isLoading, user, authFetch } = useAuth();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -240,7 +242,7 @@ export default function SuperAdminPage() {
   };
 
   if (isLoading) return <p>Chargement...</p>;
-  if (!isAuthenticated) return <p>{"Veuillez vous connecter…"}</p>;
+  if (!isAuthenticated) { router.replace("/"); return null; }
   if (!isAdminOrSuper) return <p>{"Accès refusé."}</p>;
 
   // --- Rendu fiche compte (mode lecture) ---

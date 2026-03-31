@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth, isAdmin as checkAdmin } from "../lib/auth";
 import { API_BASE } from "../lib/apiBase";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import styles from "./ConversationList.module.css";
 
 /**
@@ -15,6 +15,7 @@ import styles from "./ConversationList.module.css";
  *   onSelect?: (id: number) => void       // facultatif si on souhaite callback au lieu de navigation
  */
 export default function ConversationList({ onSelect }) {
+  const router = useRouter();
   const { user, isAuthenticated, authFetch } = useAuth();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +71,7 @@ export default function ConversationList({ onSelect }) {
     } catch {}
   };
 
-  if (!isAuthenticated) return <p className="text-[var(--text-primary)]">Veuillez vous connecter…</p>;
+  if (!isAuthenticated) { router.replace("/"); return null; }
   if (loading) return <p className="text-[var(--text-primary)]">Chargement des clients…</p>;
   if (clients.length === 0) return <p className="text-[var(--text-primary)]">Aucun client.</p>;
 

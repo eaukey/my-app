@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth, isOrgAdmin as checkOrgAdmin } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./OrgAdmin.module.css";
 
 export default function OrgAdminPage() {
+  const router = useRouter();
   const { isAuthenticated, isLoading, user, authFetch } = useAuth();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -136,7 +138,7 @@ export default function OrgAdminPage() {
   };
 
   if (isLoading) return <p>Chargement...</p>;
-  if (!isAuthenticated) return <p>Veuillez vous connecter...</p>;
+  if (!isAuthenticated) { router.replace("/"); return null; }
   if (!isOrg) return <p>{"Accès réservé aux administrateurs d'organisation."}</p>;
 
   const selectedMember = members.find((m) => m.id === selectedMemberId);
