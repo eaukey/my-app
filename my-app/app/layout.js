@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import localFont from "next/font/local";
 import "./globals.css";
 import SideNav from "../components/SideNav";
@@ -33,8 +33,26 @@ function Shell({ children }) {
 }
 
 export default function RootLayout({ children }) {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+  }, []);
+
   return (
     <html lang="fr">
+      <head>
+        <meta name="application-name" content="Eaukey" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Eaukey" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#0ea5e9" />
+        <link rel="icon" href="/favicon.ico" sizes="48x48" />
+        <link rel="icon" type="image/png" href="/icon-192x192.png" sizes="192x192" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
