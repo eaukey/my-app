@@ -92,6 +92,22 @@ const Chart = ({
     return raw;
   };
 
+  // Forward-fill : remplace les 0 par la dernière valeur positive (taux recyclage uniquement)
+  const forwardFillZeros = (dataArray, valueKey) => {
+    let lastPositive = null;
+    return dataArray.map((point) => {
+      const val = point[valueKey];
+      if (typeof val === "number" && val > 0) {
+        lastPositive = val;
+        return point;
+      }
+      if (typeof val === "number" && val === 0 && lastPositive !== null) {
+        return { ...point, [valueKey]: lastPositive };
+      }
+      return point;
+    });
+  };
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -125,6 +141,18 @@ const Chart = ({
           time: label,
           value: scaleValue(result.data[index]),
         }));
+      }
+      // Lissage du taux recyclage : remplacer les 0 par la dernière valeur positive
+      if (isRecyclingRate) {
+        if (isMulti) {
+          let result = formattedData;
+          seriesConfig.forEach((serie) => {
+            result = forwardFillZeros(result, serie.key);
+          });
+          formattedData = result;
+        } else {
+          formattedData = forwardFillZeros(formattedData, "value");
+        }
       }
       setData(formattedData);
     } catch (err) {

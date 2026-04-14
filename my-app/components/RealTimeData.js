@@ -143,6 +143,23 @@ const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
           if (value !== null && value >= 0 && value <= 1) {
             value = value * 100;
           }
+          // Si la valeur est 0, chercher la dernière valeur positive via la série semaine
+          if (value === 0) {
+            try {
+              const fallbackUrl = `${API_BASE}/taux_recyclage/semaine?nom_automate=${selectedMachine}`;
+              const fallbackRes = await fetch(fallbackUrl);
+              if (fallbackRes.ok) {
+                const fallbackJson = await fallbackRes.json();
+                const series = Array.isArray(fallbackJson?.data) ? fallbackJson.data : [];
+                for (let i = series.length - 1; i >= 0; i--) {
+                  if (series[i] !== null && series[i] !== undefined && Number.isFinite(series[i]) && series[i] > 0) {
+                    value = series[i] >= 0 && series[i] <= 1 ? series[i] * 100 : series[i];
+                    break;
+                  }
+                }
+              }
+            } catch (_) { /* silencieux */ }
+          }
           setData((prev) => ({
             ...prev,
             taux_recyclage: { value, lastUpdate: result.horodatage ? new Date(result.horodatage) : null },
