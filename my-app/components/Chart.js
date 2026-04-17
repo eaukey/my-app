@@ -92,10 +92,13 @@ const Chart = ({
     return raw;
   };
 
-  // Forward-fill : remplace les 0 par la dernière valeur positive (taux recyclage uniquement)
-  const forwardFillZeros = (dataArray, valueKey) => {
+  // Lissage des 0 du taux recyclage :
+  // - Début de série : backward-fill (prochaine valeur positive)
+  // - Milieu/fin de série : forward-fill (dernière valeur positive)
+  const fillZeros = (dataArray, valueKey) => {
+    // 1) Forward-fill : remplace les 0 par la dernière valeur positive
     let lastPositive = null;
-    return dataArray.map((point) => {
+    const filled = dataArray.map((point) => {
       const val = point[valueKey];
       if (typeof val === "number" && val > 0) {
         lastPositive = val;
@@ -106,6 +109,18 @@ const Chart = ({
       }
       return point;
     });
+    // 2) Backward-fill pour les 0 en début de série (pas de valeur précédente)
+    const firstPositive = filled.find((p) => typeof p[valueKey] === "number" && p[valueKey] > 0);
+    if (firstPositive) {
+      const val = firstPositive[valueKey];
+      return filled.map((point) => {
+        if (typeof point[valueKey] === "number" && point[valueKey] === 0) {
+          return { ...point, [valueKey]: val };
+        }
+        return point;
+      });
+    }
+    return filled;
   };
 
   const fetchData = useCallback(async () => {
@@ -147,11 +162,11 @@ const Chart = ({
         if (isMulti) {
           let result = formattedData;
           seriesConfig.forEach((serie) => {
-            result = forwardFillZeros(result, serie.key);
+            result = fillZeros(result, serie.key);
           });
           formattedData = result;
         } else {
-          formattedData = forwardFillZeros(formattedData, "value");
+          formattedData = fillZeros(formattedData, "value");
         }
       }
       setData(formattedData);
