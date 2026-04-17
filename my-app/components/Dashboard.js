@@ -85,6 +85,11 @@ const chartGroups = {
       color: chartPalette.blueSoft,
       endpoint: (period) => `/compteur_elec/${period}`,
     },
+    {
+      title: "Évolution de la consommation (kWh/m³ relevé)",
+      color: chartPalette.slate,
+      endpoint: (period) => `/ratio_kwh_m3/${period}`,
+    },
     ...(SHOW_DISINFECTION_CHART
       ? [
           {
