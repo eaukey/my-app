@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, MessageCircle, Table, AlertTriangle, Shield, Users, Download, Eye } from "lucide-react";
+import { Home, MessageCircle, Table, AlertTriangle, Shield, Users, Download, Eye, Sliders } from "lucide-react";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./SideNav.module.css";
 import { useAuth, isAdmin as checkAdmin, isSuperAdmin as checkSuperAdmin, isOrgAdmin as checkOrgAdmin } from "../lib/auth";
@@ -108,6 +108,7 @@ export default function SideNav({ collapsed = false }) {
     ...(isOrgAdmin ? [{ icon: Users, href: "/org-admin", title: "Gestion stations" }] : []),
     ...(isAdmin ? [
       { icon: Table, href: "/admin", title: "Automates" },
+      { icon: Sliders, href: "/parametres", title: "Paramètres" },
       { icon: Eye, href: "/view-as", title: "Vue client" },
       { icon: AlertTriangle, href: "/pannes", title: "Pannes" },
       { icon: Download, href: "/export", title: "Export CSV" },
