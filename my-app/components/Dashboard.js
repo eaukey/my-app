@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Chart from "./Chart";
+import ComboRenvoiRendementChart from "./ComboRenvoiRendementChart";
 import RealTimeData from "./RealTimeData";
 import { useAuth } from "../lib/auth";
 import styles from "./Dashboard.module.css";
@@ -59,6 +60,13 @@ const chartGroups = {
       color: chartPalette.teal,
       endpoint: (period) => `/taux_recyclage/${period}`,
     },
+    {
+      type: "combo",
+      title: "Volume renvoi & rendement recycleur",
+      color: chartPalette.primary,
+      volumeEndpoint: (period) => `/renvoi/${period}`,
+      rendementEndpoint: (period) => `/taux_recyclage/${period}`,
+    },
   ],
   technical: [
     {
@@ -77,6 +85,13 @@ const chartGroups = {
             title: "Rendement recycleur (%)",
             color: chartPalette.teal,
             endpoint: (period) => `/taux_recyclage/${period}`,
+          },
+          {
+            type: "combo",
+            title: "Volume renvoi & rendement recycleur",
+            color: chartPalette.primary,
+            volumeEndpoint: (period) => `/renvoi/${period}`,
+            rendementEndpoint: (period) => `/taux_recyclage/${period}`,
           },
         ]
       : []),
@@ -432,16 +447,28 @@ const Dashboard = () => {
 
       <div className={styles.chartsGrid}>
         {filteredGraphs.map((cfg) => (
-          <Chart
-            key={cfg.title}
-            title={cfg.title}
-            color={cfg.color}
-            selectedPeriod={selectedPeriod}
-            selectedMachine={selectedMachine}
-            endpoint={cfg.endpoint(selectedPeriod)}
-            seriesConfig={typeof cfg.seriesConfig === "function" ? cfg.seriesConfig(selectedPeriod) : cfg.seriesConfig}
-            onRequestFallback={handleFallbackPeriod}
-          />
+          cfg.type === "combo" ? (
+            <ComboRenvoiRendementChart
+              key={cfg.title}
+              title={cfg.title}
+              selectedPeriod={selectedPeriod}
+              selectedMachine={selectedMachine}
+              volumeEndpoint={cfg.volumeEndpoint(selectedPeriod)}
+              rendementEndpoint={cfg.rendementEndpoint(selectedPeriod)}
+              onRequestFallback={handleFallbackPeriod}
+            />
+          ) : (
+            <Chart
+              key={cfg.title}
+              title={cfg.title}
+              color={cfg.color}
+              selectedPeriod={selectedPeriod}
+              selectedMachine={selectedMachine}
+              endpoint={cfg.endpoint(selectedPeriod)}
+              seriesConfig={typeof cfg.seriesConfig === "function" ? cfg.seriesConfig(selectedPeriod) : cfg.seriesConfig}
+              onRequestFallback={handleFallbackPeriod}
+            />
+          )
         ))}
       </div>
     </div>
