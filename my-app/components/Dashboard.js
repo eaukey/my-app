@@ -20,7 +20,9 @@ const chartPalette = {
   slate: "#cbd5f5",
 };
 
-const SHOW_RECYCLING_CHART = true;
+// Flags d'affichage des graphs : passer a true pour reactiver
+const SHOW_RECYCLING_CHART = false;        // masque le graph "Rendement recycleur (%)" (remplace par le combo)
+const SHOW_RENVOI_STANDALONE_CHART = false; // masque le graph "Volume renvoi (m3)" standalone (remplace par le combo)
 const SHOW_DISINFECTION_CHART = true;
 
  
@@ -41,34 +43,21 @@ const chartGroups = {
       ],
     },
     {
-      title: "Volume renvoi (m³)",
-      color: chartPalette.primary,
-      endpoint: (period) => `/renvoi/${period}`,
-    },
-    {
-      title: "Volume adoucie (m³)",
-      color: chartPalette.green,
-      endpoint: (period) => `/adoucie/${period}`,
-    },
-    {
-      title: "Volume relevage (m³)",
-      color: chartPalette.orange,
-      endpoint: (period) => `/relevage/${period}`,
-    },
-    {
-      title: "Rendement recycleur (%)",
-      color: chartPalette.teal,
-      endpoint: (period) => `/taux_recyclage/${period}`,
-    },
-    {
       type: "combo",
       title: "Volume renvoi & rendement recycleur",
       color: chartPalette.primary,
       volumeEndpoint: (period) => `/renvoi/${period}`,
       rendementEndpoint: (period) => `/taux_recyclage/${period}`,
     },
-  ],
-  technical: [
+    ...(SHOW_RENVOI_STANDALONE_CHART
+      ? [
+          {
+            title: "Volume renvoi (m³)",
+            color: chartPalette.primary,
+            endpoint: (period) => `/renvoi/${period}`,
+          },
+        ]
+      : []),
     {
       title: "Volume adoucie (m³)",
       color: chartPalette.green,
@@ -86,12 +75,33 @@ const chartGroups = {
             color: chartPalette.teal,
             endpoint: (period) => `/taux_recyclage/${period}`,
           },
+        ]
+      : []),
+  ],
+  technical: [
+    {
+      title: "Volume adoucie (m³)",
+      color: chartPalette.green,
+      endpoint: (period) => `/adoucie/${period}`,
+    },
+    {
+      type: "combo",
+      title: "Volume renvoi & rendement recycleur",
+      color: chartPalette.primary,
+      volumeEndpoint: (period) => `/renvoi/${period}`,
+      rendementEndpoint: (period) => `/taux_recyclage/${period}`,
+    },
+    {
+      title: "Volume relevage (m³)",
+      color: chartPalette.orange,
+      endpoint: (period) => `/relevage/${period}`,
+    },
+    ...(SHOW_RECYCLING_CHART
+      ? [
           {
-            type: "combo",
-            title: "Volume renvoi & rendement recycleur",
-            color: chartPalette.primary,
-            volumeEndpoint: (period) => `/renvoi/${period}`,
-            rendementEndpoint: (period) => `/taux_recyclage/${period}`,
+            title: "Rendement recycleur (%)",
+            color: chartPalette.teal,
+            endpoint: (period) => `/taux_recyclage/${period}`,
           },
         ]
       : []),
