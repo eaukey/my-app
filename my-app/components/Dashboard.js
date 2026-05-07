@@ -151,6 +151,25 @@ const chartGroups = {
       color: chartPalette.orange,
       endpoint: (period) => `/ph/${period}`,
     },
+    {
+      title: "Conductivité (µS/cm)",
+      color: chartPalette.teal,
+      endpoint: (period) => `/conductivite/${period}`,
+      seriesConfig: [
+        { key: "cond_traitement", label: "Traitement", color: chartPalette.teal },
+        { key: "cond_renvoi",     label: "Renvoi",     color: chartPalette.primary },
+      ],
+    },
+    {
+      title: "Hauteur cuve traitement (%)",
+      color: chartPalette.green,
+      endpoint: (period) => `/hauteur_cuve_traitement/${period}`,
+    },
+    {
+      title: "Hauteur cuve disconnexion (%)",
+      color: chartPalette.amber,
+      endpoint: (period) => `/hauteur_cuve_disconnection/${period}`,
+    },
   ],
 };
 
