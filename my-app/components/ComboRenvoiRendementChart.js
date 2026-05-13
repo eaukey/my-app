@@ -65,6 +65,9 @@ const tooltipStyle = {
   labelStyle: { color: "var(--text-secondary)" },
 };
 
+// Remplace les 0 du rendement par la derniere valeur positive connue
+// (forward-fill puis backward-fill). Utile pour semaine/mois/annee ou un
+// intervalle sans mouvement (vol_renvoi = 0) renverrait 0% trompeur.
 const fillZerosRendement = (dataArray) => {
   let lastPositive = null;
   const filled = dataArray.map((point) => {
