@@ -1,7 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Minus, Plus, Loader2, Sliders } from "lucide-react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import {
+  Minus,
+  Plus,
+  Loader2,
+  Save,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+} from "lucide-react";
 import { useAuth, isAdmin as checkAdmin } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./Parametres.module.css";
@@ -87,6 +95,13 @@ const SECTIONS = [
   },
 ];
 
+const ALL_FIELDS = SECTIONS.flatMap((s) => s.fields);
+
+const stepFor = (field) => {
+  if (field.step !== undefined) return field.step;
+  return field.type === "int" ? 1 : 0.1;
+};
+
 const formatValue = (value, type) => {
   if (value === null || value === undefined) return "—";
   if (type === "bool") return value ? "On" : "Off";
@@ -106,15 +121,54 @@ const formatLastUpdate = (iso) => {
   }
 };
 
+// Compare deux valeurs (cible vs etat automate) pour determiner si une modif
+// est en attente d'application. Tolere les types int vs real equivalents.
+const valuesDiffer = (a, b) => {
+  const aNull = a === null || a === undefined || a === "";
+  const bNull = b === null || b === undefined || b === "";
+  if (aNull && bNull) return false;
+  if (aNull || bNull) return true;
+  if (typeof a === "boolean" || typeof b === "boolean") return Boolean(a) !== Boolean(b);
+  return Number(a) !== Number(b);
+};
+
+// Conversion JS -> payload PUT : string ou number -> bool/int/float selon le champ.
+const coerceForPayload = (raw, type) => {
+  if (raw === null || raw === undefined || raw === "") return null;
+  if (type === "bool") return Boolean(raw);
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return type === "int" ? Math.trunc(n) : n;
+};
+
+// Construit la valeur initiale du formulaire : cible (si elle existe) sinon etat courant.
+const buildFormValues = (current, target) => {
+  const out = {};
+  for (const f of ALL_FIELDS) {
+    if (target && target[f.name] !== undefined && target[f.name] !== null) {
+      out[f.name] = target[f.name];
+    } else if (current && current[f.name] !== undefined) {
+      out[f.name] = current[f.name];
+    } else {
+      out[f.name] = null;
+    }
+  }
+  return out;
+};
+
 export default function ParametresPage() {
   const { user, isAuthenticated, isLoading, authFetch } = useAuth();
   const isAdmin = checkAdmin(user);
 
   const [automates, setAutomates] = useState([]);
   const [selected, setSelected] = useState("");
-  const [data, setData] = useState(null);
+  const [currentData, setCurrentData] = useState(null);
+  const [targetData, setTargetData] = useState(null);
+  const [formValues, setFormValues] = useState({});
   const [loadingList, setLoadingList] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -142,41 +196,128 @@ export default function ParametresPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, isAdmin]);
 
-  useEffect(() => {
-    if (!selected) {
-      setData(null);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
+  const loadAutomateData = useCallback(
+    async (nomAutomate, { cancelledRef } = {}) => {
+      if (!nomAutomate) return;
       setLoadingData(true);
       setError("");
+      setSubmitMessage(null);
       try {
-        const res = await authFetch(
-          `${API_BASE}/donnees_modifiables/${encodeURIComponent(selected)}`
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        if (cancelled) return;
-        setData(json?.data || null);
+        const [donneesRes, consignesRes] = await Promise.all([
+          authFetch(`${API_BASE}/donnees_modifiables/${encodeURIComponent(nomAutomate)}`),
+          authFetch(`${API_BASE}/consignes_modifiables/${encodeURIComponent(nomAutomate)}`),
+        ]);
+        if (cancelledRef?.current) return;
+        if (!donneesRes.ok) throw new Error(`HTTP donnees ${donneesRes.status}`);
+        if (!consignesRes.ok) throw new Error(`HTTP consignes ${consignesRes.status}`);
+        const donneesJson = await donneesRes.json();
+        const consignesJson = await consignesRes.json();
+        if (cancelledRef?.current) return;
+        const current = donneesJson?.data || null;
+        const target = consignesJson?.data || null;
+        setCurrentData(current);
+        setTargetData(target);
+        setFormValues(buildFormValues(current, target));
       } catch (e) {
-        if (!cancelled) {
-          setError("Impossible de charger les paramètres pour cet automate.");
-          setData(null);
-        }
+        if (cancelledRef?.current) return;
+        setError("Impossible de charger les paramètres pour cet automate.");
+        setCurrentData(null);
+        setTargetData(null);
+        setFormValues({});
       } finally {
-        if (!cancelled) setLoadingData(false);
+        if (!cancelledRef?.current) setLoadingData(false);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [selected, authFetch]);
+    },
+    [authFetch]
+  );
 
-  const lastUpdate = useMemo(() => formatLastUpdate(data?.horodatage), [data]);
+  useEffect(() => {
+    if (!selected) {
+      setCurrentData(null);
+      setTargetData(null);
+      setFormValues({});
+      return;
+    }
+    const cancelledRef = { current: false };
+    loadAutomateData(selected, { cancelledRef });
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, [selected, loadAutomateData]);
+
+  const lastUpdate = useMemo(() => formatLastUpdate(currentData?.horodatage), [currentData]);
+
+  // Detection des champs en attente d'application par l'automate :
+  // formValues != currentData (l'utilisateur a une cible differente de l'etat envoye).
+  const pendingNames = useMemo(() => {
+    if (!currentData) return new Set();
+    const names = new Set();
+    for (const f of ALL_FIELDS) {
+      if (valuesDiffer(formValues[f.name], currentData[f.name])) names.add(f.name);
+    }
+    return names;
+  }, [currentData, formValues]);
+
+  // Le formulaire est-il different du dernier snapshot enregistre (cible serveur ou etat) ?
+  const isDirty = useMemo(() => {
+    const baseline = targetData || currentData || {};
+    return ALL_FIELDS.some((f) => valuesDiffer(formValues[f.name], baseline[f.name]));
+  }, [formValues, targetData, currentData]);
+
+  const handleFieldChange = useCallback((name, value) => {
+    setFormValues((prev) => ({ ...prev, [name]: value }));
+    setSubmitMessage(null);
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    if (!selected) return;
+    setSubmitting(true);
+    setSubmitMessage(null);
+    try {
+      // Envoi de TOUTES les valeurs du formulaire : l'automate recupere ainsi
+      // un set complet de consignes, plus safe que les seuls champs modifies.
+      const payload = {};
+      for (const f of ALL_FIELDS) {
+        payload[f.name] = coerceForPayload(formValues[f.name], f.type);
+      }
+      const res = await authFetch(
+        `${API_BASE}/consignes_modifiables/${encodeURIComponent(selected)}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (!res.ok) {
+        let detail = "";
+        try {
+          const j = await res.json();
+          detail = j?.detail || JSON.stringify(j);
+        } catch {
+          detail = await res.text().catch(() => "");
+        }
+        throw new Error(detail || `HTTP ${res.status}`);
+      }
+      setSubmitMessage({
+        type: "success",
+        text: "Consigne enregistrée. L'automate l'appliquera à son prochain cycle.",
+      });
+      const cancelledRef = { current: false };
+      await loadAutomateData(selected, { cancelledRef });
+    } catch (e) {
+      setSubmitMessage({
+        type: "error",
+        text: `Échec de l'enregistrement : ${e.message || e}`,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }, [selected, formValues, authFetch, loadAutomateData]);
 
   if (isLoading) return <p style={{ padding: 24 }}>Chargement...</p>;
   if (!isAuthenticated || !isAdmin) return <p style={{ padding: 24 }}>Accès refusé.</p>;
+
+  const pendingCount = pendingNames.size;
 
   return (
     <div className={styles.pageShell}>
@@ -185,7 +326,7 @@ export default function ParametresPage() {
           <p className={styles.eyebrow}>Pilotage</p>
           <h1 className={styles.pageTitle}>Paramètres modifiables</h1>
           <p className={styles.subTitle}>
-            Consignes et réglages pouvant être appliqués à l&apos;automate.
+            Consignes et réglages appliqués à l&apos;automate.
           </p>
         </div>
         <div className={styles.headerRight}>
@@ -211,14 +352,44 @@ export default function ParametresPage() {
           {lastUpdate && (
             <span className={styles.lastUpdate}>Dernière MAJ : {lastUpdate}</span>
           )}
+          <button
+            type="button"
+            className={styles.saveBtn}
+            disabled={!selected || !isDirty || submitting || loadingData}
+            onClick={handleSubmit}
+          >
+            {submitting ? (
+              <Loader2 size={14} className={styles.spin} />
+            ) : (
+              <Save size={14} />
+            )}
+            Enregistrer
+          </button>
         </div>
       </div>
 
-      <div className={styles.infoBanner}>
-        <Sliders size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
-        Les boutons + / − sont visibles mais non actifs pour l&apos;instant —
-        la prise en compte côté automate sera ajoutée dans une prochaine étape.
-      </div>
+      {pendingCount > 0 && (
+        <div className={styles.pendingBanner}>
+          <Clock size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
+          {pendingCount} paramètre{pendingCount > 1 ? "s" : ""} en cours de modification
+          {" "}(en attente d&apos;application par l&apos;automate).
+        </div>
+      )}
+
+      {submitMessage && (
+        <div
+          className={
+            submitMessage.type === "success" ? styles.successBanner : styles.alert
+          }
+        >
+          {submitMessage.type === "success" ? (
+            <CheckCircle2 size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
+          ) : (
+            <AlertCircle size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />
+          )}
+          {submitMessage.text}
+        </div>
+      )}
 
       {error && <div className={styles.alert}>{error}</div>}
 
@@ -242,7 +413,7 @@ export default function ParametresPage() {
                   <div key={f.name} className={styles.skeletonRow} />
                 ))}
               </div>
-            ) : !data ? (
+            ) : !currentData && !targetData ? (
               <div className={styles.emptyState}>
                 <p className={styles.emptyTitle}>Aucune donnée enregistrée</p>
                 <p className={styles.emptyText}>
@@ -252,7 +423,13 @@ export default function ParametresPage() {
             ) : (
               <div className={styles.paramList}>
                 {section.fields.map((f) => (
-                  <ParamRow key={f.name} field={f} value={data[f.name]} />
+                  <ParamRow
+                    key={f.name}
+                    field={f}
+                    formValue={formValues[f.name]}
+                    isPending={pendingNames.has(f.name)}
+                    onChange={(v) => handleFieldChange(f.name, v)}
+                  />
                 ))}
               </div>
             )}
@@ -263,23 +440,19 @@ export default function ParametresPage() {
   );
 }
 
-function ParamRow({ field, value }) {
-  // onClick intentionnellement no-op : la logique d'application
-  // des modifications sera branchée dans une étape ultérieure.
-  const noop = () => {};
-
+function ParamRow({ field, formValue, isPending, onChange }) {
   if (field.type === "bool") {
-    const on = value === true;
-    const isNull = value === null || value === undefined;
+    const on = formValue === true;
+    const isNull = formValue === null || formValue === undefined;
     return (
-      <div className={styles.paramRow}>
+      <div className={`${styles.paramRow} ${isPending ? styles.paramRowPending : ""}`}>
         <div className={styles.paramLabel}>
           <span className={styles.paramName}>{field.label}</span>
-          <span className={styles.paramUnit}>{formatValue(value, "bool")}</span>
+          <span className={styles.paramUnit}>{formatValue(formValue, "bool")}</span>
         </div>
         <button
           type="button"
-          onClick={noop}
+          onClick={() => onChange(!on)}
           className={`${styles.toggle} ${on ? styles.toggleOn : ""} ${isNull ? styles.toggleNull : ""}`}
           aria-label={`Basculer ${field.label}`}
           aria-pressed={on}
@@ -288,9 +461,28 @@ function ParamRow({ field, value }) {
     );
   }
 
-  const isNull = value === null || value === undefined;
+  const isNull = formValue === null || formValue === undefined || formValue === "";
+  const step = stepFor(field);
+
+  const adjust = (delta) => {
+    const base = Number(formValue);
+    const start = Number.isFinite(base) ? base : 0;
+    const next = start + delta;
+    const rounded =
+      field.type === "int" ? Math.trunc(next) : Math.round(next * 1000) / 1000;
+    onChange(rounded);
+  };
+
+  const onInput = (e) => {
+    const v = e.target.value;
+    if (v === "") return onChange(null);
+    const n = Number(v);
+    if (!Number.isFinite(n)) return;
+    onChange(field.type === "int" ? Math.trunc(n) : n);
+  };
+
   return (
-    <div className={styles.paramRow}>
+    <div className={`${styles.paramRow} ${isPending ? styles.paramRowPending : ""}`}>
       <div className={styles.paramLabel}>
         <span className={styles.paramName}>{field.label}</span>
         {field.unit && <span className={styles.paramUnit}>{field.unit}</span>}
@@ -298,18 +490,23 @@ function ParamRow({ field, value }) {
       <div className={styles.stepper}>
         <button
           type="button"
-          onClick={noop}
+          onClick={() => adjust(-step)}
           className={styles.stepBtn}
           aria-label={`Diminuer ${field.label}`}
         >
           <Minus size={16} />
         </button>
-        <span className={`${styles.stepValue} ${isNull ? styles.stepValueNull : ""}`}>
-          {formatValue(value, field.type)}
-        </span>
+        <input
+          type="number"
+          step={step}
+          value={isNull ? "" : formValue}
+          onChange={onInput}
+          className={`${styles.stepInput} ${isNull ? styles.stepValueNull : ""}`}
+          aria-label={field.label}
+        />
         <button
           type="button"
-          onClick={noop}
+          onClick={() => adjust(step)}
           className={styles.stepBtn}
           aria-label={`Augmenter ${field.label}`}
         >
