@@ -42,3 +42,25 @@
   to { transform: rotate(360deg); }
 }
 
+/* --- Responsive téléphone --- */
+@media screen and (max-width: 768px) {
+  .container { padding: 16px 12px 80px; gap: 12px; }
+  .section { padding: 12px; }
+  .title { font-size: 17px; }
+  /* Formulaire : une colonne, champs pleine largeur */
+  .formGrid { grid-template-columns: 1fr; gap: 10px; }
+  /* La recherche ne doit plus imposer une largeur fixe */
+  .searchInput { min-width: 0; width: 100%; }
+  .searchBox { flex: 1; }
+  /* Onglets : pleine largeur, plus de min-width rigide */
+  .tabs { width: 100%; }
+  .tabButton { min-width: 0; flex: 1; padding: 10px 8px; font-size: 13px; }
+  /* La barre de titre passe à la ligne proprement */
+  .titleRow { justify-content: flex-start; }
+  /* Le tableau garde un scroll horizontal mais reste compact */
+  .table { font-size: 13px; }
+  .th, .td { padding: 6px; font-size: 13px; }
+  .actions { justify-content: stretch; }
+  .button { width: 100%; }
+}
+

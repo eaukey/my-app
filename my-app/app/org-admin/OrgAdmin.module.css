@@ -332,4 +332,19 @@
   .stationsGrid {
     grid-template-columns: 1fr;
   }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .membersCard,
+  .stationsCard {
+    padding: 16px;
+  }
 }

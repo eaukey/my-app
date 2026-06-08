@@ -207,5 +207,26 @@
   .summaryBar {
     flex-direction: column;
     align-items: flex-start;
+    padding: var(--space-12) var(--space-16);
+  }
+  .summaryInsight {
+    max-width: 100%;
+  }
+  /* 2 KPIs par ligne sur téléphone : compact mais lisible */
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-12);
+  }
+  .kpiValue {
+    font-size: 1.3rem;
+  }
+  .kpiLabel {
+    font-size: 0.78rem;
+  }
+}
+
+@media screen and (max-width: 400px) {
+  .kpiGrid {
+    grid-template-columns: 1fr;
   }
 }

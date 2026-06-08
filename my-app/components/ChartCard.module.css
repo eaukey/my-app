@@ -10,6 +10,20 @@
   min-height: 320px;
 }
 
+/* Carte plus compacte sur téléphone pour pouvoir scroller plusieurs cartes */
+@media screen and (max-width: 768px) {
+  .card {
+    padding: var(--space-12);
+    min-height: 240px;
+  }
+  .title {
+    font-size: 0.98rem;
+  }
+  .subtitle {
+    font-size: 0.78rem;
+  }
+}
+
 .header {
   display: flex;
   justify-content: space-between;

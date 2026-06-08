@@ -500,4 +500,27 @@
   .inlineForm .input {
     width: 100%;
   }
+
+  .listCard,
+  .detailCard {
+    padding: 16px;
+  }
+
+  /* Onglets scrollables horizontalement plutôt que débordants */
+  .tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    flex: 1 0 auto;
+    padding: 8px 14px;
+    white-space: nowrap;
+  }
+
+  .ficheActions,
+  .createFormRow {
+    flex-wrap: wrap;
+  }
 }

@@ -89,8 +89,8 @@ function ResetPasswordForm() {
 
   if (validating) {
     return (
-      <div className="login-gradient-bg flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center bg-[var(--bg-elevated)] border border-[var(--border-strong)] p-10 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+      <div className="login-gradient-bg flex items-center justify-center min-h-screen px-4">
+        <div className="flex flex-col items-center bg-[var(--bg-elevated)] border border-[var(--border-strong)] p-6 sm:p-10 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
           <p className="text-[var(--text-secondary)]">Validation du lien...</p>
         </div>
       </div>
@@ -98,8 +98,8 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="login-gradient-bg flex items-center justify-center min-h-screen">
-      <div className="flex flex-col items-center bg-[var(--bg-elevated)] border border-[var(--border-strong)] p-10 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur">
+    <div className="login-gradient-bg flex items-center justify-center min-h-screen px-4">
+      <div className="w-full max-w-md sm:w-auto sm:max-w-none flex flex-col items-center bg-[var(--bg-elevated)] border border-[var(--border-strong)] p-6 sm:p-10 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur">
         <Image
           src="/images/Logo Eaukey.png"
           alt="Eaukey Logo"
@@ -195,8 +195,8 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="login-gradient-bg flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center bg-[var(--bg-elevated)] border border-[var(--border-strong)] p-10 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+      <div className="login-gradient-bg flex items-center justify-center min-h-screen px-4">
+        <div className="flex flex-col items-center bg-[var(--bg-elevated)] border border-[var(--border-strong)] p-6 sm:p-10 rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
           <p className="text-[var(--text-secondary)]">Chargement...</p>
         </div>
       </div>

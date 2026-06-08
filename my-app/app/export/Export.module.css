@@ -195,3 +195,17 @@
 .exportBtn:hover:not(:disabled) {
   filter: brightness(1.1);
 }
+
+/* --- Responsive téléphone --- */
+@media screen and (max-width: 768px) {
+  .container { padding: 1.25rem 1rem 80px; }
+  .title { font-size: 1.2rem; }
+  .grid { gap: var(--space-12); }
+  .checkboxList { max-height: 200px; }
+  .exportBtn { max-width: 100%; }
+}
+
+/* Sur écran très étroit, les deux dates s'empilent */
+@media screen and (max-width: 420px) {
+  .dateRow { flex-direction: column; gap: 8px; }
+}

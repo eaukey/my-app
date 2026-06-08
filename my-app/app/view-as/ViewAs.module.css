@@ -232,4 +232,24 @@
   .stationGrid {
     grid-template-columns: 1fr;
   }
+
+  .header {
+    align-items: flex-start;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .searchInput {
+    max-width: 100%;
+  }
+
+  .banner {
+    flex-wrap: wrap;
+  }
+
+  .stationsCard {
+    padding: 16px;
+  }
 }

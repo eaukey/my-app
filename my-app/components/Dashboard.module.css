@@ -6,7 +6,28 @@
 
 @media screen and (max-width: 768px) {
   .container {
-    padding: 1.25rem;
+    padding: 1.25rem 1rem;
+  }
+  .pageTitle {
+    font-size: 1.25rem;
+  }
+  .totalValue {
+    font-size: 1.15rem;
+    white-space: normal;
+  }
+  .totalBanner {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .selector {
+    max-width: 100%;
+  }
+}
+
+@media screen and (max-width: 400px) {
+  .container {
+    padding: 1rem 0.85rem;
   }
 }
 

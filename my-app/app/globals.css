@@ -40,6 +40,14 @@
   --text-label: 13px;
 }
 
+html {
+  /* clip empêche tout débordement horizontal sans créer de conteneur de
+     défilement : aucun risque de casser un position:sticky (contrairement
+     à overflow:hidden). Desktop inchangé puisqu'il n'y a jamais de
+     débordement horizontal légitime. */
+  overflow-x: clip;
+}
+
 body {
   background:
     radial-gradient(120% 120% at 10% 10%, rgba(65, 174, 173, 0.05), transparent 40%),
@@ -47,6 +55,25 @@ body {
     var(--bg-base);
   color: var(--text-primary);
   min-height: 100vh;
+  overflow-x: clip;
+}
+
+/* --- Échelle typographique réduite sur téléphone --- */
+/* Les variables de titres / KPI sont réduites pour que tout reste lisible
+   tout en tenant dans la largeur d'un écran mobile (~360-414px). */
+@media screen and (max-width: 768px) {
+  :root {
+    --text-title: 19px;
+    --text-kpi: 26px;
+    --text-label: 12px;
+  }
+}
+
+@media screen and (max-width: 400px) {
+  :root {
+    --text-title: 18px;
+    --text-kpi: 23px;
+  }
 }
 
 main {
@@ -75,6 +102,15 @@ textarea {
 input::placeholder,
 textarea::placeholder {
   color: var(--text-muted);
+}
+
+/* Sur mobile, un font-size >= 16px évite le zoom automatique iOS au focus */
+@media screen and (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 input:focus,
