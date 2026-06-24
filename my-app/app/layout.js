@@ -34,8 +34,18 @@ function Shell({ children }) {
 
 export default function RootLayout({ children }) {
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js");
+    // Auparavant on enregistrait un service worker (/sw.js), mais ce fichier n'est
+    // pas deploye (404) et un SW perime peut servir un ancien bundle en cache et
+    // casser la connexion (boucle login). On desenregistre tout SW residuel + on
+    // purge ses caches pour auto-reparer les navigateurs deja affectes.
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((regs) => regs.forEach((r) => r.unregister()))
+        .catch(() => {});
+    }
+    if (typeof caches !== "undefined") {
+      caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => {});
     }
   }, []);
 
