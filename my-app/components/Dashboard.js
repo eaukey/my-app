@@ -4,9 +4,11 @@ import React, { useState, useEffect } from "react";
 import Chart from "./Chart";
 import ComboRenvoiRendementChart from "./ComboRenvoiRendementChart";
 import RealTimeData from "./RealTimeData";
+import RealTimeDataAir from "./RealTimeDataAir";
 import { useAuth } from "../lib/auth";
 import styles from "./Dashboard.module.css";
 import { API_BASE } from "../lib/apiBase";
+import { chartGroupsAir } from "../lib/chartGroupsAir";
 
 const chartPalette = {
   primary: "var(--primary)",
@@ -193,6 +195,8 @@ const Dashboard = () => {
   const [stationsLoading, setStationsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [totalRecycle, setTotalRecycle] = useState(null);
+  // Type de chaque automate ('air' | 'eau'), detecte cote backend d'apres les valeurs remontees
+  const [automateTypes, setAutomateTypes] = useState({});
 
   // Fonction utilitaire pour comparer des IDs (gère "2023004" vs "2023004.0")
   const idsEqual = (a, b) => {
@@ -297,6 +301,23 @@ const Dashboard = () => {
     fetchTotal();
   }, [isAuthenticated, authFetch]);
 
+  // Récupère le type (air/eau) de chaque automate pour router l'affichage
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchTypes = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/automates/types`);
+        if (res.ok) {
+          const data = await res.json(); // { "20260300.0": "air", ... }
+          setAutomateTypes(data && typeof data === "object" ? data : {});
+        }
+      } catch (err) {
+        console.error("Erreur lors de la récupération des types d'automate:", err);
+      }
+    };
+    fetchTypes();
+  }, [isAuthenticated]);
+
   // 2️⃣ Dès que l'utilisateur est chargé, construit la liste des machines qu'il peut voir
   useEffect(() => {
     if (!isAuthenticated) {
@@ -331,7 +352,16 @@ const Dashboard = () => {
     }
   }, [isAuthenticated, stationMapping, allAutomates]);
 
-  const filteredGraphs = chartGroups[activeDataCategory] || [];
+  // Type de l'automate sélectionné (tolère "2023004" vs "2023004.0")
+  const resolveType = (machineId) => {
+    if (!machineId) return "eau";
+    if (automateTypes[machineId]) return automateTypes[machineId];
+    const found = Object.keys(automateTypes).find((k) => idsEqual(k, machineId));
+    return found ? automateTypes[found] : "eau";
+  };
+  const isAir = resolveType(selectedMachine) === "air";
+  const activeChartGroups = isAir ? chartGroupsAir : chartGroups;
+  const filteredGraphs = activeChartGroups[activeDataCategory] || [];
 
   const filteredSuggestions = searchQuery.trim()
     ? availableMachines.filter((station) => {
@@ -440,11 +470,15 @@ const Dashboard = () => {
       </div>
 
       {selectedMachine && (
-        <RealTimeData
-          selectedMachine={selectedMachine}
-          selectedPeriod={selectedPeriod}
-          siteLabel={stationMapping[selectedMachine] || availableMachines.find((s) => s.id === selectedMachine)?.name}
-        />
+        isAir ? (
+          <RealTimeDataAir selectedMachine={selectedMachine} />
+        ) : (
+          <RealTimeData
+            selectedMachine={selectedMachine}
+            selectedPeriod={selectedPeriod}
+            siteLabel={stationMapping[selectedMachine] || availableMachines.find((s) => s.id === selectedMachine)?.name}
+          />
+        )
       )}
 
       <div className={styles.tabsRow}>
