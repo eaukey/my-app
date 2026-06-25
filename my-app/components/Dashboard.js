@@ -36,13 +36,6 @@ const SHOW_DISINFECTION_CHART = true;
 const chartGroups = {
   performance: [
     {
-      // Carte qualite d'eau (indice IA /jour + opacite) avec la derniere photo
-      // prise par le recycleur. Donnees : table urls_images (predictions IA).
-      type: "qualite_photo",
-      title: "Qualité d'eau & dernière photo",
-      color: chartPalette.teal,
-    },
-    {
       title: "Volumes (m³)",
       color: chartPalette.green,
       endpoint: (period) => `/volumes_all/${period}`,
@@ -87,6 +80,14 @@ const chartGroups = {
           },
         ]
       : []),
+    {
+      // Carte qualite d'eau (indice IA /jour + opacite) avec la derniere photo
+      // prise par le recycleur. Donnees : table urls_images (predictions IA).
+      // Placee en fin de section (apres Volume relevage).
+      type: "qualite_photo",
+      title: "Qualité d'eau & dernière photo",
+      color: chartPalette.teal,
+    },
   ],
   technical: [
     {

@@ -40,6 +40,15 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
   const [photo, setPhoto] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  // Fermeture de la photo agrandie avec la touche Échap.
+  useEffect(() => {
+    if (!lightboxOpen) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") setLightboxOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxOpen]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -142,21 +151,22 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
           <div style={{ flex: "1 1 200px", minWidth: 180, display: "flex", flexDirection: "column", gap: 8 }}>
             {photo && photo.url ? (
               <>
-                <a href={photo.url} target="_blank" rel="noopener noreferrer" style={{ display: "block" }}>
-                  <img
-                    src={photo.url}
-                    alt="Dernière photo du recycleur"
-                    style={{
-                      width: "100%",
-                      height: 200,
-                      objectFit: "cover",
-                      borderRadius: 12,
-                      border: "1px solid var(--border-strong)",
-                    }}
-                  />
-                </a>
+                <img
+                  src={photo.url}
+                  alt="Dernière photo du recycleur"
+                  onClick={() => setLightboxOpen(true)}
+                  title="Cliquer pour agrandir"
+                  style={{
+                    width: "100%",
+                    height: 200,
+                    objectFit: "cover",
+                    borderRadius: 12,
+                    border: "1px solid var(--border-strong)",
+                    cursor: "zoom-in",
+                  }}
+                />
                 <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                  {photoDate && <div>📅 Photo du {photoDate}</div>}
+                  {photoDate && <div>Photo du {photoDate}</div>}
                   {photo.qualite != null && (
                     <div>Indice : <strong>{photo.qualite.toFixed(1)}/10</strong></div>
                   )}
@@ -172,6 +182,58 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Photo agrandie (lightbox) : clic sur le fond ou le bouton pour fermer */}
+      {lightboxOpen && photo && photo.url && (
+        <div
+          onClick={() => setLightboxOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            background: "rgba(0,0,0,0.8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <button
+            onClick={() => setLightboxOpen(false)}
+            aria-label="Fermer"
+            style={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              border: "none",
+              background: "rgba(255,255,255,0.15)",
+              color: "#fff",
+              fontSize: 22,
+              lineHeight: 1,
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </button>
+          <img
+            src={photo.url}
+            alt="Dernière photo du recycleur (agrandie)"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              objectFit: "contain",
+              borderRadius: 8,
+              boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
+            }}
+          />
         </div>
       )}
     </ChartCard>
