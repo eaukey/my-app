@@ -73,6 +73,7 @@ const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
     hauteur_cuve_traitement: { value: null, lastUpdate: null },
     hauteur_cuve_disconnection: { value: null, lastUpdate: null },
     volume_renvoi: { value: null, lastUpdate: null },
+    volume_relevage: { value: null, lastUpdate: null },
     compteur_electrique: { value: null, lastUpdate: null },
   });
   const [deltaData, setDeltaData] = useState({});
@@ -91,6 +92,7 @@ const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
           "hauteur_cuve_traitement",
           "hauteur_cuve_disconnection",
           "volume_renvoi",
+          "volume_relevage",
           "compteur_electrique",
         ];
 
@@ -277,6 +279,7 @@ const RealTimeData = ({ selectedMachine, selectedPeriod }) => {
     buildKpi("hauteur_cuve_traitement", "Cuve de traitement", "%"),
     buildKpi("hauteur_cuve_disconnection", "Cuve de renvoi", "%"),
     buildKpi("volume_renvoi", "Volume de renvoi", "m³"),
+    buildKpi("volume_relevage", "Volume relevage", "m³"),
   ];
 
   return (
