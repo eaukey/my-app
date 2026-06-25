@@ -105,6 +105,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
   return (
     <ChartCard
       title={title}
+      subtitle="Indices notés sur 10"
       loading={loading}
       error={error}
       isEmpty={isEmpty}
@@ -130,7 +131,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
                 <Line
                   type="monotone"
                   dataKey="qualite"
-                  name="Qualité (/10)"
+                  name="Qualité"
                   stroke={color || "var(--primary)"}
                   strokeWidth={2.4}
                   dot={false}
