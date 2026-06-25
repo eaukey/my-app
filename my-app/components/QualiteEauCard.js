@@ -117,7 +117,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
       }
     >
       {hasData && (
-        <>
+        <div style={{ width: "100%" }}>
           <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--text-muted)" }}>
             Indices notés sur 10
           </p>
@@ -187,7 +187,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
             )}
           </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* Photo agrandie (lightbox) : clic sur le fond ou le bouton pour fermer */}
