@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Chart from "./Chart";
 import ComboRenvoiRendementChart from "./ComboRenvoiRendementChart";
+import QualiteEauCard from "./QualiteEauCard";
 import RealTimeData from "./RealTimeData";
 import RealTimeDataAir from "./RealTimeDataAir";
 import { useAuth } from "../lib/auth";
@@ -34,6 +35,13 @@ const SHOW_DISINFECTION_CHART = true;
 
 const chartGroups = {
   performance: [
+    {
+      // Carte qualite d'eau (indice IA /jour + opacite) avec la derniere photo
+      // prise par le recycleur. Donnees : table urls_images (predictions IA).
+      type: "qualite_photo",
+      title: "Qualité d'eau & dernière photo",
+      color: chartPalette.teal,
+    },
     {
       title: "Volumes (m³)",
       color: chartPalette.green,
@@ -152,6 +160,17 @@ const chartGroups = {
       title: "pH",
       color: chartPalette.orange,
       endpoint: (period) => `/ph/${period}`,
+    },
+    {
+      // Qualite d'eau predite par le modele IA depuis les photos du recycleur
+      // (table urls_images). Images "bac sans eau" exclues cote backend.
+      title: "Qualité d'eau analysée par image (indice /10)",
+      color: chartPalette.teal,
+      endpoint: (period) => `/eau/qualite_eau/${period}`,
+      seriesConfig: [
+        { key: "qualite_eau", label: "Qualité (/10)", color: chartPalette.teal },
+        { key: "opacite", label: "Opacité", color: chartPalette.amber },
+      ],
     },
     {
       title: "Conductivité (µS/cm)",
@@ -510,7 +529,14 @@ const Dashboard = () => {
 
       <div className={styles.chartsGrid}>
         {filteredGraphs.map((cfg) => (
-          cfg.type === "combo" ? (
+          cfg.type === "qualite_photo" ? (
+            <QualiteEauCard
+              key={cfg.title}
+              title={cfg.title}
+              color={cfg.color}
+              selectedMachine={selectedMachine}
+            />
+          ) : cfg.type === "combo" ? (
             <ComboRenvoiRendementChart
               key={cfg.title}
               title={cfg.title}
