@@ -121,9 +121,9 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
           <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--text-muted)" }}>
             Indices notés sur 10
           </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "stretch" }}>
+          <div style={{ display: "flex", flexWrap: "nowrap", gap: 16, alignItems: "stretch" }}>
           {/* Courbe qualité par jour */}
-          <div style={{ flex: "2 1 320px", minWidth: 0 }}>
+          <div style={{ flex: "1 1 0", minWidth: 0 }}>
             <ResponsiveContainer width="100%" height={240}>
               <RechartsLineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--grid-line)" />
@@ -152,7 +152,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
           </div>
 
           {/* Dernière photo prise par l'automate */}
-          <div style={{ flex: "1 1 200px", minWidth: 180, display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ flex: "0 0 160px", minWidth: 160, display: "flex", flexDirection: "column", gap: 8 }}>
             {photo && photo.url ? (
               <>
                 <img
