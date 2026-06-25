@@ -162,17 +162,6 @@ const chartGroups = {
       endpoint: (period) => `/ph/${period}`,
     },
     {
-      // Qualite d'eau predite par le modele IA depuis les photos du recycleur
-      // (table urls_images). Images "bac sans eau" exclues cote backend.
-      title: "Qualité d'eau analysée par image (indice /10)",
-      color: chartPalette.teal,
-      endpoint: (period) => `/eau/qualite_eau/${period}`,
-      seriesConfig: [
-        { key: "qualite_eau", label: "Qualité (/10)", color: chartPalette.teal },
-        { key: "opacite", label: "Opacité", color: chartPalette.amber },
-      ],
-    },
-    {
       title: "Conductivité (µS/cm)",
       color: chartPalette.teal,
       endpoint: (period) => `/conductivite/${period}`,
