@@ -100,8 +100,12 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
       error={error}
       isEmpty={isEmpty}
       onRetry={fetchAll}
-      emptyTitle={!selectedMachine ? "Sélectionnez un site" : undefined}
-      emptyDescription={!selectedMachine ? "Choisissez un site pour afficher les données." : undefined}
+      emptyTitle={!selectedMachine ? "Sélectionnez un site" : "Analyse d'image non disponible"}
+      emptyDescription={
+        !selectedMachine
+          ? "Choisissez un site pour afficher les données."
+          : "Cet automate ne collecte pas (ou ne transmet pas) l'analyse de la qualité d'eau par image."
+      }
     >
       {hasData && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "stretch" }}>
