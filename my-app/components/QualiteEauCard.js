@@ -105,7 +105,6 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
   return (
     <ChartCard
       title={title}
-      subtitle="Indices notés sur 10"
       loading={loading}
       error={error}
       isEmpty={isEmpty}
@@ -118,7 +117,11 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
       }
     >
       {hasData && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "stretch" }}>
+        <>
+          <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--text-muted)" }}>
+            Indices notés sur 10
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "stretch" }}>
           {/* Courbe qualité par jour */}
           <div style={{ flex: "2 1 320px", minWidth: 0 }}>
             <ResponsiveContainer width="100%" height={240}>
@@ -183,7 +186,8 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        </>
       )}
 
       {/* Photo agrandie (lightbox) : clic sur le fond ou le bouton pour fermer */}
