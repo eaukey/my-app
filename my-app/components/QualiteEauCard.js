@@ -60,9 +60,11 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
         setLoading(false);
         return;
       }
+      // include_bac_vide=true : on affiche aussi les photos classees "bac vide"
+      // (avec un badge), pour pouvoir verifier visuellement si le bac l'est vraiment.
       const [serieRes, photoRes] = await Promise.all([
-        fetch(`${API_BASE}/eau/qualite_eau/mois?nom_automate=${selectedMachine}`),
-        fetch(`${API_BASE}/eau/derniere_photo?nom_automate=${selectedMachine}`),
+        fetch(`${API_BASE}/eau/qualite_eau/mois?nom_automate=${selectedMachine}&include_bac_vide=true`),
+        fetch(`${API_BASE}/eau/derniere_photo?nom_automate=${selectedMachine}&include_bac_vide=true`),
       ]);
       if (!serieRes.ok) throw new Error(`Erreur serveur: ${serieRes.status}`);
       const serie = await serieRes.json();
@@ -101,6 +103,11 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
         day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
       }).format(new Date(photo.timestamp))
     : null;
+
+  // Le modele a classe cette photo comme "bac vide" : on l'affiche quand meme
+  // (avec un badge d'alerte) pour permettre une verification visuelle.
+  const bacVideProb = photo && photo.bac_vide_prob != null ? photo.bac_vide_prob : null;
+  const photoBacVide = bacVideProb != null && bacVideProb >= 0.5;
 
   return (
     <ChartCard
@@ -173,6 +180,24 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
                   {photoDate && <div>Photo du {photoDate}</div>}
                   {photo.qualite != null && (
                     <div>Indice : <strong>{photo.qualite.toFixed(1)}/10</strong></div>
+                  )}
+                  {photoBacVide && (
+                    <div style={{
+                      marginTop: 6,
+                      padding: "4px 8px",
+                      borderRadius: 8,
+                      background: "rgba(245, 158, 11, 0.15)",
+                      border: "1px solid var(--amber, #f59e0b)",
+                      color: "var(--amber, #f59e0b)",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      lineHeight: 1.3,
+                    }}>
+                      ⚠ Bac détecté comme vide ({Math.round(bacVideProb * 100)}%)
+                      <div style={{ fontWeight: 400, opacity: 0.85, marginTop: 2 }}>
+                        Vérifiez visuellement.
+                      </div>
+                    </div>
                   )}
                 </div>
               </>
