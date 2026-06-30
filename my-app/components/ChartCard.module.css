@@ -10,6 +10,11 @@
   min-height: 320px;
 }
 
+/* Carte large : occupe toute la largeur de la grille (2 colonnes). */
+.spanFull {
+  grid-column: 1 / -1;
+}
+
 /* Carte plus compacte sur téléphone pour pouvoir scroller plusieurs cartes */
 @media screen and (max-width: 768px) {
   .card {

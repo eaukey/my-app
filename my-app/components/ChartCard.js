@@ -15,10 +15,11 @@ const ChartCard = ({
   lastAvailableText,
   emptyTitle = "Aucune donnée sur la période sélectionnée",
   emptyDescription = "Essayez une autre période ou vérifiez la connexion capteurs.",
+  wide = false,
   children,
 }) => {
   return (
-    <div className={styles.card}>
+    <div className={`${styles.card}${wide ? ` ${styles.spanFull}` : ""}`}>
       <div className={styles.header}>
         <div>
           {subtitle && <p className={styles.subtitle}>{subtitle}</p>}

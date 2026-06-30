@@ -200,11 +200,10 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
   const photoBacVide = bacVideProb != null && bacVideProb >= 0.5;
   const isCorrigee = !!(current && (current.corr_qualite != null || current.corr_opacite != null));
 
-  const panelWidth = superAdmin ? 240 : 160;
-
   return (
     <ChartCard
       title={title}
+      wide
       loading={loading}
       error={error}
       isEmpty={isEmpty}
@@ -221,10 +220,10 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
           <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--text-muted)" }}>
             Indices notés sur 10
           </p>
-          <div style={{ display: "flex", flexWrap: "nowrap", gap: 16, alignItems: "stretch" }}>
-          {/* Courbe qualité par jour */}
-          <div style={{ flex: "1 1 0", minWidth: 0 }}>
-            <ResponsiveContainer width="100%" height={240}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
+          {/* Courbe qualité par jour — garde la taille d'une carte normale */}
+          <div style={{ flex: "1 1 460px", minWidth: 300 }}>
+            <ResponsiveContainer width="100%" height={260}>
               <RechartsLineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--grid-line)" />
                 <XAxis dataKey="time" {...axisStyle} />
@@ -251,8 +250,8 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
             </ResponsiveContainer>
           </div>
 
-          {/* Photo prise par l'automate (+ édition super admin) */}
-          <div style={{ flex: `0 0 ${panelWidth}px`, minWidth: panelWidth, display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* Photo prise par l'automate */}
+          <div style={{ flex: "0 0 240px", minWidth: 220, display: "flex", flexDirection: "column", gap: 8 }}>
             {displayPhoto && displayPhoto.url ? (
               <>
                 <img
@@ -317,70 +316,6 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
                     </div>
                   )}
                 </div>
-
-                {/* Édition super admin : valider / corriger qualité & opacité */}
-                {superAdmin && current && (
-                  <div style={{
-                    marginTop: 4,
-                    padding: 10,
-                    borderRadius: 10,
-                    border: "1px solid var(--border-strong)",
-                    background: "var(--bg-elevated)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                  }}>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                      Modèle : qualité {current.pred_qualite != null ? current.pred_qualite.toFixed(1) : "—"}
-                      {" · "}opacité {current.pred_opacite != null ? current.pred_opacite.toFixed(1) : "—"}
-                    </div>
-
-                    <label style={editLabelStyle}>
-                      <span>Qualité</span>
-                      <input
-                        type="number" min={0} max={10} step={0.1}
-                        value={editQualite}
-                        onChange={(e) => setEditQualite(e.target.value)}
-                        style={editInputStyle}
-                      />
-                    </label>
-                    <label style={editLabelStyle}>
-                      <span>Opacité</span>
-                      <input
-                        type="number" min={0} max={10} step={0.1}
-                        value={editOpacite}
-                        onChange={(e) => setEditOpacite(e.target.value)}
-                        style={editInputStyle}
-                      />
-                    </label>
-
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <button type="button" disabled={saving} onClick={() => saveValidation("correct")} style={primaryBtnStyle(saving)}>
-                        Enregistrer
-                      </button>
-                      <button type="button" disabled={saving} onClick={() => saveValidation("validate")} style={ghostBtnStyle(saving)} title="Le modèle est bon, valider sans corriger">
-                        Valider
-                      </button>
-                      {isCorrigee && (
-                        <button type="button" disabled={saving} onClick={() => saveValidation("reset")} style={ghostBtnStyle(saving)} title="Revenir à la prédiction du modèle">
-                          ↺
-                        </button>
-                      )}
-                    </div>
-
-                    {current.validated_at && (
-                      <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                        ✓ {isCorrigee ? "Corrigé" : "Validé"} par {current.validated_by || "?"}
-                        {" le "}{formatPhotoDate(current.validated_at)}
-                      </div>
-                    )}
-                    {saveMsg && (
-                      <div style={{ fontSize: 12, color: saveMsg.ok ? "var(--success, #10b981)" : "var(--danger, #ef4444)" }}>
-                        {saveMsg.text}
-                      </div>
-                    )}
-                  </div>
-                )}
               </>
             ) : (
               <div style={{
@@ -392,6 +327,74 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
               </div>
             )}
           </div>
+
+          {/* Panneau critères (super admin) : valider / corriger qualité & opacité, à côté de la photo */}
+          {superAdmin && current && (
+            <div style={{
+              flex: "0 0 250px",
+              minWidth: 230,
+              padding: 12,
+              borderRadius: 10,
+              border: "1px solid var(--border-strong)",
+              background: "var(--bg-elevated)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>
+                Critères de notation
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                Modèle : qualité {current.pred_qualite != null ? current.pred_qualite.toFixed(1) : "—"}
+                {" · "}opacité {current.pred_opacite != null ? current.pred_opacite.toFixed(1) : "—"}
+              </div>
+
+              <label style={editLabelStyle}>
+                <span>Qualité</span>
+                <input
+                  type="number" min={0} max={10} step={0.1}
+                  value={editQualite}
+                  onChange={(e) => setEditQualite(e.target.value)}
+                  style={editInputStyle}
+                />
+              </label>
+              <label style={editLabelStyle}>
+                <span>Opacité</span>
+                <input
+                  type="number" min={0} max={10} step={0.1}
+                  value={editOpacite}
+                  onChange={(e) => setEditOpacite(e.target.value)}
+                  style={editInputStyle}
+                />
+              </label>
+
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <button type="button" disabled={saving} onClick={() => saveValidation("correct")} style={primaryBtnStyle(saving)}>
+                  Enregistrer
+                </button>
+                <button type="button" disabled={saving} onClick={() => saveValidation("validate")} style={ghostBtnStyle(saving)} title="Le modèle est bon, valider sans corriger">
+                  Valider
+                </button>
+                {isCorrigee && (
+                  <button type="button" disabled={saving} onClick={() => saveValidation("reset")} style={ghostBtnStyle(saving)} title="Revenir à la prédiction du modèle">
+                    ↺
+                  </button>
+                )}
+              </div>
+
+              {current.validated_at && (
+                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                  ✓ {isCorrigee ? "Corrigé" : "Validé"} par {current.validated_by || "?"}
+                  {" le "}{formatPhotoDate(current.validated_at)}
+                </div>
+              )}
+              {saveMsg && (
+                <div style={{ fontSize: 12, color: saveMsg.ok ? "var(--success, #10b981)" : "var(--danger, #ef4444)" }}>
+                  {saveMsg.text}
+                </div>
+              )}
+            </div>
+          )}
           </div>
         </div>
       )}
