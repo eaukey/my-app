@@ -136,31 +136,18 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
     const p = photos[idx];
     setEditQualite(p && p.qualite != null ? String(p.qualite) : "");
     setEditOpacite(p && p.opacite != null ? String(p.opacite) : "");
-    setSaveMsg(null);
   }, [superAdmin, photos, idx]);
 
-  // Enregistre une validation / correction / réinitialisation.
-  const saveValidation = async (mode) => {
+  // Efface le message de confirmation uniquement quand on change de photo
+  // (pas après un enregistrement, sinon le "✓" disparaîtrait aussitôt).
+  useEffect(() => { setSaveMsg(null); }, [idx]);
+
+  // Cœur commun : envoie le body au backend, met à jour la photo locale + le graphe.
+  const applyValidation = async (body, successText) => {
     if (!current) return;
     setSaving(true);
     setSaveMsg(null);
     try {
-      let body;
-      if (mode === "reset") {
-        body = { reset: true };
-      } else if (mode === "correct") {
-        const q = editQualite === "" ? null : parseFloat(editQualite);
-        const o = editOpacite === "" ? null : parseFloat(editOpacite);
-        const bad = (v) => v != null && (Number.isNaN(v) || v < 0 || v > 10);
-        if (bad(q) || bad(o)) {
-          setSaveMsg({ ok: false, text: "Valeurs attendues entre 0 et 10." });
-          setSaving(false);
-          return;
-        }
-        body = { qualite_eau: q, opacite: o };
-      } else {
-        body = {}; // validation simple : le modèle était bon
-      }
       const res = await authFetch(`${API_BASE}/eau/photo/${current.id}/validation`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -176,10 +163,12 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
         opacite: upd.opacite,
         corr_qualite: upd.corr_qualite,
         corr_opacite: upd.corr_opacite,
+        corr_bac_vide: upd.corr_bac_vide,
+        bac_vide: upd.bac_vide,
         validated_by: upd.validated_by,
         validated_at: upd.validated_at,
       } : p)));
-      setSaveMsg({ ok: true, text: mode === "reset" ? "Réinitialisé ✓" : "Enregistré ✓" });
+      setSaveMsg({ ok: true, text: successText });
       fetchSerie().catch(() => {}); // le graphe reflète la correction
     } catch (e) {
       setSaveMsg({ ok: false, text: e.message });
@@ -187,6 +176,26 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
       setSaving(false);
     }
   };
+
+  // Valide / corrige la qualité & l'opacité, ou réinitialise.
+  const saveValidation = (mode) => {
+    if (mode === "reset") return applyValidation({ reset: true }, "Réinitialisé ✓");
+    if (mode === "correct") {
+      const q = editQualite === "" ? null : parseFloat(editQualite);
+      const o = editOpacite === "" ? null : parseFloat(editOpacite);
+      const bad = (v) => v != null && (Number.isNaN(v) || v < 0 || v > 10);
+      if (bad(q) || bad(o)) {
+        setSaveMsg({ ok: false, text: "Valeurs attendues entre 0 et 10." });
+        return undefined;
+      }
+      return applyValidation({ qualite_eau: q, opacite: o }, "Enregistré ✓");
+    }
+    return applyValidation({}, "Validé ✓"); // le modèle était bon
+  };
+
+  // Corrige le statut "bac vide" : true = réellement vide, false = contient de l'eau.
+  const saveBacVide = (value) =>
+    applyValidation({ bac_vide: value }, value ? "Marqué : bac vide ✓" : "Marqué : contient de l'eau ✓");
 
   const hasData = Array.isArray(data) && data.some(
     (d) => (d.qualite != null && !Number.isNaN(parseFloat(d.qualite)))
@@ -197,8 +206,15 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
   const photoDate = formatPhotoDate(displayPhoto && displayPhoto.timestamp);
   const bacVideProb =
     displayPhoto && displayPhoto.bac_vide_prob != null ? displayPhoto.bac_vide_prob : null;
-  const photoBacVide = bacVideProb != null && bacVideProb >= 0.5;
-  const isCorrigee = !!(current && (current.corr_qualite != null || current.corr_opacite != null));
+  // Correction humaine du statut "bac vide" : true/false, ou null si pas décidé.
+  const corrBacVide =
+    displayPhoto && displayPhoto.corr_bac_vide != null ? displayPhoto.corr_bac_vide : null;
+  // Statut effectif = correction humaine sinon prédiction modèle (seuil 0.5).
+  const effectiveBacVide =
+    corrBacVide != null ? corrBacVide : (bacVideProb != null && bacVideProb >= 0.5);
+  const isCorrigee = !!(current && (
+    current.corr_qualite != null || current.corr_opacite != null || current.corr_bac_vide != null
+  ));
 
   return (
     <ChartCard
@@ -297,18 +313,21 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
                   {!superAdmin && displayPhoto.qualite != null && (
                     <div>Indice : <strong>{displayPhoto.qualite.toFixed(1)}/10</strong></div>
                   )}
-                  {photoBacVide && (
-                    <div style={{
-                      marginTop: 6,
-                      padding: "4px 8px",
-                      borderRadius: 8,
-                      background: "rgba(245, 158, 11, 0.15)",
-                      border: "1px solid var(--amber, #f59e0b)",
-                      color: "var(--amber, #f59e0b)",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      lineHeight: 1.3,
-                    }}>
+                  {corrBacVide === true && (
+                    <div style={badgeStyle("#ef4444")}>
+                      ⛔ Bac vide confirmé
+                      <div style={{ fontWeight: 400, opacity: 0.85, marginTop: 2 }}>
+                        Exclu de la courbe de qualité.
+                      </div>
+                    </div>
+                  )}
+                  {corrBacVide === false && (
+                    <div style={badgeStyle("var(--success, #10b981)")}>
+                      ✓ Contient de l&apos;eau (validé)
+                    </div>
+                  )}
+                  {corrBacVide == null && effectiveBacVide && (
+                    <div style={badgeStyle("var(--amber, #f59e0b)")}>
                       ⚠ Bac détecté comme vide ({Math.round(bacVideProb * 100)}%)
                       <div style={{ fontWeight: 400, opacity: 0.85, marginTop: 2 }}>
                         Vérifiez visuellement.
@@ -347,34 +366,73 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
               <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                 Modèle : qualité {current.pred_qualite != null ? current.pred_qualite.toFixed(1) : "—"}
                 {" · "}opacité {current.pred_opacite != null ? current.pred_opacite.toFixed(1) : "—"}
+                {current.bac_vide_prob != null && (
+                  <>{" · "}bac vide {Math.round(current.bac_vide_prob * 100)}%</>
+                )}
               </div>
 
-              <label style={editLabelStyle}>
-                <span>Qualité</span>
-                <input
-                  type="number" min={0} max={10} step={0.1}
-                  value={editQualite}
-                  onChange={(e) => setEditQualite(e.target.value)}
-                  style={editInputStyle}
-                />
-              </label>
-              <label style={editLabelStyle}>
-                <span>Opacité</span>
-                <input
-                  type="number" min={0} max={10} step={0.1}
-                  value={editOpacite}
-                  onChange={(e) => setEditOpacite(e.target.value)}
-                  style={editInputStyle}
-                />
-              </label>
+              {/* État du bac : corrige un faux positif "bac vide" du modèle */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>État du bac</span>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    type="button" disabled={saving}
+                    onClick={() => saveBacVide(false)}
+                    style={toggleBtnStyle(effectiveBacVide === false, saving)}
+                    title="Il y a de l'eau dans le bac (corrige un faux positif du modèle)"
+                  >
+                    Contient de l&apos;eau
+                  </button>
+                  <button
+                    type="button" disabled={saving}
+                    onClick={() => saveBacVide(true)}
+                    style={toggleBtnStyle(effectiveBacVide === true, saving)}
+                    title="Le bac est réellement vide (exclu de la courbe de qualité)"
+                  >
+                    Bac vide
+                  </button>
+                </div>
+              </div>
+
+              {/* Bac vide -> pas de qualite/opacite a mesurer. Sinon champs editables. */}
+              {effectiveBacVide ? (
+                <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
+                  Qualité & opacité non applicables (bac vide).
+                </div>
+              ) : (
+                <>
+                  <label style={editLabelStyle}>
+                    <span>Qualité</span>
+                    <input
+                      type="number" min={0} max={10} step={0.1}
+                      value={editQualite}
+                      onChange={(e) => setEditQualite(e.target.value)}
+                      style={editInputStyle}
+                    />
+                  </label>
+                  <label style={editLabelStyle}>
+                    <span>Opacité</span>
+                    <input
+                      type="number" min={0} max={10} step={0.1}
+                      value={editOpacite}
+                      onChange={(e) => setEditOpacite(e.target.value)}
+                      style={editInputStyle}
+                    />
+                  </label>
+                </>
+              )}
 
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                <button type="button" disabled={saving} onClick={() => saveValidation("correct")} style={primaryBtnStyle(saving)}>
-                  Enregistrer
-                </button>
-                <button type="button" disabled={saving} onClick={() => saveValidation("validate")} style={ghostBtnStyle(saving)} title="Le modèle est bon, valider sans corriger">
-                  Valider
-                </button>
+                {!effectiveBacVide && (
+                  <>
+                    <button type="button" disabled={saving} onClick={() => saveValidation("correct")} style={primaryBtnStyle(saving)}>
+                      Enregistrer
+                    </button>
+                    <button type="button" disabled={saving} onClick={() => saveValidation("validate")} style={ghostBtnStyle(saving)} title="Le modèle est bon, valider sans corriger">
+                      Valider
+                    </button>
+                  </>
+                )}
                 {isCorrigee && (
                   <button type="button" disabled={saving} onClick={() => saveValidation("reset")} style={ghostBtnStyle(saving)} title="Revenir à la prédiction du modèle">
                     ↺
@@ -485,6 +543,24 @@ const ghostBtnStyle = (disabled) => ({
   border: "1px solid var(--border-strong)", background: "transparent",
   color: "var(--text-primary)", fontSize: 12,
   cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.6 : 1,
+});
+
+// Bouton toggle "Contient de l'eau / Bac vide" : mis en évidence quand actif.
+const toggleBtnStyle = (active, disabled) => ({
+  flex: 1, padding: "5px 8px", borderRadius: 6, fontSize: 12,
+  fontWeight: active ? 600 : 400,
+  border: active ? "1px solid var(--primary)" : "1px solid var(--border-strong)",
+  background: active ? "var(--primary)" : "transparent",
+  color: active ? "#fff" : "var(--text-primary)",
+  cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.6 : 1,
+});
+
+// Petit badge d'état (bac vide confirmé / eau confirmée / alerte modèle).
+const badgeStyle = (color) => ({
+  marginTop: 6, padding: "4px 8px", borderRadius: 8,
+  background: "color-mix(in srgb, " + color + " 15%, transparent)",
+  border: "1px solid " + color, color,
+  fontSize: 12, fontWeight: 600, lineHeight: 1.3,
 });
 
 export default QualiteEauCard;
