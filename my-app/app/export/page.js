@@ -40,6 +40,8 @@ export default function ExportPage() {
   const [dateFin, setDateFin] = useState("");
   const [exporting, setExporting] = useState(false);
   const [stationSearch, setStationSearch] = useState("");
+  const [depuisMiseEnRoute, setDepuisMiseEnRoute] = useState(false);
+  const [miseEnRouteLoading, setMiseEnRouteLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -56,6 +58,54 @@ export default function ExportPage() {
     };
     fetchStations();
   }, [isAuthenticated, authFetch]);
+
+  // Desactive "Depuis la mise en route" si on n'a pas exactement une station
+  useEffect(() => {
+    if (selectedStations.length !== 1 && depuisMiseEnRoute) {
+      setDepuisMiseEnRoute(false);
+    }
+  }, [selectedStations, depuisMiseEnRoute]);
+
+  // Recupere la date de mise en route de la station et la place dans "Du"
+  useEffect(() => {
+    if (!depuisMiseEnRoute || selectedStations.length !== 1) return;
+    const station = selectedStations[0];
+    let cancelled = false;
+    const fetchPremiereDate = async () => {
+      setMiseEnRouteLoading(true);
+      try {
+        const params = new URLSearchParams({ station, source });
+        const res = await authFetch(`${API_BASE}/export/premiere-date?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) {
+            if (data.premiere_date) {
+              setDateDebut(data.premiere_date);
+            } else {
+              alert("Aucune donnée disponible pour cette station.");
+              setDepuisMiseEnRoute(false);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Erreur récupération mise en route:", err);
+      } finally {
+        if (!cancelled) setMiseEnRouteLoading(false);
+      }
+    };
+    fetchPremiereDate();
+    return () => {
+      cancelled = true;
+    };
+  }, [depuisMiseEnRoute, selectedStations, source, authFetch]);
+
+  const toggleMiseEnRoute = () => {
+    setDepuisMiseEnRoute((prev) => {
+      const next = !prev;
+      if (!next) setDateDebut("");
+      return next;
+    });
+  };
 
   const toggleStation = (nom) => {
     setSelectedStations((prev) =>
@@ -202,6 +252,23 @@ export default function ExportPage() {
           </div>
 
           <h2 className={styles.sectionTitle} style={{ marginTop: "16px" }}>Période</h2>
+          <label
+            className={styles.checkboxItem}
+            style={{ marginBottom: "10px", opacity: selectedStations.length === 1 ? 1 : 0.5 }}
+            title={selectedStations.length === 1 ? "" : "Sélectionnez une seule station"}
+          >
+            <input
+              type="checkbox"
+              checked={depuisMiseEnRoute}
+              disabled={selectedStations.length !== 1}
+              onChange={toggleMiseEnRoute}
+            />
+            <span>
+              Depuis la mise en route
+              {selectedStations.length !== 1 && " (une seule station)"}
+              {miseEnRouteLoading && " …"}
+            </span>
+          </label>
           <div className={styles.dateRow}>
             <div className={styles.dateField}>
               <label className={styles.dateLabel}>Du</label>
@@ -210,6 +277,7 @@ export default function ExportPage() {
                 value={dateDebut}
                 onChange={(e) => setDateDebut(e.target.value)}
                 className={styles.dateInput}
+                disabled={depuisMiseEnRoute}
               />
             </div>
             <div className={styles.dateField}>
