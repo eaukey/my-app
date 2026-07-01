@@ -154,7 +154,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
     const p = photos[idx];
     setEditQualite(p && p.qualite != null ? String(p.qualite) : "");
     setEditOpacite(p && p.opacite != null ? String(p.opacite) : "");
-    setEditMatiere(p && p.matiere != null ? String(p.matiere) : "");
+    setEditMatiere(p && p.matiere != null ? String(Math.round(p.matiere * 10)) : "");
   }, [superAdmin, photos, idx]);
 
   // Efface le message de confirmation uniquement quand on change de photo
@@ -216,12 +216,19 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
     if (mode === "correct") {
       const q = editQualite === "" ? null : parseFloat(editQualite);
       const o = editOpacite === "" ? null : parseFloat(editOpacite);
-      const m = editMatiere === "" ? null : parseFloat(editMatiere);
-      const bad = (v) => v != null && (Number.isNaN(v) || v < 0 || v > 10);
-      if (bad(q) || bad(o) || bad(m)) {
-        setSaveMsg({ ok: false, text: "Valeurs attendues entre 0 et 10." });
+      const mPct = editMatiere === "" ? null : parseFloat(editMatiere); // MES saisie en %
+      const bad10 = (v) => v != null && (Number.isNaN(v) || v < 0 || v > 10);
+      const badPct = (v) => v != null && (Number.isNaN(v) || v < 0 || v > 100);
+      if (bad10(q) || bad10(o)) {
+        setSaveMsg({ ok: false, text: "Qualité et opacité attendues entre 0 et 10." });
         return undefined;
       }
+      if (badPct(mPct)) {
+        setSaveMsg({ ok: false, text: "MES attendue entre 0 et 100 %." });
+        return undefined;
+      }
+      // MES stockée en /10 côté backend (probabilité×10) -> on convertit le % saisi.
+      const m = mPct == null ? null : mPct / 10;
       return applyValidation({ qualite_eau: q, opacite: o, matiere: m }, "Enregistré ✓");
     }
     return applyValidation({}, "Validé ✓"); // le modèle était bon
@@ -298,14 +305,6 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
                   strokeWidth={2.4}
                   dot={false}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="matiere"
-                  name="Matière en susp."
-                  stroke="var(--teal, #14b8a6)"
-                  strokeWidth={2.4}
-                  dot={false}
-                />
               </RechartsLineChart>
             </ResponsiveContainer>
           </div>
@@ -357,6 +356,12 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
                   {indice != null && !effectiveBacVide && (
                     <div title="Indice global = (qualité + (10 − opacité)) / 2">
                       Indice : <strong>{indice.toFixed(1)}/10</strong>
+                    </div>
+                  )}
+                  {displayPhoto.matiere != null && !effectiveBacVide && (
+                    <div title="Probabilité que le modèle détecte des matières en suspension">
+                      Matières en suspension : <strong>{Math.round(displayPhoto.matiere * 10)}%</strong>
+                      <span style={{ color: "var(--text-muted)" }}> (probable)</span>
                     </div>
                   )}
                   {corrBacVide === true && (
@@ -412,7 +417,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
               <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                 Modèle : qualité {current.pred_qualite != null ? current.pred_qualite.toFixed(1) : "—"}
                 {" · "}opacité {current.pred_opacite != null ? current.pred_opacite.toFixed(1) : "—"}
-                {" · "}MES {current.pred_matiere != null ? current.pred_matiere.toFixed(1) : "—"}
+                {" · "}MES {current.pred_matiere != null ? Math.round(current.pred_matiere * 10) + "%" : "—"}
               </div>
 
               {/* Portée : n'importe quelle action ci-dessous s'applique à toute l'heure si coché */}
@@ -486,9 +491,9 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
                     />
                   </label>
                   <label style={editLabelStyle}>
-                    <span title="Matière en suspension (estimation IA, sur 10)">MES</span>
+                    <span title="Matières en suspension : probabilité (estimation IA), en %">MES (%)</span>
                     <input
-                      type="number" min={0} max={10} step={0.1}
+                      type="number" min={0} max={100} step={1}
                       value={editMatiere}
                       onChange={(e) => setEditMatiere(e.target.value)}
                       style={editInputStyle}
