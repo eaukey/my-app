@@ -219,7 +219,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
   return (
     <ChartCard
       title={title}
-      wide
+      wide={superAdmin}
       loading={loading}
       error={error}
       isEmpty={isEmpty}
@@ -237,8 +237,8 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
             Indices notés sur 10
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
-          {/* Courbe qualité par jour — garde la taille d'une carte normale */}
-          <div style={{ flex: "1 1 460px", minWidth: 300 }}>
+          {/* Courbe qualité par jour — capée à la taille d'une carte normale (ne domine pas) */}
+          <div style={{ flex: "1 1 340px", minWidth: 280, maxWidth: 600 }}>
             <ResponsiveContainer width="100%" height={260}>
               <RechartsLineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--grid-line)" />
@@ -310,7 +310,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
 
                 <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
                   {photoDate && <div>Photo du {photoDate}</div>}
-                  {!superAdmin && displayPhoto.qualite != null && (
+                  {displayPhoto.qualite != null && !effectiveBacVide && (
                     <div>Indice : <strong>{displayPhoto.qualite.toFixed(1)}/10</strong></div>
                   )}
                   {corrBacVide === true && (
@@ -350,8 +350,8 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
           {/* Panneau critères (super admin) : valider / corriger qualité & opacité, à côté de la photo */}
           {superAdmin && current && (
             <div style={{
-              flex: "0 0 250px",
-              minWidth: 230,
+              flex: "1 1 300px",
+              minWidth: 280,
               padding: 12,
               borderRadius: 10,
               border: "1px solid var(--border-strong)",
