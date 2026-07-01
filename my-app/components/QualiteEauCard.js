@@ -38,16 +38,16 @@ const formatPhotoDate = (ts) =>
       }).format(new Date(ts))
     : null;
 
-// Indice global /10 (haut = bonne eau) : moyenne de la qualité et des composants
-// inversés (opacité et MES, où "haut = mauvais"). Formule validée :
-//   (qualité + (10 − opacité) + (10 − MES)) / 3
-// On moyenne les composants réellement disponibles (robustesse si l'un manque).
+// Indice global /10 (haut = bonne eau). Formule validée :
+//   (qualité + (10 − opacité)) / 2
+// Deux vraies mesures graduées. La MES est volontairement EXCLUE : c'est une
+// probabilité (oui/non), pas une mesure sur la même échelle. On moyenne les
+// composants réellement disponibles (robustesse si l'un manque).
 const computeIndice = (p) => {
   if (!p) return null;
   const parts = [];
   if (p.qualite != null) parts.push(p.qualite);
   if (p.opacite != null) parts.push(10 - p.opacite);
-  if (p.matiere != null) parts.push(10 - p.matiere);
   if (!parts.length) return null;
   const v = parts.reduce((a, b) => a + b, 0) / parts.length;
   return Math.max(0, Math.min(10, v));
@@ -355,7 +355,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
                 <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
                   {photoDate && <div>Photo du {photoDate}</div>}
                   {indice != null && !effectiveBacVide && (
-                    <div title="Indice global = (qualité + (10 − opacité) + (10 − MES)) / 3">
+                    <div title="Indice global = (qualité + (10 − opacité)) / 2">
                       Indice : <strong>{indice.toFixed(1)}/10</strong>
                     </div>
                   )}
