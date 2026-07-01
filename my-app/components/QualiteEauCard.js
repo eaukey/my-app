@@ -63,6 +63,8 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
   // Édition (super admin)
   const [editQualite, setEditQualite] = useState("");
   const [editOpacite, setEditOpacite] = useState("");
+  const [editMatiere, setEditMatiere] = useState("");
+  const [applyHour, setApplyHour] = useState(false); // appliquer à toute l'heure
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState(null);
 
@@ -88,6 +90,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
       time: label,
       qualite: serie.qualite_eau ? serie.qualite_eau[i] : null,
       opacite: serie.opacite ? serie.opacite[i] : null,
+      matiere: serie.matiere ? serie.matiere[i] : null,
     })));
   }, [selectedMachine]);
 
@@ -136,13 +139,14 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
     const p = photos[idx];
     setEditQualite(p && p.qualite != null ? String(p.qualite) : "");
     setEditOpacite(p && p.opacite != null ? String(p.opacite) : "");
+    setEditMatiere(p && p.matiere != null ? String(p.matiere) : "");
   }, [superAdmin, photos, idx]);
 
   // Efface le message de confirmation uniquement quand on change de photo
   // (pas après un enregistrement, sinon le "✓" disparaîtrait aussitôt).
   useEffect(() => { setSaveMsg(null); }, [idx]);
 
-  // Cœur commun : envoie le body au backend, met à jour la photo locale + le graphe.
+  // Cœur commun : envoie le body au backend, met à jour la/les photo(s) locale(s) + le graphe.
   const applyValidation = async (body, successText) => {
     if (!current) return;
     setSaving(true);
@@ -151,24 +155,38 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
       const res = await authFetch(`${API_BASE}/eau/photo/${current.id}/validation`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, apply_to_hour: applyHour }),
       });
       if (!res.ok) {
         throw new Error(res.status === 403 ? "Réservé au super admin." : `Erreur ${res.status}`);
       }
       const upd = await res.json();
-      setPhotos((prev) => prev.map((p, i) => (i === idx ? {
+      // Les corrections sont uniformes ; la valeur affichée se recalcule avec la prédiction
+      // propre à chaque photo (COALESCE(correction, prédiction)).
+      const merge = (p) => ({
         ...p,
-        qualite: upd.qualite,
-        opacite: upd.opacite,
         corr_qualite: upd.corr_qualite,
         corr_opacite: upd.corr_opacite,
+        corr_matiere: upd.corr_matiere,
         corr_bac_vide: upd.corr_bac_vide,
-        bac_vide: upd.bac_vide,
         validated_by: upd.validated_by,
         validated_at: upd.validated_at,
-      } : p)));
-      setSaveMsg({ ok: true, text: successText });
+        qualite: upd.corr_qualite != null ? upd.corr_qualite : p.pred_qualite,
+        opacite: upd.corr_opacite != null ? upd.corr_opacite : p.pred_opacite,
+        matiere: upd.corr_matiere != null ? upd.corr_matiere : p.pred_matiere,
+        bac_vide: upd.corr_bac_vide != null
+          ? upd.corr_bac_vide
+          : (p.bac_vide_prob != null && p.bac_vide_prob >= 0.5),
+      });
+      const hourKey = current.timestamp ? current.timestamp.slice(0, 13) : null;
+      setPhotos((prev) => prev.map((p, i) => {
+        if (applyHour) {
+          return (hourKey && p.timestamp && p.timestamp.slice(0, 13) === hourKey) ? merge(p) : p;
+        }
+        return i === idx ? merge(p) : p;
+      }));
+      const suffix = applyHour && upd.affected > 1 ? ` (${upd.affected} photos)` : "";
+      setSaveMsg({ ok: true, text: successText + suffix });
       fetchSerie().catch(() => {}); // le graphe reflète la correction
     } catch (e) {
       setSaveMsg({ ok: false, text: e.message });
@@ -177,18 +195,19 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
     }
   };
 
-  // Valide / corrige la qualité & l'opacité, ou réinitialise.
+  // Valide / corrige la qualité, l'opacité & la MES, ou réinitialise.
   const saveValidation = (mode) => {
     if (mode === "reset") return applyValidation({ reset: true }, "Réinitialisé ✓");
     if (mode === "correct") {
       const q = editQualite === "" ? null : parseFloat(editQualite);
       const o = editOpacite === "" ? null : parseFloat(editOpacite);
+      const m = editMatiere === "" ? null : parseFloat(editMatiere);
       const bad = (v) => v != null && (Number.isNaN(v) || v < 0 || v > 10);
-      if (bad(q) || bad(o)) {
+      if (bad(q) || bad(o) || bad(m)) {
         setSaveMsg({ ok: false, text: "Valeurs attendues entre 0 et 10." });
         return undefined;
       }
-      return applyValidation({ qualite_eau: q, opacite: o }, "Enregistré ✓");
+      return applyValidation({ qualite_eau: q, opacite: o, matiere: m }, "Enregistré ✓");
     }
     return applyValidation({}, "Validé ✓"); // le modèle était bon
   };
@@ -200,6 +219,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
   const hasData = Array.isArray(data) && data.some(
     (d) => (d.qualite != null && !Number.isNaN(parseFloat(d.qualite)))
         || (d.opacite != null && !Number.isNaN(parseFloat(d.opacite)))
+        || (d.matiere != null && !Number.isNaN(parseFloat(d.matiere)))
   );
   const isEmpty = !loading && !error && !hasData;
 
@@ -259,6 +279,14 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
                   dataKey="opacite"
                   name="Opacité"
                   stroke="var(--amber, #f59e0b)"
+                  strokeWidth={2.4}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="matiere"
+                  name="Matière en susp."
+                  stroke="var(--teal, #14b8a6)"
                   strokeWidth={2.4}
                   dot={false}
                 />
@@ -366,10 +394,21 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
               <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                 Modèle : qualité {current.pred_qualite != null ? current.pred_qualite.toFixed(1) : "—"}
                 {" · "}opacité {current.pred_opacite != null ? current.pred_opacite.toFixed(1) : "—"}
+                {" · "}MES {current.pred_matiere != null ? current.pred_matiere.toFixed(1) : "—"}
                 {current.bac_vide_prob != null && (
                   <>{" · "}bac vide {Math.round(current.bac_vide_prob * 100)}%</>
                 )}
               </div>
+
+              {/* Portée : n'importe quelle action ci-dessous s'applique à toute l'heure si coché */}
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-secondary)", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={applyHour}
+                  onChange={(e) => setApplyHour(e.target.checked)}
+                />
+                Appliquer à toute l&apos;heure (photos ~10&nbsp;min)
+              </label>
 
               {/* État du bac : corrige un faux positif "bac vide" du modèle */}
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -416,6 +455,15 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
                       type="number" min={0} max={10} step={0.1}
                       value={editOpacite}
                       onChange={(e) => setEditOpacite(e.target.value)}
+                      style={editInputStyle}
+                    />
+                  </label>
+                  <label style={editLabelStyle}>
+                    <span title="Matière en suspension (estimation IA, sur 10)">MES</span>
+                    <input
+                      type="number" min={0} max={10} step={0.1}
+                      value={editMatiere}
+                      onChange={(e) => setEditMatiere(e.target.value)}
                       style={editInputStyle}
                     />
                   </label>
