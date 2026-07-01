@@ -395,9 +395,6 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
                 Modèle : qualité {current.pred_qualite != null ? current.pred_qualite.toFixed(1) : "—"}
                 {" · "}opacité {current.pred_opacite != null ? current.pred_opacite.toFixed(1) : "—"}
                 {" · "}MES {current.pred_matiere != null ? current.pred_matiere.toFixed(1) : "—"}
-                {current.bac_vide_prob != null && (
-                  <>{" · "}bac vide {Math.round(current.bac_vide_prob * 100)}%</>
-                )}
               </div>
 
               {/* Portée : n'importe quelle action ci-dessous s'applique à toute l'heure si coché */}
@@ -431,6 +428,18 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
                     Bac vide
                   </button>
                 </div>
+                {/* La proba du modèle = simple suggestion tant qu'un humain n'a pas tranché ;
+                    une fois corrigée, elle passe au passé (jamais en concurrence avec la décision). */}
+                {corrBacVide == null && effectiveBacVide && (
+                  <div style={{ fontSize: 11, color: "var(--amber, #f59e0b)" }}>
+                    ⚠ Suggestion du modèle : bac vide ({Math.round(bacVideProb * 100)}%). À confirmer ou corriger.
+                  </div>
+                )}
+                {corrBacVide === false && bacVideProb != null && bacVideProb >= 0.5 && (
+                  <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    Le modèle s&apos;était trompé (il voyait « vide » à {Math.round(bacVideProb * 100)}%).
+                  </div>
+                )}
               </div>
 
               {/* Bac vide -> pas de qualite/opacite a mesurer. Sinon champs editables. */}
