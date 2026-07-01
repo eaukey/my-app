@@ -38,6 +38,21 @@ const formatPhotoDate = (ts) =>
       }).format(new Date(ts))
     : null;
 
+// Indice global /10 (haut = bonne eau) : moyenne de la qualité et des composants
+// inversés (opacité et MES, où "haut = mauvais"). Formule validée :
+//   (qualité + (10 − opacité) + (10 − MES)) / 3
+// On moyenne les composants réellement disponibles (robustesse si l'un manque).
+const computeIndice = (p) => {
+  if (!p) return null;
+  const parts = [];
+  if (p.qualite != null) parts.push(p.qualite);
+  if (p.opacite != null) parts.push(10 - p.opacite);
+  if (p.matiere != null) parts.push(10 - p.matiere);
+  if (!parts.length) return null;
+  const v = parts.reduce((a, b) => a + b, 0) / parts.length;
+  return Math.max(0, Math.min(10, v));
+};
+
 /**
  * Carte "Qualité d'eau" : courbe de l'indice qualité par jour (prédiction IA
  * sur les photos du recycleur) + photo prise par l'automate à côté.
@@ -224,6 +239,7 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
   const isEmpty = !loading && !error && !hasData;
 
   const photoDate = formatPhotoDate(displayPhoto && displayPhoto.timestamp);
+  const indice = computeIndice(displayPhoto);
   const bacVideProb =
     displayPhoto && displayPhoto.bac_vide_prob != null ? displayPhoto.bac_vide_prob : null;
   // Correction humaine du statut "bac vide" : true/false, ou null si pas décidé.
@@ -338,8 +354,10 @@ const QualiteEauCard = ({ title, color, selectedMachine }) => {
 
                 <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
                   {photoDate && <div>Photo du {photoDate}</div>}
-                  {displayPhoto.qualite != null && !effectiveBacVide && (
-                    <div>Indice : <strong>{displayPhoto.qualite.toFixed(1)}/10</strong></div>
+                  {indice != null && !effectiveBacVide && (
+                    <div title="Indice global = (qualité + (10 − opacité) + (10 − MES)) / 3">
+                      Indice : <strong>{indice.toFixed(1)}/10</strong>
+                    </div>
                   )}
                   {corrBacVide === true && (
                     <div style={badgeStyle("#ef4444")}>
