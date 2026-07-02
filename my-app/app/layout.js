@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import localFont from "next/font/local";
 import "./globals.css";
 import SideNav from "../components/SideNav";
+import SavAssistant from "../components/SavAssistant";
 import styles from "./Layout.module.css";
 import { AuthProvider, useAuth } from "../lib/auth";
 
@@ -28,6 +29,7 @@ function Shell({ children }) {
       <div className={showSideNav ? styles.content : styles.contentNoNav}>
         {children}
       </div>
+      <SavAssistant />
     </div>
   );
 }
