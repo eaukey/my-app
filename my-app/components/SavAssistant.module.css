@@ -297,3 +297,19 @@
   text-decoration: underline;
   font-weight: 600;
 }
+.poweredBy {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-disabled);
+  letter-spacing: 0.02em;
+}
+.poweredBy a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 600;
+}
+.poweredBy a:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}

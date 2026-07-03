@@ -275,6 +275,12 @@ export default function SavAssistant() {
           {"Besoin d'un humain ? "}
           <Link href="/chat">Contacter le support</Link>
         </div>
+        <div className={styles.poweredBy}>
+          Powered by{" "}
+          <a href="https://www.wardian-ai.com" target="_blank" rel="noopener noreferrer">
+            Wardian
+          </a>
+        </div>
       </div>
     </div>
   );
