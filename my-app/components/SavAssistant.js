@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { MessageCircle, Droplet, X } from "lucide-react";
 import { API_BASE } from "../lib/apiBase";
 import { useAuth } from "../lib/auth";
 import { renderMarkdown } from "../lib/markdownLite";
@@ -191,7 +192,7 @@ export default function SavAssistant() {
   if (!open) {
     return (
       <button className={styles.launcher} onClick={() => setOpen(true)} aria-label="Ouvrir l'assistant SAV">
-        <span>💬</span>
+        <MessageCircle size={18} strokeWidth={2} />
         <span>Assistance</span>
       </button>
     );
@@ -201,7 +202,9 @@ export default function SavAssistant() {
     <div className={styles.panel} role="dialog" aria-label="Assistant SAV">
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <div className={styles.avatar}>💧</div>
+          <div className={styles.avatar}>
+            <Droplet size={16} strokeWidth={2} />
+          </div>
           <div>
             <div className={styles.headerTitle}>Assistant Eaukey</div>
             <div className={styles.headerSub}>
@@ -211,7 +214,7 @@ export default function SavAssistant() {
           </div>
         </div>
         <button className={styles.iconBtn} onClick={() => setOpen(false)} aria-label="Fermer">
-          ×
+          <X size={18} strokeWidth={2} />
         </button>
       </div>
 

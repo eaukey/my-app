@@ -32,11 +32,13 @@
   height: min(580px, calc(100vh - 32px));
   display: flex;
   flex-direction: column;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  /* Palette volontairement plus claire que l'app (fond #070d1a) pour que le
+     widget se detache nettement du contenu derriere. */
+  background: #1b2b47;
+  border: 1px solid #3a5480;
   border-radius: var(--radius-16);
   overflow: hidden;
-  box-shadow: var(--shadow-strong);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(65, 174, 173, 0.12);
 }
 
 .header {
@@ -44,8 +46,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border-subtle);
+  background: #243758;
+  border-bottom: 1px solid #34507a;
 }
 .headerLeft {
   display: flex;
@@ -87,15 +89,16 @@
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 22px;
   line-height: 1;
   cursor: pointer;
-  padding: 2px 8px;
+  padding: 5px;
   border-radius: 8px;
+  display: grid;
+  place-items: center;
   transition: background 0.15s ease, color 0.15s ease;
 }
 .iconBtn:hover {
-  background: var(--bg-highlight);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
 }
 
@@ -106,7 +109,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: var(--bg-base);
+  background: #16243c;
 }
 
 .msg {
@@ -127,9 +130,9 @@
 }
 .assistant {
   align-self: flex-start;
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-subtle);
+  background: #2c4368;
+  color: #e3ebf7;
+  border: 1px solid #3d5c88;
   border-bottom-left-radius: 4px;
 }
 .errorMsg {
@@ -196,8 +199,8 @@
   display: inline-flex;
   gap: 4px;
   padding: 12px 14px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
+  background: #2c4368;
+  border: 1px solid #3d5c88;
   border-radius: 14px;
   border-bottom-left-radius: 4px;
 }
@@ -237,8 +240,8 @@
 }
 
 .footer {
-  border-top: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
+  border-top: 1px solid #34507a;
+  background: #1f2f4d;
   padding: 10px 12px;
 }
 .inputRow {
@@ -249,14 +252,14 @@
 .textarea {
   flex: 1;
   resize: none;
-  border: 1px solid var(--border-strong);
+  border: 1px solid #3d5c88;
   border-radius: 10px;
   padding: 9px 11px;
   font-size: 14px;
   font-family: inherit;
   max-height: 120px;
   outline: none;
-  background: var(--bg-input);
+  background: #142138;
   color: var(--text-primary);
 }
 .textarea::placeholder {
