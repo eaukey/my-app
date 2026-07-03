@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { API_BASE } from "../lib/apiBase";
 import { useAuth } from "../lib/auth";
+import { renderMarkdown } from "../lib/markdownLite";
 import styles from "./SavAssistant.module.css";
 
 // Assistant SAV (agent Wardian, read-only) — widget flottant.
@@ -199,9 +200,15 @@ export default function SavAssistant() {
   return (
     <div className={styles.panel} role="dialog" aria-label="Assistant SAV">
       <div className={styles.header}>
-        <div>
-          <div className={styles.headerTitle}>Assistant Eaukey</div>
-          <div className={styles.headerSub}>Support en ligne</div>
+        <div className={styles.headerLeft}>
+          <div className={styles.avatar}>💧</div>
+          <div>
+            <div className={styles.headerTitle}>Assistant Eaukey</div>
+            <div className={styles.headerSub}>
+              <span className={styles.dot} />
+              En ligne
+            </div>
+          </div>
         </div>
         <button className={styles.iconBtn} onClick={() => setOpen(false)} aria-label="Fermer">
           ×
@@ -222,17 +229,28 @@ export default function SavAssistant() {
               </div>
             );
           }
-          const isLastAssistant =
-            m.role === "assistant" && i === messages.length - 1 && loading;
+          if (m.role === "user") {
+            return (
+              <div key={i} className={`${styles.msg} ${styles.user}`}>
+                {m.text}
+              </div>
+            );
+          }
+          // assistant
+          const isLast = i === messages.length - 1;
+          if (!m.text) {
+            // bulle « en train d'écrire » tant que rien n'est arrivé
+            return isLast && loading ? (
+              <div key={i} className={styles.typing}>
+                <span />
+                <span />
+                <span />
+              </div>
+            ) : null;
+          }
           return (
-            <div
-              key={i}
-              className={`${styles.msg} ${m.role === "user" ? styles.user : styles.assistant} ${
-                isLastAssistant && !m.text ? styles.cursor : ""
-              }`}
-            >
-              {m.text}
-              {isLastAssistant && m.text ? <span className={styles.cursor} /> : null}
+            <div key={i} className={`${styles.msg} ${styles.assistant} ${styles.md}`}>
+              {renderMarkdown(m.text)}
             </div>
           );
         })}
