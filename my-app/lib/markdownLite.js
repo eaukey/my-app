@@ -9,7 +9,7 @@ import React from "react";
 // --- inline : **gras**, ***gras+italique***, *italique*, `code`, [texte](url)
 function renderInline(text, keyBase) {
   const pattern =
-    /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]+\))/;
+    /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]+\)|(?:https?:\/\/|www\.)[^\s<]+)/;
   const out = [];
   let rest = text;
   let k = 0;
@@ -39,6 +39,23 @@ function renderInline(text, keyBase) {
           {lm[1]}
         </a>
       );
+    } else if (/^(https?:\/\/|www\.)/.test(tok)) {
+      // URL brute : on retire la ponctuation finale (. , ; : ! ? ) ]) qui
+      // appartient a la phrase, pas au lien.
+      let url = tok;
+      let trail = "";
+      const tm = url.match(/[.,;:!?)\]]+$/);
+      if (tm) {
+        trail = tm[0];
+        url = url.slice(0, url.length - trail.length);
+      }
+      const href = url.startsWith("www.") ? `https://${url}` : url;
+      out.push(
+        <a key={key} href={href} target="_blank" rel="noopener noreferrer">
+          {url}
+        </a>
+      );
+      if (trail) out.push(trail);
     } else {
       out.push(<em key={key}>{tok.slice(1, -1)}</em>);
     }
