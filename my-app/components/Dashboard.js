@@ -6,6 +6,7 @@ import ComboRenvoiRendementChart from "./ComboRenvoiRendementChart";
 import QualiteEauCard from "./QualiteEauCard";
 import RealTimeData from "./RealTimeData";
 import RealTimeDataAir from "./RealTimeDataAir";
+import ChartExporter from "./ChartExporter";
 import { useAuth } from "../lib/auth";
 import styles from "./Dashboard.module.css";
 import { API_BASE } from "../lib/apiBase";
@@ -515,6 +516,11 @@ const Dashboard = () => {
             {period.label}
           </button>
         ))}
+        <ChartExporter
+          selectedMachine={selectedMachine}
+          chartGroups={activeChartGroups}
+          stationLabel={stationMapping[selectedMachine] || availableMachines.find((s) => s.id === selectedMachine)?.name}
+        />
       </div>
 
       <div className={styles.chartsGrid}>

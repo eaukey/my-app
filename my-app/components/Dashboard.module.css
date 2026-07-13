@@ -205,6 +205,122 @@
   gap: 0.5rem;
   margin-bottom: var(--space-12);
   flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Bouton "Telecharger" + popover d'export des courbes */
+.exportWrap {
+  position: relative;
+  margin-left: auto;
+}
+
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.exportBtn:hover:not(:disabled) {
+  border-color: var(--primary);
+  box-shadow: var(--card-glow);
+}
+
+.exportBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.exportBtnBusy {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exportSpinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: exportSpin 0.7s linear infinite;
+}
+
+@keyframes exportSpin {
+  to { transform: rotate(360deg); }
+}
+
+.exportMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 220px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  box-shadow: var(--shadow-soft);
+  padding: 12px;
+}
+
+.exportMenuTitle {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.exportOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.exportOption input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.exportDivider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 6px 0;
+}
+
+.exportConfirm {
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--primary-strong);
+  background: var(--primary);
+  color: #04131a;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.exportConfirm:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.exportHint {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
 }
 
 .periodBtn {
