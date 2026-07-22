@@ -1,18 +1,15 @@
 "use client";
 
-// Bouton "Telecharger" discret : permet d'exporter les courbes du dashboard
-// telles qu'elles sont affichees, pour une ou plusieurs periodes
-// (jour / semaine / mois / annee) et les deux onglets, dans un seul PDF.
+// Bouton "Telecharger" discret : genere un rapport PDF qualitatif des courbes
+// cles + bandeau KPI temps reel, pour la/les periode(s) choisie(s).
 //
-// Principe : on monte hors-ecran une "scene" contenant les grilles de graphiques
-// pour chaque (periode x onglet) demande, on attend la fin des chargements
-// (disparition des skeletons ChartCard), puis on capture chaque carte en PNG
-// (html-to-image) et on assemble le tout en PDF (jsPDF).
+// Principe : on monte hors-ecran un layout "rapport" (ExportReport, theme clair
+// print), on attend la fin des chargements (skeletons ChartCard disparus), puis
+// on capture le bandeau KPI et chaque courbe en PNG (html-to-image) et on
+// assemble un PDF pagine (jsPDF) avec en-tetes/titres dessines nativement.
 
 import React, { useEffect, useRef, useState } from "react";
-import Chart from "./Chart";
-import ComboRenvoiRendementChart from "./ComboRenvoiRendementChart";
-import QualiteEauCard from "./QualiteEauCard";
+import ExportReport from "./ExportReport";
 import styles from "./Dashboard.module.css";
 
 const ALL_PERIODS = [
@@ -22,56 +19,24 @@ const ALL_PERIODS = [
   { label: "Année", value: "annee" },
 ];
 
-const TABS = [
-  { key: "performance", label: "Synthèse & performance" },
-  { key: "technical", label: "Données techniques" },
-];
-
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Rend un graphique a partir de sa config (meme aiguillage que le Dashboard).
-function ExportChart({ cfg, period, selectedMachine }) {
-  if (cfg.type === "qualite_photo") {
-    return (
-      <QualiteEauCard title={cfg.title} color={cfg.color} selectedMachine={selectedMachine} />
-    );
-  }
-  if (cfg.type === "combo") {
-    return (
-      <ComboRenvoiRendementChart
-        title={cfg.title}
-        selectedPeriod={period}
-        selectedMachine={selectedMachine}
-        volumeEndpoint={cfg.volumeEndpoint(period)}
-        rendementEndpoint={cfg.rendementEndpoint(period)}
-      />
-    );
-  }
-  return (
-    <Chart
-      title={cfg.title}
-      color={cfg.color}
-      selectedPeriod={period}
-      selectedMachine={selectedMachine}
-      endpoint={cfg.endpoint(period)}
-      seriesConfig={typeof cfg.seriesConfig === "function" ? cfg.seriesConfig(period) : cfg.seriesConfig}
-    />
-  );
-}
-
-export default function ChartExporter({ selectedMachine, chartGroups, stationLabel }) {
+export default function ChartExporter({ selectedMachine, chartGroups, stationLabel, isAir, currentPeriod }) {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState({ jour: true, semaine: true, mois: true, annee: true });
+  const [selected, setSelected] = useState({});
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
-  // Liste des (periode x onglet) a rendre hors-ecran pendant l'export
-  const [jobs, setJobs] = useState([]);
+  const [jobPeriods, setJobPeriods] = useState([]); // periodes rendues hors-ecran
 
   const stageRef = useRef(null);
   const menuRef = useRef(null);
-  const resolveRef = useRef(null); // resout la promesse une fois la scene montee
+  const resolveRef = useRef(null);
 
-  // Ferme le menu au clic exterieur
+  // Par defaut, seule la periode actuellement affichee est cochee
+  useEffect(() => {
+    setSelected({ [currentPeriod || "jour"]: true });
+  }, [currentPeriod]);
+
   useEffect(() => {
     if (!open) return;
     const onClick = (e) => {
@@ -81,36 +46,28 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
-  // Quand la scene hors-ecran est montee, on debloque runExport
+  // Debloque runExport une fois la scene montee
   useEffect(() => {
-    if (jobs.length > 0 && resolveRef.current) {
+    if (jobPeriods.length > 0 && resolveRef.current) {
       const r = resolveRef.current;
       resolveRef.current = null;
       r();
     }
-  }, [jobs]);
+  }, [jobPeriods]);
 
   const selectedPeriods = ALL_PERIODS.filter((p) => selected[p.value]);
-  const allChecked = ALL_PERIODS.every((p) => selected[p.value]);
-
   const toggle = (value) => setSelected((s) => ({ ...s, [value]: !s[value] }));
-  const toggleAll = () => {
-    const next = !allChecked;
-    setSelected({ jour: next, semaine: next, mois: next, annee: next });
-  };
 
-  // Attend la fin des chargements (skeletons disparus) puis laisse les
-  // animations Recharts se terminer avant la capture.
   const waitForReady = async (root) => {
     const started = performance.now();
-    await sleep(1000); // laisse le temps aux fetch de demarrer
+    await sleep(1000);
     const maxMs = 60000;
     while (performance.now() - started < maxMs) {
       const loaders = root.querySelectorAll('[aria-label="Chargement du graphique"]');
       if (loaders.length === 0) break;
       await sleep(300);
     }
-    await sleep(1800); // fin des animations d'entree Recharts
+    await sleep(1800); // fin des animations Recharts
   };
 
   const runExport = async () => {
@@ -123,105 +80,129 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
       const { toPng } = await import("html-to-image");
       const { jsPDF } = await import("jspdf");
 
-      // Construit la liste des scenes (periode x onglet)
-      const newJobs = [];
-      selectedPeriods.forEach((p) => {
-        TABS.forEach((tab) => {
-          if (Array.isArray(chartGroups[tab.key]) && chartGroups[tab.key].length > 0) {
-            newJobs.push({ period: p, tab });
-          }
-        });
-      });
-
-      // Monte la scene hors-ecran et attend le montage
-      setProgress("Rendu des graphiques…");
+      // Monte le rapport hors-ecran et attend le montage
+      setProgress("Rendu du rapport…");
       await new Promise((resolve) => {
         resolveRef.current = resolve;
-        setJobs(newJobs);
+        setJobPeriods(selectedPeriods);
       });
 
       const root = stageRef.current;
       setProgress("Chargement des données…");
       await waitForReady(root);
 
-      // Couleur de fond des cartes (pour combler les coins arrondis)
-      const bg =
-        getComputedStyle(document.body).getPropertyValue("--bg-elevated").trim() || "#ffffff";
+      const capture = (node) => toPng(node, { pixelRatio: 2, backgroundColor: "#ffffff" });
 
       const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: "a4", compress: true });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 28;
+      const margin = 30;
       const contentW = pageW - margin * 2;
+      const colGap = 14;
+      const colW = (contentW - colGap) / 2;
+      const teal = [65, 174, 173];
       let y = margin;
-      let firstPage = true;
 
-      // En-tete du document
+      // --- En-tete du document ---
+      pdf.setTextColor(15, 26, 45);
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(16);
-      pdf.text("Eaukey — Export des courbes", margin, y + 6);
-      y += 22;
+      pdf.setFontSize(18);
+      pdf.text("Rapport de performance", margin, y + 6);
+      y += 24;
       pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(10);
-      const dateStr = new Date().toLocaleString("fr-FR");
-      pdf.text(`${stationLabel || selectedMachine} · ${dateStr}`, margin, y + 4);
-      y += 20;
+      pdf.setFontSize(11);
+      pdf.setTextColor(100, 116, 139);
+      const dateStr = new Date().toLocaleString("fr-FR", {
+        day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+      });
+      pdf.text(`${stationLabel || selectedMachine}`, margin, y + 2);
+      pdf.text(dateStr, pageW - margin, y + 2, { align: "right" });
+      y += 12;
+      pdf.setDrawColor(211, 219, 230);
+      pdf.line(margin, y + 4, pageW - margin, y + 4);
+      y += 16;
 
-      const stageEls = root.querySelectorAll("[data-export-stage]");
-      for (let s = 0; s < stageEls.length; s++) {
-        const stageEl = stageEls[s];
-        const heading = stageEl.getAttribute("data-heading") || "";
-        setProgress(`Capture ${s + 1}/${stageEls.length} — ${heading}`);
+      // --- Bandeau KPI temps reel ---
+      setProgress("Capture des indicateurs…");
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9);
+      pdf.setTextColor(...teal);
+      pdf.text("INDICATEURS TEMPS RÉEL", margin, y + 4);
+      y += 12;
+      try {
+        const kpiNode = root.querySelector("[data-report-kpi]");
+        if (kpiNode) {
+          const dataUrl = await capture(kpiNode);
+          const rect = kpiNode.getBoundingClientRect();
+          const imgH = contentW * (rect.height / rect.width);
+          pdf.addImage(dataUrl, "PNG", margin, y, contentW, imgH, undefined, "FAST");
+          y += imgH + 18;
+        }
+      } catch (err) {
+        console.error("Échec capture KPI:", err);
+      }
 
-        // Titre de section
-        const headerH = 26;
-        if (!firstPage && y + headerH + 120 > pageH - margin) {
+      // --- Une section de courbes par periode ---
+      for (let pi = 0; pi < selectedPeriods.length; pi++) {
+        const period = selectedPeriods[pi];
+        setProgress(`Capture courbes — ${period.label} (${pi + 1}/${selectedPeriods.length})`);
+
+        const cards = root.querySelectorAll(`[data-report-card][data-period="${period.value}"]`);
+
+        // Capture toutes les cartes de la periode
+        const imgs = [];
+        for (const card of cards) {
+          try {
+            const dataUrl = await capture(card);
+            const rect = card.getBoundingClientRect();
+            imgs.push({ dataUrl, h: colW * (rect.height / rect.width) });
+          } catch (err) {
+            console.error("Échec capture d'une courbe:", err);
+          }
+        }
+        if (imgs.length === 0) continue;
+
+        // Titre de section (periode)
+        const titleH = 22;
+        const firstRowH = imgs[0].h;
+        if (y + titleH + firstRowH > pageH - margin) {
           pdf.addPage();
           y = margin;
         }
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(13);
-        pdf.setDrawColor(180);
-        pdf.text(heading, margin, y + 12);
-        y += headerH;
-        firstPage = false;
+        pdf.setTextColor(15, 26, 45);
+        pdf.text(period.label, margin, y + 10);
+        y += titleH;
 
-        const cards = stageEl.querySelectorAll("[data-export-card]");
-        for (const card of cards) {
-          let dataUrl;
-          try {
-            dataUrl = await toPng(card, {
-              pixelRatio: 2,
-              backgroundColor: bg,
-            });
-          } catch (err) {
-            console.error("Échec capture d'une carte:", err);
-            continue; // on ignore la carte en echec et on continue
-          }
-          const rect = card.getBoundingClientRect();
-          const ratio = rect.height / rect.width;
-          const imgW = contentW;
-          const imgH = imgW * ratio;
-
-          if (y + imgH > pageH - margin) {
+        // Disposition 2 colonnes
+        for (let i = 0; i < imgs.length; i += 2) {
+          const left = imgs[i];
+          const right = imgs[i + 1];
+          const rowH = Math.max(left.h, right ? right.h : 0);
+          if (y + rowH > pageH - margin) {
             pdf.addPage();
             y = margin;
           }
-          pdf.addImage(dataUrl, "PNG", margin, y, imgW, imgH, undefined, "FAST");
-          y += imgH + 14;
+          pdf.addImage(left.dataUrl, "PNG", margin, y, colW, left.h, undefined, "FAST");
+          if (right) {
+            pdf.addImage(right.dataUrl, "PNG", margin + colW + colGap, y, colW, right.h, undefined, "FAST");
+          }
+          y += rowH + 12;
         }
+        y += 6;
       }
 
       const safeLabel = String(stationLabel || selectedMachine || "station")
         .replace(/[^\w\-]+/g, "_")
         .slice(0, 40);
       const periodsPart = selectedPeriods.map((p) => p.value).join("-");
-      pdf.save(`eaukey_courbes_${safeLabel}_${periodsPart}.pdf`);
+      pdf.save(`rapport_eaukey_${safeLabel}_${periodsPart}.pdf`);
     } catch (err) {
       console.error("Erreur export PDF:", err);
       alert("Une erreur est survenue pendant l'export. Réessayez.");
     } finally {
-      setJobs([]);
+      setJobPeriods([]);
       setBusy(false);
       setProgress("");
     }
@@ -236,7 +217,7 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
         disabled={busy || !selectedMachine}
         aria-haspopup="true"
         aria-expanded={open}
-        title="Télécharger les courbes en PDF"
+        title="Télécharger un rapport PDF"
       >
         {busy ? (
           <span className={styles.exportBtnBusy}>
@@ -257,12 +238,7 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
 
       {open && !busy && (
         <div className={styles.exportMenu} role="menu">
-          <div className={styles.exportMenuTitle}>Périodes à exporter</div>
-          <label className={styles.exportOption}>
-            <input type="checkbox" checked={allChecked} onChange={toggleAll} />
-            <span><strong>Tout</strong></span>
-          </label>
-          <div className={styles.exportDivider} />
+          <div className={styles.exportMenuTitle}>Périodes à inclure</div>
           {ALL_PERIODS.map((p) => (
             <label key={p.value} className={styles.exportOption}>
               <input type="checkbox" checked={!!selected[p.value]} onChange={() => toggle(p.value)} />
@@ -277,46 +253,25 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
           >
             Télécharger le PDF
           </button>
-          <p className={styles.exportHint}>Les 2 onglets (synthèse + technique) sont inclus.</p>
+          <p className={styles.exportHint}>
+            Rapport ~2 pages : indicateurs temps réel + courbes clés.
+          </p>
         </div>
       )}
 
-      {/* Scene hors-ecran utilisee uniquement pendant la capture */}
-      {jobs.length > 0 && (
+      {/* Rapport rendu hors-ecran, uniquement pendant la capture */}
+      {jobPeriods.length > 0 && (
         <div
           ref={stageRef}
           aria-hidden="true"
-          style={{
-            position: "fixed",
-            left: "-10000px",
-            top: 0,
-            width: 920,
-            pointerEvents: "none",
-            opacity: 1,
-          }}
+          style={{ position: "fixed", left: "-10000px", top: 0, pointerEvents: "none" }}
         >
-          {jobs.map(({ period, tab }) => (
-            <div
-              key={`${period.value}-${tab.key}`}
-              data-export-stage
-              data-heading={`${tab.label} — ${period.label}`}
-              style={{ width: 920 }}
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: 16,
-                }}
-              >
-                {chartGroups[tab.key].map((cfg) => (
-                  <div data-export-card key={cfg.title}>
-                    <ExportChart cfg={cfg} period={period.value} selectedMachine={selectedMachine} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+          <ExportReport
+            selectedMachine={selectedMachine}
+            isAir={isAir}
+            chartGroups={chartGroups}
+            periods={jobPeriods}
+          />
         </div>
       )}
     </div>

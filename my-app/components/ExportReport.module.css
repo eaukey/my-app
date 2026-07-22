@@ -1,0 +1,85 @@
+/* Layout "rapport" print clair. On surcharge les variables de theme sur .report
+   pour que les composants graphiques (qui utilisent var(--...)) s'affichent en
+   clair, tout en gardant la couleur primaire de la marque. */
+.report {
+  --bg-base: #ffffff;
+  --bg-surface: #f6f8fb;
+  --bg-elevated: #ffffff;
+  --bg-highlight: #eef2f7;
+  --bg-input: #ffffff;
+  --text-primary: #0f1a2d;
+  --text-secondary: #33415c;
+  --text-muted: #64748b;
+  --text-disabled: #94a3b8;
+  --border-subtle: #e4e9f0;
+  --border-strong: #d3dbe6;
+  --grid-line: rgba(15, 26, 45, 0.08);
+  --shadow-soft: 0 1px 2px rgba(15, 26, 45, 0.06);
+  --card-glow: 0 0 0 1px rgba(65, 174, 173, 0.12);
+
+  width: 794px;
+  box-sizing: border-box;
+  padding: 8px;
+  background: #ffffff;
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Bandeau KPI : 3 colonnes x 2 lignes */
+.kpiBand {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 4px;
+  background: #ffffff;
+}
+
+.kpiTile {
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--primary);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #f9fbfc;
+}
+
+.kpiLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.kpiValueRow {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.kpiValue {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.kpiUnit {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.kpiSkeleton {
+  height: 66px;
+  border-radius: 10px;
+  background: #eef2f7;
+}
+
+/* Grille de courbes : 2 colonnes */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 4px;
+}

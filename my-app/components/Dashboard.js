@@ -519,6 +519,8 @@ const Dashboard = () => {
         <ChartExporter
           selectedMachine={selectedMachine}
           chartGroups={activeChartGroups}
+          isAir={isAir}
+          currentPeriod={selectedPeriod}
           stationLabel={stationMapping[selectedMachine] || availableMachines.find((s) => s.id === selectedMachine)?.name}
         />
       </div>
