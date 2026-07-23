@@ -14,45 +14,16 @@ import ComboRenvoiRendementChart from "./ComboRenvoiRendementChart";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./ExportReport.module.css";
 
-// Selection curatee des courbes, organisee en 2 sections (comme les onglets).
-// Chaque titre est resolu depuis le groupe correspondant (performance/technical).
-const EAU_SECTIONS = [
-  {
-    key: "performance",
-    label: "Synthèse & performance",
-    titles: ["Volumes (m³)", "Volume renvoi & rendement recycleur"],
-  },
-  {
-    key: "technical",
-    label: "Données techniques",
-    titles: [
-      "Consommation électrique (kWh)",
-      "Taux désinfection (%)",
-      "Température (°C)",
-      "Chlore (mV)",
-      "pH",
-      "Pression (mbar)",
-    ],
-  },
+// Les 2 sections reprennent l'INTEGRALITE des courbes de chaque onglet du
+// dashboard (comme a l'ecran). Seule la carte "qualite d'eau + photo" est
+// exclue (photo non capturable pour cause de CORS).
+const SECTION_META = [
+  { key: "performance", label: "Synthèse & performance" },
+  { key: "technical", label: "Données techniques" },
 ];
 
-const AIR_SECTIONS = [
-  {
-    key: "performance",
-    label: "Synthèse & performance",
-    titles: ["Débits d'air (m³/h)", "Volume d'air traité (m³)"],
-  },
-  {
-    key: "technical",
-    label: "Données techniques",
-    titles: [
-      "Pressions différentielles — encrassement filtres (Pa)",
-      "Températures (°C)",
-      "Humidité (%)",
-      "Qualité d'air (CO₂ / COV / MES)",
-    ],
-  },
-];
+// Types de cartes non exportables (photo qui taint le canvas)
+const EXCLUDED_TYPES = new Set(["qualite_photo"]);
 
 // Definition des tuiles KPI (temps reel)
 const EAU_KPIS = [
@@ -102,32 +73,16 @@ export default function ExportReport({ selectedMachine, isAir, chartGroups, peri
   const [kpiLoading, setKpiLoading] = useState(true);
 
   const kpiDefs = isAir ? AIR_KPIS : EAU_KPIS;
-  const allSectionDefs = isAir ? AIR_SECTIONS : EAU_SECTIONS;
-  // Ne garder que les sections cochees (toutes par defaut si non precise)
-  const sectionDefs = sections && sections.length
-    ? allSectionDefs.filter((s) => sections.includes(s.key))
-    : allSectionDefs;
 
-  // Un lookup par groupe : chaque section resout ses titres depuis son onglet
-  // d'origine (important pour les entrees presentes dans les deux onglets, ex.
-  // le combo "Volume renvoi & rendement recycleur").
-  const buildLookup = (list) => {
-    const map = {};
-    (list || []).forEach((cfg) => {
-      if (cfg && cfg.title && !map[cfg.title]) map[cfg.title] = cfg;
-    });
-    return map;
-  };
-  const lookups = {
-    performance: buildLookup(chartGroups.performance),
-    technical: buildLookup(chartGroups.technical),
-  };
-
-  // Sections resolues : { key, label, configs: [...] }
-  const resolvedSections = sectionDefs
+  // Sections resolues : chaque section = toutes les courbes de son onglet
+  // (sauf types exclus). On respecte les sections cochees (toutes par defaut).
+  const resolvedSections = SECTION_META
+    .filter((sec) => !sections || !sections.length || sections.includes(sec.key))
     .map((sec) => ({
       ...sec,
-      configs: sec.titles.map((t) => lookups[sec.key][t]).filter(Boolean),
+      configs: (chartGroups[sec.key] || []).filter(
+        (cfg) => cfg && !EXCLUDED_TYPES.has(cfg.type)
+      ),
     }))
     .filter((sec) => sec.configs.length > 0);
 
@@ -217,6 +172,3 @@ export default function ExportReport({ selectedMachine, isAir, chartGroups, peri
     </div>
   );
 }
-
-// Exportees pour que ChartExporter dessine les memes en-tetes de section.
-export const REPORT_SECTIONS = { eau: EAU_SECTIONS, air: AIR_SECTIONS };
