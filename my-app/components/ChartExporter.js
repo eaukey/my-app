@@ -19,6 +19,13 @@ const ALL_PERIODS = [
   { label: "Année", value: "annee" },
 ];
 
+// Sections du rapport (memes libelles que les onglets du dashboard)
+const SECTION_ORDER = ["performance", "technical"];
+const SECTION_LABELS = {
+  performance: "Synthèse & performance",
+  technical: "Données techniques",
+};
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export default function ChartExporter({ selectedMachine, chartGroups, stationLabel, isAir, currentPeriod }) {
@@ -142,53 +149,72 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
         console.error("Échec capture KPI:", err);
       }
 
-      // --- Une section de courbes par periode ---
+      // --- Pour chaque periode : titre periode + 2 sections (perf + technique) ---
       for (let pi = 0; pi < selectedPeriods.length; pi++) {
         const period = selectedPeriods[pi];
         setProgress(`Capture courbes — ${period.label} (${pi + 1}/${selectedPeriods.length})`);
 
-        const cards = root.querySelectorAll(`[data-report-card][data-period="${period.value}"]`);
-
-        // Capture toutes les cartes de la periode
-        const imgs = [];
-        for (const card of cards) {
-          try {
-            const dataUrl = await capture(card);
-            const rect = card.getBoundingClientRect();
-            imgs.push({ dataUrl, h: colW * (rect.height / rect.width) });
-          } catch (err) {
-            console.error("Échec capture d'une courbe:", err);
-          }
-        }
-        if (imgs.length === 0) continue;
-
-        // Titre de section (periode)
-        const titleH = 22;
-        const firstRowH = imgs[0].h;
-        if (y + titleH + firstRowH > pageH - margin) {
+        // Titre de periode (grand)
+        const periodTitleH = 24;
+        if (y + periodTitleH + 60 > pageH - margin) {
           pdf.addPage();
           y = margin;
         }
         pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(13);
+        pdf.setFontSize(15);
         pdf.setTextColor(15, 26, 45);
-        pdf.text(period.label, margin, y + 10);
-        y += titleH;
+        pdf.text(period.label, margin, y + 11);
+        y += periodTitleH;
 
-        // Disposition 2 colonnes
-        for (let i = 0; i < imgs.length; i += 2) {
-          const left = imgs[i];
-          const right = imgs[i + 1];
-          const rowH = Math.max(left.h, right ? right.h : 0);
-          if (y + rowH > pageH - margin) {
+        // Chaque section (Synthese & performance, puis Donnees techniques)
+        for (const secKey of SECTION_ORDER) {
+          const cards = root.querySelectorAll(
+            `[data-report-card][data-period="${period.value}"][data-section="${secKey}"]`
+          );
+          if (cards.length === 0) continue;
+
+          // Capture toutes les cartes de la section
+          const imgs = [];
+          for (const card of cards) {
+            try {
+              const dataUrl = await capture(card);
+              const rect = card.getBoundingClientRect();
+              imgs.push({ dataUrl, h: colW * (rect.height / rect.width) });
+            } catch (err) {
+              console.error("Échec capture d'une courbe:", err);
+            }
+          }
+          if (imgs.length === 0) continue;
+
+          // Sous-en-tete de section
+          const secTitleH = 20;
+          const firstRowH = imgs[0].h;
+          if (y + secTitleH + firstRowH > pageH - margin) {
             pdf.addPage();
             y = margin;
           }
-          pdf.addImage(left.dataUrl, "PNG", margin, y, colW, left.h, undefined, "FAST");
-          if (right) {
-            pdf.addImage(right.dataUrl, "PNG", margin + colW + colGap, y, colW, right.h, undefined, "FAST");
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(11);
+          pdf.setTextColor(...teal);
+          pdf.text((SECTION_LABELS[secKey] || secKey).toUpperCase(), margin, y + 9);
+          y += secTitleH;
+
+          // Disposition 2 colonnes
+          for (let i = 0; i < imgs.length; i += 2) {
+            const left = imgs[i];
+            const right = imgs[i + 1];
+            const rowH = Math.max(left.h, right ? right.h : 0);
+            if (y + rowH > pageH - margin) {
+              pdf.addPage();
+              y = margin;
+            }
+            pdf.addImage(left.dataUrl, "PNG", margin, y, colW, left.h, undefined, "FAST");
+            if (right) {
+              pdf.addImage(right.dataUrl, "PNG", margin + colW + colGap, y, colW, right.h, undefined, "FAST");
+            }
+            y += rowH + 12;
           }
-          y += rowH + 12;
+          y += 8;
         }
         y += 6;
       }
@@ -254,7 +280,8 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
             Télécharger le PDF
           </button>
           <p className={styles.exportHint}>
-            Rapport ~2 pages : indicateurs temps réel + courbes clés.
+            Indicateurs temps réel + courbes clés (Synthèse & performance et
+            Données techniques).
           </p>
         </div>
       )}

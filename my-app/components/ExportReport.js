@@ -2,7 +2,8 @@
 
 // Layout "rapport" dedie a l'export PDF (rendu hors-ecran, theme clair print).
 // Contient un bandeau KPI temps reel + une selection curatee des courbes cles,
-// pour chaque periode demandee. Concu pour tenir en ~2 pages par periode.
+// organisee en 2 sections ("Synthese & performance" / "Donnees techniques"),
+// pour chaque periode demandee.
 //
 // Reutilise les composants graphiques existants (Chart / Combo) : le theme clair
 // est obtenu en surchargeant les variables CSS sur le conteneur .report.
@@ -13,23 +14,44 @@ import ComboRenvoiRendementChart from "./ComboRenvoiRendementChart";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./ExportReport.module.css";
 
-// Selection curatee des courbes (par titre, resolues depuis chartGroups)
-const EAU_CURATED = [
-  "Volumes (m³)",
-  "Volume renvoi & rendement recycleur",
-  "Consommation électrique (kWh)",
-  "Taux désinfection (%)",
-  "Température (°C)",
-  "Chlore (mV)",
+// Selection curatee des courbes, organisee en 2 sections (comme les onglets).
+// Chaque titre est resolu depuis le groupe correspondant (performance/technical).
+const EAU_SECTIONS = [
+  {
+    key: "performance",
+    label: "Synthèse & performance",
+    titles: ["Volumes (m³)", "Volume renvoi & rendement recycleur"],
+  },
+  {
+    key: "technical",
+    label: "Données techniques",
+    titles: [
+      "Consommation électrique (kWh)",
+      "Taux désinfection (%)",
+      "Température (°C)",
+      "Chlore (mV)",
+      "pH",
+      "Pression (mbar)",
+    ],
+  },
 ];
 
-const AIR_CURATED = [
-  "Débits d'air (m³/h)",
-  "Volume d'air traité (m³)",
-  "Pressions différentielles — encrassement filtres (Pa)",
-  "Températures (°C)",
-  "Humidité (%)",
-  "Qualité d'air (CO₂ / COV / MES)",
+const AIR_SECTIONS = [
+  {
+    key: "performance",
+    label: "Synthèse & performance",
+    titles: ["Débits d'air (m³/h)", "Volume d'air traité (m³)"],
+  },
+  {
+    key: "technical",
+    label: "Données techniques",
+    titles: [
+      "Pressions différentielles — encrassement filtres (Pa)",
+      "Températures (°C)",
+      "Humidité (%)",
+      "Qualité d'air (CO₂ / COV / MES)",
+    ],
+  },
 ];
 
 // Definition des tuiles KPI (temps reel)
@@ -80,14 +102,30 @@ export default function ExportReport({ selectedMachine, isAir, chartGroups, peri
   const [kpiLoading, setKpiLoading] = useState(true);
 
   const kpiDefs = isAir ? AIR_KPIS : EAU_KPIS;
-  const curatedTitles = isAir ? AIR_CURATED : EAU_CURATED;
+  const sectionDefs = isAir ? AIR_SECTIONS : EAU_SECTIONS;
 
-  // Resout les configs de courbes a partir des titres curates
-  const lookup = {};
-  [...(chartGroups.performance || []), ...(chartGroups.technical || [])].forEach((cfg) => {
-    if (cfg && cfg.title && !lookup[cfg.title]) lookup[cfg.title] = cfg;
-  });
-  const curatedConfigs = curatedTitles.map((t) => lookup[t]).filter(Boolean);
+  // Un lookup par groupe : chaque section resout ses titres depuis son onglet
+  // d'origine (important pour les entrees presentes dans les deux onglets, ex.
+  // le combo "Volume renvoi & rendement recycleur").
+  const buildLookup = (list) => {
+    const map = {};
+    (list || []).forEach((cfg) => {
+      if (cfg && cfg.title && !map[cfg.title]) map[cfg.title] = cfg;
+    });
+    return map;
+  };
+  const lookups = {
+    performance: buildLookup(chartGroups.performance),
+    technical: buildLookup(chartGroups.technical),
+  };
+
+  // Sections resolues : { key, label, configs: [...] }
+  const resolvedSections = sectionDefs
+    .map((sec) => ({
+      ...sec,
+      configs: sec.titles.map((t) => lookups[sec.key][t]).filter(Boolean),
+    }))
+    .filter((sec) => sec.configs.length > 0);
 
   // Recupere les valeurs temps reel une fois
   useEffect(() => {
@@ -149,18 +187,32 @@ export default function ExportReport({ selectedMachine, isAir, chartGroups, peri
             ))}
       </div>
 
-      {/* Une section de courbes curatees par periode */}
-      {periods.map((p) => (
-        <div key={p.value} data-report-section data-period={p.value}>
-          <div className={styles.cardGrid}>
-            {curatedConfigs.map((cfg) => (
-              <div data-report-card data-period={p.value} key={cfg.title}>
-                <ExportChart cfg={cfg} period={p.value} selectedMachine={selectedMachine} />
-              </div>
-            ))}
+      {/* Pour chaque periode : 2 sections curatees (perf + technique) */}
+      {periods.map((p) =>
+        resolvedSections.map((sec) => (
+          <div
+            key={`${p.value}-${sec.key}`}
+            data-report-section={sec.key}
+            data-period={p.value}
+          >
+            <div className={styles.cardGrid}>
+              {sec.configs.map((cfg) => (
+                <div
+                  data-report-card
+                  data-period={p.value}
+                  data-section={sec.key}
+                  key={cfg.title}
+                >
+                  <ExportChart cfg={cfg} period={p.value} selectedMachine={selectedMachine} />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   );
 }
+
+// Exportees pour que ChartExporter dessine les memes en-tetes de section.
+export const REPORT_SECTIONS = { eau: EAU_SECTIONS, air: AIR_SECTIONS };
