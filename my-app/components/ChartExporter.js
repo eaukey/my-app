@@ -31,6 +31,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export default function ChartExporter({ selectedMachine, chartGroups, stationLabel, isAir, currentPeriod }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState({});
+  // Sections a inclure (les deux cochees par defaut)
+  const [selSections, setSelSections] = useState({ performance: true, technical: true });
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const [jobPeriods, setJobPeriods] = useState([]); // periodes rendues hors-ecran
@@ -65,6 +67,12 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
   const selectedPeriods = ALL_PERIODS.filter((p) => selected[p.value]);
   const toggle = (value) => setSelected((s) => ({ ...s, [value]: !s[value] }));
 
+  // Sections cochees, dans l'ordre d'affichage
+  const activeSections = SECTION_ORDER.filter((k) => selSections[k]);
+  const toggleSection = (key) =>
+    setSelSections((s) => ({ ...s, [key]: !s[key] }));
+  const canExport = selectedPeriods.length > 0 && activeSections.length > 0;
+
   const waitForReady = async (root) => {
     const started = performance.now();
     await sleep(1000);
@@ -78,7 +86,7 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
   };
 
   const runExport = async () => {
-    if (!selectedMachine || selectedPeriods.length === 0 || busy) return;
+    if (!selectedMachine || !canExport || busy) return;
     setOpen(false);
     setBusy(true);
     setProgress("Préparation…");
@@ -166,8 +174,8 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
         pdf.text(period.label, margin, y + 11);
         y += periodTitleH;
 
-        // Chaque section (Synthese & performance, puis Donnees techniques)
-        for (const secKey of SECTION_ORDER) {
+        // Chaque section cochee (Synthese & performance, puis Donnees techniques)
+        for (const secKey of activeSections) {
           const cards = root.querySelectorAll(
             `[data-report-card][data-period="${period.value}"][data-section="${secKey}"]`
           );
@@ -271,17 +279,29 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
               <span>{p.label}</span>
             </label>
           ))}
+
+          <div className={styles.exportMenuTitle}>Sections à inclure</div>
+          {SECTION_ORDER.map((key) => (
+            <label key={key} className={styles.exportOption}>
+              <input
+                type="checkbox"
+                checked={!!selSections[key]}
+                onChange={() => toggleSection(key)}
+              />
+              <span>{SECTION_LABELS[key]}</span>
+            </label>
+          ))}
+
           <button
             type="button"
             className={styles.exportConfirm}
             onClick={runExport}
-            disabled={selectedPeriods.length === 0}
+            disabled={!canExport}
           >
             Télécharger le PDF
           </button>
           <p className={styles.exportHint}>
-            Indicateurs temps réel + courbes clés (Synthèse & performance et
-            Données techniques).
+            Le rapport inclut toujours les indicateurs temps réel en tête.
           </p>
         </div>
       )}
@@ -298,6 +318,7 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
             isAir={isAir}
             chartGroups={chartGroups}
             periods={jobPeriods}
+            sections={activeSections}
           />
         </div>
       )}

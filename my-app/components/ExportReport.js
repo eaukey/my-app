@@ -97,12 +97,16 @@ function ExportChart({ cfg, period, selectedMachine }) {
   );
 }
 
-export default function ExportReport({ selectedMachine, isAir, chartGroups, periods }) {
+export default function ExportReport({ selectedMachine, isAir, chartGroups, periods, sections }) {
   const [kpis, setKpis] = useState({});
   const [kpiLoading, setKpiLoading] = useState(true);
 
   const kpiDefs = isAir ? AIR_KPIS : EAU_KPIS;
-  const sectionDefs = isAir ? AIR_SECTIONS : EAU_SECTIONS;
+  const allSectionDefs = isAir ? AIR_SECTIONS : EAU_SECTIONS;
+  // Ne garder que les sections cochees (toutes par defaut si non precise)
+  const sectionDefs = sections && sections.length
+    ? allSectionDefs.filter((s) => sections.includes(s.key))
+    : allSectionDefs;
 
   // Un lookup par groupe : chaque section resout ses titres depuis son onglet
   // d'origine (important pour les entrees presentes dans les deux onglets, ex.
