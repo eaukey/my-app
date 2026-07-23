@@ -18,8 +18,13 @@ const ChartCard = ({
   wide = false,
   children,
 }) => {
+  // Etat expose au DOM (utilise par l'export PDF pour ignorer les graphes vides)
+  const chartState = loading ? "loading" : error ? "error" : isEmpty ? "empty" : "ready";
   return (
-    <div className={`${styles.card}${wide ? ` ${styles.spanFull}` : ""}`}>
+    <div
+      className={`${styles.card}${wide ? ` ${styles.spanFull}` : ""}`}
+      data-chart-state={chartState}
+    >
       <div className={styles.header}>
         <div>
           {subtitle && <p className={styles.subtitle}>{subtitle}</p>}

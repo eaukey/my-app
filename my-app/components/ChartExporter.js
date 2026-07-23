@@ -162,17 +162,23 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
         const period = selectedPeriods[pi];
         setProgress(`Capture courbes — ${period.label} (${pi + 1}/${selectedPeriods.length})`);
 
-        // Titre de periode (grand)
-        const periodTitleH = 24;
-        if (y + periodTitleH + 60 > pageH - margin) {
-          pdf.addPage();
-          y = margin;
-        }
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(15);
-        pdf.setTextColor(15, 26, 45);
-        pdf.text(period.label, margin, y + 11);
-        y += periodTitleH;
+        // Titre de periode dessine "paresseusement" : seulement si la periode
+        // possede au moins une courbe non vide (evite les titres orphelins).
+        let periodTitleDrawn = false;
+        const drawPeriodTitle = () => {
+          if (periodTitleDrawn) return;
+          periodTitleDrawn = true;
+          const periodTitleH = 24;
+          if (y + periodTitleH + 60 > pageH - margin) {
+            pdf.addPage();
+            y = margin;
+          }
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(15);
+          pdf.setTextColor(15, 26, 45);
+          pdf.text(period.label, margin, y + 11);
+          y += periodTitleH;
+        };
 
         // Chaque section cochee (Synthese & performance, puis Donnees techniques)
         for (const secKey of activeSections) {
@@ -181,9 +187,13 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
           );
           if (cards.length === 0) continue;
 
-          // Capture toutes les cartes de la section
+          // Capture toutes les cartes de la section (on ignore les graphes
+          // sans donnee ou en erreur : inutiles dans le rapport)
           const imgs = [];
           for (const card of cards) {
+            const stateEl = card.querySelector("[data-chart-state]");
+            const state = stateEl && stateEl.getAttribute("data-chart-state");
+            if (state === "empty" || state === "error") continue;
             try {
               const dataUrl = await capture(card);
               const rect = card.getBoundingClientRect();
@@ -193,6 +203,9 @@ export default function ChartExporter({ selectedMachine, chartGroups, stationLab
             }
           }
           if (imgs.length === 0) continue;
+
+          // La periode a du contenu : on dessine son titre si pas deja fait
+          drawPeriodTitle();
 
           // Sous-en-tete de section
           const secTitleH = 20;
