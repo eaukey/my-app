@@ -425,6 +425,22 @@ const Dashboard = () => {
             </div>
             <div className={styles.totalSub}>
               {totalRecycle.nb_stations} station{totalRecycle.nb_stations > 1 ? "s" : ""}
+              {totalRecycle.economie_eur > 0 && (
+                <>
+                  {" · "}
+                  <strong className={styles.totalEconomie}>
+                    ~{totalRecycle.economie_eur.toLocaleString("fr-FR")} € économisés
+                  </strong>
+                  {" "}
+                  <span
+                    title={`Estimation : ${totalRecycle.total_recycle_m3.toLocaleString(
+                      "fr-FR"
+                    )} m³ × ${totalRecycle.prix_eau_m3} €/m³ (eau + assainissement, prix moyen national). Le prix réel varie selon la commune.`}
+                  >
+                    (estimation à {String(totalRecycle.prix_eau_m3).replace(".", ",")} €/m³)
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>

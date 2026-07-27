@@ -101,6 +101,12 @@
   font-size: 0.78rem;
 }
 
+/* Economie en euros : mise en avant discrete dans le sous-titre du bandeau */
+.totalEconomie {
+  color: var(--success);
+  font-weight: 600;
+}
+
 .selectorCard {
   background: var(--bg-elevated);
   border: 1px solid var(--border-strong);
