@@ -3,12 +3,30 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, MessageCircle, Table, AlertTriangle, Shield, Users, Download, Eye } from "lucide-react";
+import {
+  Home,
+  MessageCircle,
+  LayoutGrid,
+  AlertTriangle,
+  Shield,
+  Building2,
+  Download,
+  Eye,
+  Menu,
+  X,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./SideNav.module.css";
 import { useAuth, isAdmin as checkAdmin, isSuperAdmin as checkSuperAdmin, isOrgAdmin as checkOrgAdmin } from "../lib/auth";
 
-export default function SideNav({ collapsed = false }) {
+export default function SideNav({
+  expanded = false,
+  onToggle = () => {},
+  mobileOpen = false,
+  setMobileOpen = () => {},
+}) {
   const pathname = usePathname();
   const { user, isAuthenticated, authFetch } = useAuth();
   const isAdmin = checkAdmin(user);
@@ -102,55 +120,153 @@ export default function SideNav({ collapsed = false }) {
     return () => window.removeEventListener("chat:admin-opened-conversation", handler);
   }, [isAuthenticated, isAdmin]);
 
-  const links = [
-    { icon: Home, href: "/", title: "Accueil" },
-    ...(isSuperAdmin ? [{ icon: Shield, href: "/super-admin", title: "Super admin" }] : []),
-    ...(isOrgAdmin ? [{ icon: Users, href: "/org-admin", title: "Gestion stations" }] : []),
-    ...(isAdmin ? [
-      { icon: Table, href: "/admin", title: "Automates" },
-      { icon: Eye, href: "/view-as", title: "Vue client" },
-      { icon: AlertTriangle, href: "/pannes", title: "Pannes" },
-      { icon: Download, href: "/export", title: "Export CSV" },
-    ] : []),
-    { icon: MessageCircle, href: "/chat", title: "Chat" },
-  ];
+  // On referme le tiroir mobile à chaque changement de page
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname, setMobileOpen]);
 
-  const navClassName = collapsed ? `${styles.root} ${styles.collapsed}` : styles.root;
+  // Sections du menu.
+  // NB: la visibilité par rôle reprend EXACTEMENT les conditions existantes :
+  //   - "/"            : tous
+  //   - "/admin", "/pannes", "/export", "/view-as" : isAdmin
+  //   - "/org-admin"   : isOrgAdmin
+  //   - "/super-admin" : isSuperAdmin
+  //   - "/chat"        : tous
+  const sections = [
+    {
+      title: "Supervision",
+      items: [
+        { icon: Home, href: "/", label: "Tableau de bord" },
+        ...(isAdmin
+          ? [
+              { icon: LayoutGrid, href: "/admin", label: "Automates" },
+              { icon: AlertTriangle, href: "/pannes", label: "Pannes & alertes" },
+            ]
+          : []),
+      ],
+    },
+    {
+      title: "Échanges",
+      items: [
+        { icon: MessageCircle, href: "/chat", label: "Messagerie", badge: true },
+        ...(isAdmin ? [{ icon: Download, href: "/export", label: "Exports" }] : []),
+      ],
+    },
+    {
+      title: "Administration",
+      items: [
+        ...(isAdmin ? [{ icon: Eye, href: "/view-as", label: "Vue client" }] : []),
+        ...(isOrgAdmin ? [{ icon: Building2, href: "/org-admin", label: "Stations" }] : []),
+        ...(isSuperAdmin ? [{ icon: Shield, href: "/super-admin", label: "Super admin" }] : []),
+      ],
+    },
+  ].filter((section) => section.items.length > 0);
+
+  const rootClassName = [
+    styles.root,
+    expanded ? styles.expanded : "",
+    mobileOpen ? styles.mobileOpen : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <div className={navClassName}>
-      <Link
-        href="/"
-        className={styles.brand}
-        aria-label="Accueil Eaukey"
-        title="Accueil Eaukey"
+    <>
+      {/* Déclencheur hamburger (mobile uniquement) */}
+      <button
+        type="button"
+        className={styles.mobileTrigger}
+        aria-label="Ouvrir le menu"
+        aria-expanded={mobileOpen}
+        onClick={() => setMobileOpen(true)}
       >
-        <Image
-          src="/images/Logo Eaukey.png"
-          alt="Logo Eaukey"
-          width={44}
-          height={56}
-          className={styles.brandMark}
-          priority
-        />
-      </Link>
-      <div className={styles.links}>
-        {links.map(({ icon: Icon, href, title }) => (
+        <Menu size={22} />
+        {chatUnreadCount > 0 && <span className={styles.triggerBadge} />}
+      </button>
+
+      {/* Fond sombre cliquable pour refermer le tiroir mobile */}
+      <div
+        className={`${styles.backdrop} ${mobileOpen ? styles.backdropVisible : ""}`}
+        onClick={() => setMobileOpen(false)}
+        aria-hidden="true"
+      />
+
+      <nav className={rootClassName} aria-label="Navigation principale">
+        {/* En-tête : logo + bascule */}
+        <div className={styles.header}>
           <Link
-            key={href}
-            href={href}
-            className={`${styles.link} ${pathname === href ? styles.active : ""}`}
-            title={title}
+            href="/"
+            className={styles.brand}
+            aria-label="Accueil Eaukey"
+            title="Accueil Eaukey"
           >
-            <Icon size={24} className={styles.icon} />
-            {href === "/chat" && chatUnreadCount > 0 && (
-              <span className={styles.badge}>
-                {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
-              </span>
-            )}
+            <Image
+              src="/images/Logo Eaukey.png"
+              alt="Logo Eaukey"
+              width={40}
+              height={50}
+              className={styles.brandMark}
+              priority
+            />
+            <span className={styles.brandText}>Eaukey</span>
           </Link>
-        ))}
-      </div>
-    </div>
+
+          {/* Bascule rangé / déployé (desktop) */}
+          <button
+            type="button"
+            className={styles.toggle}
+            onClick={onToggle}
+            aria-label={expanded ? "Ranger le menu" : "Déployer le menu"}
+            title={expanded ? "Ranger le menu" : "Déployer le menu"}
+          >
+            {expanded ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+          </button>
+
+          {/* Fermeture du tiroir (mobile) */}
+          <button
+            type="button"
+            className={styles.mobileClose}
+            onClick={() => setMobileOpen(false)}
+            aria-label="Fermer le menu"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Sections */}
+        <div className={styles.sections}>
+          {sections.map((section) => (
+            <div key={section.title} className={styles.section}>
+              <div className={styles.sectionTitle}>{section.title}</div>
+              <div className={styles.links}>
+                {section.items.map(({ icon: Icon, href, label, badge }) => {
+                  const active = pathname === href;
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={`${styles.link} ${active ? styles.active : ""}`}
+                      title={label}
+                      aria-current={active ? "page" : undefined}
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <span className={styles.iconWrap}>
+                        <Icon size={22} className={styles.icon} />
+                        {badge && chatUnreadCount > 0 && (
+                          <span className={styles.badge}>
+                            {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                          </span>
+                        )}
+                      </span>
+                      <span className={styles.label}>{label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </nav>
+    </>
   );
 }
