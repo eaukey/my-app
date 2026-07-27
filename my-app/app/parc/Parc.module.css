@@ -1,0 +1,290 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px 40px;
+  background: var(--bg-base);
+  min-height: 100vh;
+  color: var(--text-primary);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  max-width: 60ch;
+}
+
+.majBloc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.boutonMaj {
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.boutonMaj:hover {
+  border-color: var(--primary);
+  background: var(--primary-ghost);
+}
+
+.majTexte {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.erreur {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--critical-ghost);
+  border: 1px solid var(--critical);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+/* --- Compteurs / filtres --- */
+.resume {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.carteResume {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-left-width: 4px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.carteResume:hover {
+  transform: translateY(-2px);
+}
+
+.carteResume.actif {
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+.resumeNombre {
+  font-size: var(--text-kpi);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.resumeLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.resumeDetail {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* --- Couleurs par statut (partagees cartes + tuiles) --- */
+.ok {
+  border-left-color: var(--success);
+}
+.ok .pastille,
+.ok .resumeNombre {
+  color: var(--success);
+}
+.ok .pastille {
+  background: var(--success);
+}
+
+.attention {
+  border-left-color: var(--warning);
+}
+.attention .pastille,
+.attention .resumeNombre {
+  color: var(--warning);
+}
+.attention .pastille {
+  background: var(--warning);
+}
+
+.muet {
+  border-left-color: var(--critical);
+}
+.muet .pastille,
+.muet .resumeNombre {
+  color: var(--critical);
+}
+.muet .pastille {
+  background: var(--critical);
+}
+
+/* --- Barre d'outils --- */
+.barreOutils {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.recherche {
+  flex: 1 1 280px;
+  max-width: 420px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.recherche:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.boutonReset {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.boutonReset:hover {
+  color: var(--text-primary);
+  border-color: var(--primary);
+}
+
+.compteVisible {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* --- Grille d'automates --- */
+.grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.tuile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-left-width: 4px;
+}
+
+.tuileHaut {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pastille {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tuileTitres {
+  min-width: 0;
+}
+
+.tuileClient {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tuileLieu {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tuileNumero {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tuileEtat {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.tuileDetail {
+  margin-top: 2px;
+}
+
+.lienDetail {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.detailTexte {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.vide {
+  padding: 32px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 20px 16px;
+  }
+  .compteVisible {
+    margin-left: 0;
+  }
+}

@@ -7,6 +7,7 @@ import {
   Home,
   MessageCircle,
   Cpu,
+  Activity,
   AlertTriangle,
   Shield,
   Building2,
@@ -139,6 +140,7 @@ export default function SideNav({
         { icon: Home, href: "/", label: "Tableau de bord" },
         ...(isAdmin
           ? [
+              { icon: Activity, href: "/parc", label: "État du parc" },
               { icon: Cpu, href: "/admin", label: "Automates" },
               { icon: AlertTriangle, href: "/pannes", label: "Pannes & alertes" },
             ]
