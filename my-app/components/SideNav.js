@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   MessageCircle,
-  LayoutGrid,
+  Cpu,
   AlertTriangle,
   Shield,
   Building2,
@@ -139,7 +139,7 @@ export default function SideNav({
         { icon: Home, href: "/", label: "Tableau de bord" },
         ...(isAdmin
           ? [
-              { icon: LayoutGrid, href: "/admin", label: "Automates" },
+              { icon: Cpu, href: "/admin", label: "Automates" },
               { icon: AlertTriangle, href: "/pannes", label: "Pannes & alertes" },
             ]
           : []),
