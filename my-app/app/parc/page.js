@@ -126,9 +126,9 @@ export default function ParcPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>État du parc</h1>
+          <h1 className={styles.title}>Remontée de données</h1>
           <p className={styles.subtitle}>
-            Quels automates remontent encore des données. Lecture seule — aucun
+            Quels automates envoient encore des mesures. Lecture seule — aucun
             automate n&apos;est modifié.
           </p>
         </div>

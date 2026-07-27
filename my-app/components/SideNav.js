@@ -140,7 +140,7 @@ export default function SideNav({
         { icon: Home, href: "/", label: "Tableau de bord" },
         ...(isAdmin
           ? [
-              { icon: Activity, href: "/parc", label: "État du parc" },
+              { icon: Activity, href: "/parc", label: "Remontée de données" },
               { icon: Cpu, href: "/admin", label: "Automates" },
               { icon: AlertTriangle, href: "/pannes", label: "Pannes & alertes" },
             ]
