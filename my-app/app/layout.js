@@ -1,11 +1,13 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import localFont from "next/font/local";
 import "./globals.css";
 import SideNav from "../components/SideNav";
 import SavAssistant from "../components/SavAssistant";
 import styles from "./Layout.module.css";
 import { AuthProvider, useAuth } from "../lib/auth";
+
+const MENU_STORAGE_KEY = "eaukey.menuExpanded";
 
 // Import des polices
 const geistSans = localFont({
@@ -23,12 +25,42 @@ function Shell({ children }) {
   const { isAuthenticated } = useAuth();
   const showSideNav = isAuthenticated;
 
+  // État "rangé / déployé" du rail (desktop), mémorisé entre les visites
+  const [expanded, setExpanded] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(MENU_STORAGE_KEY);
+      if (saved !== null) setExpanded(saved === "1");
+    } catch {}
+  }, []);
+
+  const toggleExpanded = () => {
+    setExpanded((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(MENU_STORAGE_KEY, next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  };
+
+  const contentClass = !showSideNav
+    ? styles.contentNoNav
+    : `${styles.content} ${expanded ? styles.contentExpanded : ""}`;
+
   return (
     <div className={styles.shell}>
-      {showSideNav && <SideNav />}
-      <div className={showSideNav ? styles.content : styles.contentNoNav}>
-        {children}
-      </div>
+      {showSideNav && (
+        <SideNav
+          expanded={expanded}
+          onToggle={toggleExpanded}
+          mobileOpen={mobileOpen}
+          setMobileOpen={setMobileOpen}
+        />
+      )}
+      <div className={contentClass}>{children}</div>
       <SavAssistant />
     </div>
   );

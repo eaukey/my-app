@@ -1,62 +1,56 @@
-/* Barre latérale à gauche en desktop, barre du bas en mobile */
+/* =========================================================
+   SideNav v2 — rail déployable (desktop) + tiroir (mobile)
+   ========================================================= */
+
 .root {
-  /* Layout desktop */
   position: fixed;
   top: 0;
   left: 0;
-  width: 4rem; /* équiv. w-16 */
-  min-height: 100vh;
+  width: 4rem; /* rangé : 64px, comme l'ancien rail */
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
   background-color: var(--bg-elevated);
   border-right: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-soft);
-  z-index: 50; /* s'assure d'être au-dessus du contenu */
+  z-index: 50;
+  overflow: hidden;
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Zone brand/header */
-.brand {
-  width: 100%;
+/* --- État déployé (desktop) --- */
+.expanded {
+  width: 232px;
+}
+
+/* =========================
+   En-tête : logo + bascule
+   ========================= */
+.header {
+  position: relative;
   height: 80px;
   min-height: 80px;
-  padding: 0.7rem 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   text-decoration: none;
   color: #e3eef2;
-  position: relative;
-  overflow: hidden;
-  background: none;
-  border-bottom: 1px solid var(--border-subtle);
-  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
-}
-
-.brand::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(4, 19, 26, 0) 0%, rgba(65, 174, 173, 0.08) 100%);
-  pointer-events: none;
-  transition: opacity 0.18s ease;
-}
-
-.brand:hover {
-  color: #f3f9fb;
-}
-
-.brand:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -2px;
+  min-width: 0;
+  flex: 1;
 }
 
 .brandMark {
-  width: 44px;
-  height: 56px;
-  color: rgba(227, 238, 242, 0.92);
-  transition: inherit;
+  width: 40px;
+  height: 50px;
+  flex-shrink: 0;
 }
 
 .brandMark svg {
@@ -66,141 +60,332 @@
 }
 
 .brandText {
-  font-size: 0.82rem;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-  color: rgba(227, 238, 242, 0.92);
-  line-height: 1.1;
-  transition: color 0.18s ease, opacity 0.18s ease;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(227, 238, 242, 0.95);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
-.collapsed .brand {
-  background-color: transparent;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
+.expanded .brandText {
+  opacity: 1;
+  transform: none;
 }
 
-.collapsed .brandText {
-  display: none;
-}
-
-/* Liste des liens (pile verticale en desktop) */
-.links {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-grow: 1;
-  row-gap: 1.5rem; /* équiv. space-y-6 */
-  margin-top: 1.25rem; /* rapproché pour aligner avec header compact */
-}
-
-/* Bouton de lien */
-.link {
-  position: relative;
-  width: 3rem; /* équiv. w-12 */
-  height: 3rem; /* équiv. h-12 */
+/* Bouton de bascule rangé/déployé (desktop) */
+.toggle {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem; /* équiv. rounded-lg */
-  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: background-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
 }
 
-.link::before {
+.expanded .toggle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.toggle:hover {
+  background-color: var(--primary-ghost);
+  color: #cfe8e7;
+}
+
+/* Quand le rail est rangé, la bascule se superpose au logo et n'apparaît qu'au survol */
+.root:not(.expanded):hover .toggle {
+  opacity: 1;
+  pointer-events: auto;
+}
+.root:not(.expanded) .header {
+  padding: 0;
+  justify-content: center;
+}
+.root:not(.expanded) .brand {
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.root:not(.expanded) .toggle {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  background: rgba(4, 19, 26, 0.55);
+}
+
+/* =========================
+   Sections + liens
+   ========================= */
+.sections {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.9rem 0.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+}
+
+.section + .section {
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sectionTitle {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.72;
+  padding: 0 0.55rem 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  height: auto;
+  transition: opacity 0.18s ease;
+}
+
+/* Rangé : on masque les titres de section (rail fin) */
+.root:not(.expanded) .sectionTitle {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  height: 44px;
+  padding: 0 0.7rem;
+  border-radius: 0.6rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.link:hover {
+  background-color: var(--primary-ghost);
+  color: #e3eef2;
+}
+
+.active {
+  background-color: rgba(65, 174, 173, 0.12);
+  color: #cfe8e7;
+}
+
+/* Barre d'accent à gauche du lien actif */
+.active::before {
   content: "";
   position: absolute;
-  left: 8px;
+  left: 3px;
   top: 8px;
   bottom: 8px;
   width: 3px;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(65, 174, 173, 0.02) 0%, rgba(65, 174, 173, 0.1) 100%);
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
+  background: var(--primary);
 }
 
-/* Effet hover en desktop */
-.link:hover {
-  background-color: var(--primary-ghost);
+.iconWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
 }
 
-/* Lien actif */
-.active {
-  background-color: rgba(65, 174, 173, 0.08);
-  box-shadow: none;
-}
-
-.active::before {
-  opacity: 1;
-}
-
-/* Couleur de l'icône (monochrome par défaut, couleur marque si actif) */
 .icon {
-  color: var(--text-muted);
+  color: inherit;
 }
 .active .icon {
   color: #cfe8e7;
 }
 
-/* Badge de notification */
+.label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.expanded .label {
+  opacity: 1;
+  transform: none;
+}
+
+/* Rangé : liens centrés, on cache le libellé */
+.root:not(.expanded) .link {
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+}
+.root:not(.expanded) .label {
+  display: none;
+}
+
+/* Badge de notification (sur l'icône) */
 .badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -6px;
+  right: -8px;
   min-width: 18px;
   height: 18px;
-  padding-left: 4px;
-  padding-right: 4px; /* équiv. px-1 */
+  padding: 0 4px;
   border-radius: 9999px;
   background-color: var(--critical);
   color: #0a0f18;
   font-size: 10px;
+  font-weight: 700;
   line-height: 18px;
   text-align: center;
 }
 
-/* --- Responsive --- */
-/* Sur mobile (écrans ≤ 768px),
-   - la barre devient une barre de navigation fixe en bas
-   - les liens passent en ligne
-   - le logo est caché */
+/* =========================
+   Mobile : déclencheur, tiroir, fond
+   ========================= */
+.mobileTrigger {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.7rem;
+  background-color: var(--bg-elevated);
+  color: #e3eef2;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  z-index: 60;
+}
+
+.triggerBadge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--critical);
+}
+
+.mobileClose {
+  display: none;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.mobileClose:hover {
+  background-color: var(--primary-ghost);
+  color: #e3eef2;
+}
+
+.backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 10, 14, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+  z-index: 55;
+}
+
+/* =========================
+   Responsive
+   ========================= */
 @media screen and (max-width: 768px) {
+  /* Le rail devient un tiroir qui glisse depuis la gauche */
   .root {
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100vw;
-    height: 52px; /* légèrement plus bas */
-    min-height: 0;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-around;
-    background-color: var(--bg-elevated); /* fond opaque en mobile */
-    z-index: 999; /* au-dessus des graphes et clics capturés */
-    border-top: 1px solid var(--border-subtle); /* séparation douce */
-    box-shadow: 0 -2px 16px rgba(0,0,0,0.25); /* ombre douce */
+    width: 264px;
+    transform: translateX(-100%);
+    transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 32px rgba(0, 0, 0, 0.45);
+  }
+  .mobileOpen {
+    transform: translateX(0);
   }
 
-  .brand {
-    display: none; /* Sur mobile, on cache le logo pour libérer de la place */
+  /* En tiroir, on affiche toujours titres + libellés */
+  .root .brandText,
+  .root .label {
+    opacity: 1;
+    transform: none;
+    display: inline;
+  }
+  .root .sectionTitle {
+    opacity: 0.72;
+    height: auto;
+    padding: 0 0.55rem 0.35rem;
+    pointer-events: auto;
+  }
+  .root .link {
+    justify-content: flex-start;
+    gap: 0.85rem;
+    padding: 0 0.7rem;
+  }
+  .root .header {
+    padding: 0 0.75rem;
+    justify-content: space-between;
+  }
+  .root .brand {
+    justify-content: flex-start;
+    flex: 1;
   }
 
-  .links {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-around;
-    margin-top: 0;
-    width: 100%;
+  /* Sur mobile, la bascule desktop disparaît au profit du bouton fermer */
+  .toggle {
+    display: none;
   }
-
-  .link {
-    width: 36px;
-    height: 36px; /* boutons plus compacts */
+  .mobileClose {
+    display: flex;
   }
-
-  .badge {
-    top: -2px;
-    right: -6px; /* léger ajustement pour le format compact */
+  .mobileTrigger {
+    display: flex;
   }
-} 
+  .backdrop {
+    display: block;
+  }
+  .backdropVisible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

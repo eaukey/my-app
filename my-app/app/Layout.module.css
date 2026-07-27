@@ -8,8 +8,14 @@
 /* En desktop, on laisse un d e9calage  e0 gauche pour la barre lat 1arale fixe */
 .content {
   flex: 1;
-  margin-left: 4rem; /*  e9quiv. ml-16 */
+  margin-left: 4rem; /* rail rangé : 64px */
   background: var(--bg-base);
+  transition: margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Rail déployé : le contenu se décale */
+.contentExpanded {
+  margin-left: 232px;
 }
 
 .contentNoNav {
@@ -20,15 +26,16 @@
 }
 
 /* --- Responsive --- */
-/* Sur mobile, la barre lat 1arale devient une barre du bas :
-   - on retire le d e9calage gauche
-   - on ajoute un padding bas pour ne pas cacher le contenu sous la nav */
+/* Sur mobile, le menu devient un tiroir (overlay) :
+   - le contenu occupe toute la largeur (pas de décalage)
+   - on réserve un peu d'espace en haut pour le bouton hamburger */
 @media screen and (max-width: 768px) {
   .shell {
     display: block; /* flux vertical naturel */
   }
-  .content {
+  .content,
+  .contentExpanded {
     margin-left: 0;
-    padding-bottom: 56px; /* espace pour la nav du bas */
+    padding-top: 60px; /* espace pour le bouton hamburger flottant */
   }
 } 
