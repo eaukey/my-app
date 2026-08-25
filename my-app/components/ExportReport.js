@@ -44,6 +44,26 @@ const AIR_KPIS = [
   { key: "qualite", label: "CO₂", unit: "ppm", digits: 0 },
 ];
 
+// Sur les petits sites, les compteurs eau montent par paliers de 1 m3 : la fenetre
+// 24h du KPI temps reel peut ne contenir aucun tick, auquel cas le backend renvoie 0.
+// Le dashboard (RealTimeData.js) retombe alors sur la derniere valeur positive de la
+// serie semaine. On reprend la meme logique ici pour que le PDF affiche la meme valeur.
+async function dernierTauxRecyclagePositif(selectedMachine, { positifSeulement = true } = {}) {
+  try {
+    const res = await fetch(`${API_BASE}/taux_recyclage/semaine?nom_automate=${selectedMachine}`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const series = Array.isArray(json?.data) ? json.data : [];
+    for (let i = series.length - 1; i >= 0; i--) {
+      const v = series[i];
+      if (v === null || v === undefined || !Number.isFinite(v)) continue;
+      if (positifSeulement && !(v > 0)) continue;
+      return v >= 0 && v <= 1 ? v * 100 : v;
+    }
+  } catch (_) { /* silencieux */ }
+  return null;
+}
+
 function ExportChart({ cfg, period, selectedMachine }) {
   if (cfg.type === "combo") {
     return (
@@ -101,7 +121,15 @@ export default function ExportReport({ selectedMachine, isAir, chartGroups, peri
             const json = await res.json();
             let v = json.valeur !== undefined ? json.valeur : null;
             if (def.key === "taux_recyclage" && v !== null && v >= 0 && v <= 1) v = v * 100;
+            // Meme fallback que le dashboard : un 0 signifie le plus souvent "aucun tick
+            // de compteur dans la fenetre 24h", pas un rendement nul.
+            if (def.key === "taux_recyclage" && !isAir && v === 0) {
+              const fallback = await dernierTauxRecyclagePositif(selectedMachine);
+              if (fallback !== null) v = fallback;
+            }
             out[def.key] = v;
+          } else if (def.key === "taux_recyclage" && !isAir) {
+            out[def.key] = await dernierTauxRecyclagePositif(selectedMachine, { positifSeulement: false });
           } else {
             out[def.key] = null;
           }
