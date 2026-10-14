@@ -14,6 +14,31 @@ const readToken = () => {
   }
 };
 
+// Sécurité (2026-10-14) : le backend exige désormais un jeton sur toutes ses routes.
+// Plusieurs composants appellent l'API avec fetch() directement (sans authFetch) :
+// on ajoute donc automatiquement l'en-tête Authorization à toute requête vers
+// API_BASE qui n'en a pas déjà un. Sans jeton stocké, la requête part telle quelle.
+if (typeof window !== "undefined" && !window.__eaukeyAuthFetch) {
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    try {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input?.url || "";
+      if (url.startsWith(API_BASE)) {
+        const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined) || {});
+        if (!headers.has("Authorization")) {
+          const t = readToken();
+          if (t) {
+            headers.set("Authorization", `Bearer ${t}`);
+            init = { ...(init || {}), headers };
+          }
+        }
+      }
+    } catch {}
+    return nativeFetch(input, init);
+  };
+  window.__eaukeyAuthFetch = true;
+}
+
 const writeToken = (token) => {
   try {
     if (typeof window === "undefined") return;

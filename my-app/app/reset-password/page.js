@@ -30,7 +30,7 @@ function ResetPasswordForm() {
 
     const validateToken = async () => {
       try {
-        const res = await fetch(`${API_BASE}/auth/validate-reset-token?token=${token}`);
+        const res = await fetch(`${API_BASE}/auth/verify-reset-token?token=${token}`);
         if (!res.ok) {
           setError('Ce lien est invalide ou a expiré. Veuillez faire une nouvelle demande.');
           setTokenValid(false);
