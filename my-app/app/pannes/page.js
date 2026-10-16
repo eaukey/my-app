@@ -7,14 +7,43 @@ import { useAuth, isAdmin as checkAdmin } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
 import styles from "./Pannes.module.css";
 
-const emptyForm = {
+// Heure locale courante au format attendu par <input type="datetime-local">
+const nowLocal = () => {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+};
+
+const makeEmptyForm = () => ({
   client: "",
   lieu: "",
   nom_automate: "",
   panne: "",
   probleme: "",
+  date_debut: nowLocal(),
+  date_fin: "",
+  cause: "",
+  action_realisee: "",
+  pieces_changees: "",
+  deplacement: "",
+  intervenant: "",
+  partage_sav: true,
+});
+
+// "oui" / "non" / "" (non renseigné) <-> true / false / null
+const toDeplacement = (v) => (v === "oui" ? true : v === "non" ? false : null);
+const fromDeplacement = (v) => (v === true ? "oui" : v === false ? "non" : "");
+
+const emptyRowValues = {
+  panne: "",
+  probleme: "",
   date_debut: "",
   date_fin: "",
+  inProgress: false,
+  cause: "",
+  action_realisee: "",
+  pieces_changees: "",
+  deplacement: "",
 };
 
 const TAB_OPTIONS = [
@@ -28,7 +57,7 @@ export default function PannesPage() {
   const { user, isAuthenticated, isLoading, authFetch } = useAuth();
   const isAdmin = checkAdmin(user);
 
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState(makeEmptyForm);
   const [clients, setClients] = useState([]);
   const [stations, setStations] = useState([]);
   const [panneTypes, setPanneTypes] = useState([]);
@@ -38,13 +67,7 @@ export default function PannesPage() {
   const [activeTab, setActiveTab] = useState("in_progress");
   const [editingRowId, setEditingRowId] = useState(null);
   const [rowSavingId, setRowSavingId] = useState(null);
-  const [rowValues, setRowValues] = useState({
-    panne: "",
-    probleme: "",
-    date_debut: "",
-    date_fin: "",
-    inProgress: false,
-  });
+  const [rowValues, setRowValues] = useState(emptyRowValues);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -184,6 +207,12 @@ export default function PannesPage() {
         probleme: form.probleme,
         date_debut: toIso(form.date_debut),
         date_fin: inProgress ? null : form.date_fin ? toIso(form.date_fin) : null,
+        cause: form.cause,
+        action_realisee: form.action_realisee,
+        pieces_changees: form.pieces_changees,
+        deplacement: toDeplacement(form.deplacement),
+        intervenant: form.intervenant,
+        partage_sav: form.partage_sav,
       };
       const res = await authFetch(`${API_BASE}/pannes`, {
         method: "POST",
@@ -192,7 +221,7 @@ export default function PannesPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       await res.json();
-      setForm(emptyForm);
+      setForm(makeEmptyForm());
       setCustomPanneType("");
       setInProgress(false);
       fetchPannes();
@@ -228,12 +257,16 @@ export default function PannesPage() {
       date_debut: p.date_debut ? new Date(p.date_debut).toISOString().slice(0, 16) : "",
       date_fin: p.date_fin ? new Date(p.date_fin).toISOString().slice(0, 16) : "",
       inProgress: !p.date_fin,
+      cause: p.cause || "",
+      action_realisee: p.action_realisee || "",
+      pieces_changees: p.pieces_changees || "",
+      deplacement: fromDeplacement(p.deplacement),
     });
   };
 
   const cancelRowEdit = () => {
     setEditingRowId(null);
-    setRowValues({ panne: "", probleme: "", date_debut: "", date_fin: "", inProgress: false });
+    setRowValues(emptyRowValues);
   };
 
   const handleRowChange = (field, value) => {
@@ -271,6 +304,13 @@ export default function PannesPage() {
         probleme: problemeValue,
         date_debut: toIso(rowValues.date_debut),
         date_fin: rowValues.inProgress ? null : rowValues.date_fin ? toIso(rowValues.date_fin) : null,
+        cause: rowValues.cause,
+        action_realisee: rowValues.action_realisee,
+        pieces_changees: rowValues.pieces_changees,
+        deplacement: toDeplacement(rowValues.deplacement),
+        // Champs non éditables dans le tableau : on conserve les valeurs existantes
+        intervenant: p.intervenant || "",
+        partage_sav: p.partage_sav !== false,
       };
       const res = await authFetch(`${API_BASE}/pannes/${targetId}`, {
         method: "PUT",
@@ -299,7 +339,7 @@ export default function PannesPage() {
     const term = searchTerm.toLowerCase().trim();
     if (!term) return baseList;
     return baseList.filter((p) =>
-      [p.client, p.lieu, p.nom_automate, p.panne, p.probleme, p.created_by]
+      [p.client, p.lieu, p.nom_automate, p.panne, p.probleme, p.created_by, p.cause, p.action_realisee, p.pieces_changees, p.intervenant]
         .some((v) => String(v || "").toLowerCase().includes(term))
     );
   }, [activeTab, pannes, searchTerm]);
@@ -436,6 +476,70 @@ export default function PannesPage() {
               required
             />
           </div>
+          <div className={styles.subTitle}>Résolution <span className={styles.hint}>(à compléter dès que c&apos;est réglé)</span></div>
+          <div className={styles.formGrid}>
+            <div>
+              <label>Cause identifiée</label>
+              <input
+                name="cause"
+                value={form.cause}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="Ex : crépine encrassée"
+              />
+            </div>
+            <div>
+              <label>Pièces changées</label>
+              <input
+                name="pieces_changees"
+                value={form.pieces_changees}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="Ex : joint pompe KVC"
+              />
+            </div>
+            <div>
+              <label>Déplacement sur site</label>
+              <select
+                name="deplacement"
+                value={form.deplacement}
+                onChange={handleChange}
+                className={styles.select}
+              >
+                <option value="">Non renseigné</option>
+                <option value="oui">Oui</option>
+                <option value="non">Non (résolu à distance)</option>
+              </select>
+            </div>
+            <div>
+              <label>Intervenant</label>
+              <input
+                name="intervenant"
+                value={form.intervenant}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="Par défaut : vous"
+              />
+            </div>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <label>Action réalisée / solution</label>
+            <textarea
+              name="action_realisee"
+              value={form.action_realisee}
+              onChange={handleChange}
+              className={styles.textarea}
+              placeholder="Ce qui a été fait, étape par étape, pour régler le problème"
+            />
+          </div>
+          <label className={styles.checkboxLabel} style={{ marginTop: 8 }}>
+            <input
+              type="checkbox"
+              checked={form.partage_sav}
+              onChange={(e) => setForm((prev) => ({ ...prev, partage_sav: e.target.checked }))}
+            />
+            <span>Utiliser cette fiche pour enrichir l&apos;assistant SAV</span>
+          </label>
           <div className={styles.actions}>
             <button type="submit" className={styles.button} disabled={loading}>
               {loading ? "Création..." : "Créer"}
@@ -479,14 +583,15 @@ export default function PannesPage() {
                 <th className={styles.th}>Début</th>
                 <th className={styles.th}>Fin</th>
                 <th className={styles.th}>Problème</th>
-                <th className={styles.th}>Créé par</th>
+                <th className={styles.th}>Résolution</th>
+                <th className={styles.th}>Intervenant</th>
                 <th className={styles.th}>Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredPannes.length === 0 ? (
                 <tr>
-                  <td className={styles.td} colSpan={9}>Aucune panne</td>
+                  <td className={styles.td} colSpan={10}>Aucune panne</td>
                 </tr>
               ) : (
                 filteredPannes.map((p) => {
@@ -553,7 +658,51 @@ export default function PannesPage() {
                           p.probleme
                         )}
                       </td>
-                    <td className={styles.td}>{p.created_by || "-"}</td>
+                      <td className={styles.td}>
+                        {rowIsEditing ? (
+                          <div className={styles.resolutionEdit}>
+                            <input
+                              className={styles.rowInput}
+                              placeholder="Cause"
+                              value={rowValues.cause}
+                              onChange={(e) => handleRowChange("cause", e.target.value)}
+                            />
+                            <textarea
+                              className={styles.rowTextarea}
+                              placeholder="Action réalisée"
+                              value={rowValues.action_realisee}
+                              onChange={(e) => handleRowChange("action_realisee", e.target.value)}
+                            />
+                            <input
+                              className={styles.rowInput}
+                              placeholder="Pièces changées"
+                              value={rowValues.pieces_changees}
+                              onChange={(e) => handleRowChange("pieces_changees", e.target.value)}
+                            />
+                            <select
+                              className={styles.rowInput}
+                              value={rowValues.deplacement}
+                              onChange={(e) => handleRowChange("deplacement", e.target.value)}
+                            >
+                              <option value="">Déplacement ?</option>
+                              <option value="oui">Avec déplacement</option>
+                              <option value="non">À distance</option>
+                            </select>
+                          </div>
+                        ) : (
+                          <div className={styles.resolution}>
+                            {p.cause ? <div><strong>Cause :</strong> {p.cause}</div> : null}
+                            {p.action_realisee ? <div><strong>Action :</strong> {p.action_realisee}</div> : null}
+                            {p.pieces_changees ? <div><strong>Pièces :</strong> {p.pieces_changees}</div> : null}
+                            {p.deplacement === true ? <span className={styles.pill}>Déplacement</span> : null}
+                            {p.deplacement === false ? <span className={styles.pill}>À distance</span> : null}
+                            {!p.cause && !p.action_realisee && !p.pieces_changees && p.deplacement == null ? (
+                              <span className={styles.muted}>À compléter</span>
+                            ) : null}
+                          </div>
+                        )}
+                      </td>
+                    <td className={styles.td}>{p.intervenant || p.created_by || "-"}</td>
                     <td className={`${styles.td} ${styles.tdActions}`}>
                         <div className={styles.actionGroup}>
                           {rowIsEditing ? (
