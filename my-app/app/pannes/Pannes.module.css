@@ -43,6 +43,12 @@
 }
 
 /* --- Responsive téléphone --- */
+.subTitle { margin: 18px 0 8px; font-weight: 600; font-size: 15px; color: var(--text-primary); }
+.hint { font-weight: 400; font-size: 13px; color: var(--text-secondary); }
+.resolution { display: flex; flex-direction: column; gap: 4px; min-width: 200px; font-size: 13px; }
+.resolutionEdit { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
+.muted { color: var(--text-secondary); font-style: italic; font-size: 13px; }
+
 @media screen and (max-width: 768px) {
   .container { padding: 16px 12px 80px; gap: 12px; }
   .section { padding: 12px; }
