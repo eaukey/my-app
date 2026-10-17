@@ -9,6 +9,7 @@ import {
   Cpu,
   Activity,
   AlertTriangle,
+  BookOpen,
   Shield,
   Building2,
   Download,
@@ -129,7 +130,7 @@ export default function SideNav({
   // Sections du menu.
   // NB: la visibilité par rôle reprend EXACTEMENT les conditions existantes :
   //   - "/"            : tous
-  //   - "/admin", "/pannes", "/export", "/view-as" : isAdmin
+  //   - "/admin", "/pannes", "/base-sav", "/export", "/view-as" : isAdmin
   //   - "/org-admin"   : isOrgAdmin
   //   - "/super-admin" : isSuperAdmin
   //   - "/chat"        : tous
@@ -143,6 +144,7 @@ export default function SideNav({
               { icon: Activity, href: "/parc", label: "Remontée de données" },
               { icon: Cpu, href: "/admin", label: "Automates" },
               { icon: AlertTriangle, href: "/pannes", label: "Pannes & alertes" },
+              { icon: BookOpen, href: "/base-sav", label: "Base SAV" },
             ]
           : []),
       ],
