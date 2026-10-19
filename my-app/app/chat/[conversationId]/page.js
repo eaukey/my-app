@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import ChatConversation from "../../../components/ChatConversation";
 
 export default function ConversationPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const { conversationId } = params;
@@ -14,6 +14,7 @@ export default function ConversationPage() {
   const clientId = user?.client_id || null;
 
   useEffect(() => {
+    if (isLoading) return;
     if (!isAuthenticated) {
       router.replace("/");
       return;
@@ -22,7 +23,7 @@ export default function ConversationPage() {
     if (isAuthenticated && !isAdmin && clientId) {
       router.replace(`/chat/${clientId}`);
     }
-  }, [isAuthenticated, isAdmin, clientId, router]);
+  }, [isLoading, isAuthenticated, isAdmin, clientId, router]);
 
   if (!isAuthenticated) return null;
 

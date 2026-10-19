@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth, isAdmin as checkAdmin } from "../lib/auth";
 import { API_BASE } from "../lib/apiBase";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { UserRound } from "lucide-react";
 import styles from "./ConversationList.module.css";
 
 /**
@@ -15,11 +16,11 @@ import styles from "./ConversationList.module.css";
  *   onSelect?: (id: number) => void       // facultatif si on souhaite callback au lieu de navigation
  */
 export default function ConversationList({ onSelect }) {
-  const router = useRouter();
   const { user, isAuthenticated, authFetch } = useAuth();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadByClient, setUnreadByClient] = useState({});
+  const [escalades, setEscalades] = useState({}); // client_id -> date de la demande d'intervention
   const pathname = usePathname();
 
   const isAdmin = checkAdmin(user);
@@ -57,6 +58,11 @@ export default function ConversationList({ onSelect }) {
         const byClient = (await r.json()) || {};
         setUnreadByClient(byClient);
       } catch {}
+      try {
+        // Fils où l'assistant demande l'équipe (absent si le backend ne le gère pas encore)
+        const r = await authFetch(`${API_BASE}/chat/escalades?t=${Date.now()}`);
+        if (r.ok) setEscalades((await r.json()) || {});
+      } catch {}
     };
 
     tick();
@@ -71,12 +77,25 @@ export default function ConversationList({ onSelect }) {
     } catch {}
   };
 
-  if (!isAuthenticated) { router.replace("/"); return null; }
+  if (!isAuthenticated) return null;
   if (loading) return <p className="text-[var(--text-primary)]">Chargement des clients…</p>;
   if (clients.length === 0) return <p className="text-[var(--text-primary)]">Aucun client.</p>;
 
-  const list = clients.map((client) => {
+  const escaladeBadge = (
+    <span className={`ml-2 inline-flex items-center gap-1 px-2 h-[20px] rounded-full border border-[var(--primary)] text-[var(--text-primary)] text-[11px] whitespace-nowrap`}>
+      <UserRound className="w-3 h-3" />
+      Équipe demandée
+    </span>
+  );
+
+  // Les fils où l'assistant demande l'équipe passent en tête.
+  const sorted = [...clients].sort(
+    (a, b) => (escalades?.[b.client_id] ? 1 : 0) - (escalades?.[a.client_id] ? 1 : 0)
+  );
+
+  const list = sorted.map((client) => {
     const count = unreadByClient?.[client.client_id] || 0;
+    const escalade = !!escalades?.[client.client_id];
     return (
       <li key={client.client_id} className="border-b border-[var(--border-subtle)] last:border-none">
         {onSelect ? (
@@ -88,11 +107,14 @@ export default function ConversationList({ onSelect }) {
             className={`w-full text-left px-4 py-3 hover:bg-[var(--bg-highlight)] flex items-center justify-between text-[var(--text-primary)] ${styles.item || ''}`}
           >
             <span className={styles.name || ''}>{client.client_name}</span>
+            <span className="flex items-center">
+            {escalade && escaladeBadge}
             {count > 0 && (
               <span className={`ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--critical)] text-[#0a0f18] text-[10px] ${styles.badge || ''}`}>
                 {count > 99 ? "99+" : count}
               </span>
             )}
+            </span>
           </button>
         ) : (
           <Link
@@ -103,11 +125,14 @@ export default function ConversationList({ onSelect }) {
             } flex items-center justify-between text-[var(--text-primary)] ${styles.item || ''}`}
           >
             <span className={styles.name || ''}>{client.client_name}</span>
+            <span className="flex items-center">
+            {escalade && escaladeBadge}
             {count > 0 && (
               <span className={`ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--critical)] text-[#0a0f18] text-[10px] ${styles.badge || ''}`}>
                 {count > 99 ? "99+" : count}
               </span>
             )}
+            </span>
           </Link>
         )}
       </li>
