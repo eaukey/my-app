@@ -14,13 +14,17 @@ export default function ConversationPage() {
   const clientId = user?.client_id || null;
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace("/");
+      return;
+    }
     // Pour les clients → redirection directe vers leur conversation
     if (isAuthenticated && !isAdmin && clientId) {
       router.replace(`/chat/${clientId}`);
     }
   }, [isAuthenticated, isAdmin, clientId, router]);
 
-  if (!isAuthenticated) { router.replace("/"); return null; }
+  if (!isAuthenticated) return null;
 
   // Pas de redirection pour admin : on montre la conversation demandée
 

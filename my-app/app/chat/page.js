@@ -12,13 +12,17 @@ export default function ChatPage() {
   const clientId = user?.client_id || null;
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace("/");
+      return;
+    }
     // Pour les clients → redirection directe vers leur conversation
     if (isAuthenticated && !isAdmin && clientId) {
       router.replace(`/chat/${clientId}`);
     }
   }, [isAuthenticated, isAdmin, clientId, router]);
 
-  if (!isAuthenticated) { router.replace("/"); return null; }
+  if (!isAuthenticated) return null;
 
   if (isAdmin) {
     return (
