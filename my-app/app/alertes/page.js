@@ -426,6 +426,34 @@ function AlerteCard({ al, open, detail, onToggle, onPanne, onMaj }) {
             <div className={styles.muted}>Chargement…</div>
           ) : (
             <>
+              {detail.diagnostic && (detail.diagnostic.causes?.length > 0 || detail.diagnostic.fiches?.length > 0) ? (
+                <div className={a.diag}>
+                  <div className={styles.fieldLabel}>Diagnostic probable</div>
+                  {detail.diagnostic.causes?.length > 0 ? (
+                    <ul className={a.diagList}>
+                      {detail.diagnostic.causes.map((c) => (
+                        <li key={c.cause}>
+                          <strong>{c.cause}</strong>
+                          <span className={styles.muted}>
+                            {" "}— constaté {c.occurrences} fois pour cette alerte
+                            {c.action ? ` · dernière action : ${c.action}` : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {detail.diagnostic.fiches?.length > 0 ? (
+                    <ul className={a.diagList}>
+                      {detail.diagnostic.fiches.map((f) => (
+                        <li key={f.id}>
+                          <Link href="/base-sav">Fiche SAV : {f.titre}</Link>
+                          {f.extrait ? <span className={styles.muted}> — {f.extrait}</span> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              ) : null}
               <div className={styles.fieldLabel}>
                 {detail.historique.length} dernière{detail.historique.length > 1 ? "s" : ""} occurrence{detail.historique.length > 1 ? "s" : ""}
               </div>
