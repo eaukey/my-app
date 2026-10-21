@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, CheckCircle2, Pencil, Trash2, Lightbulb, ChevronRight } from "lucide-react";
 import { useAuth, isAdmin as checkAdmin } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
 import PanneWizard, { fmt } from "./PanneWizard";
 import styles from "./Pannes.module.css";
+import pb from "../problemes/Problemes.module.css";
 
 const TAB_OPTIONS = [
   { key: "in_progress", label: "En cours" },
@@ -130,6 +132,15 @@ export default function PannesPage() {
     <div className={styles.container}>
       {notice ? <div className={styles.notice}>{notice}</div> : null}
       {error ? <div className={styles.error}>{error}</div> : null}
+
+      <Link href="/problemes" className={pb.lienProblemes}>
+        <Lightbulb size={22} className={pb.lienIcone} aria-hidden="true" />
+        <span className={pb.lienTexte}>
+          <span className={pb.lienTitre}>Problèmes fréquents</span>
+          <span className={pb.lienSous}>Pannes, escalades et alertes qui reviennent, avec recommandations</span>
+        </span>
+        <ChevronRight size={18} aria-hidden="true" />
+      </Link>
 
       {wizard ? (
         <div className={styles.section}>
