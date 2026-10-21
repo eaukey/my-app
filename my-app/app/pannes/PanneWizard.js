@@ -62,20 +62,34 @@ const RESOLUTION_STEPS = ["cause", "action", "deplacement"];
  * mode "create" : station → type → constat → réglé ? (→ résolution) → récapitulatif
  * mode "close"  : résolution d'une panne en cours → récapitulatif
  * mode "edit"   : récapitulatif d'une panne existante, chaque ligne rouvre son étape
+ *
+ * Création depuis une alerte (page /alertes) : `initial` pré-remplit le formulaire
+ * (station, type, constat, date de début) et `lockStation` fige la station (la
+ * panne doit concerner la station de l'alerte). Le formulaire démarre alors à la
+ * première étape non remplie.
  */
-export default function PanneWizard({ mode, panne, stations, panneTypes, currentUser, onSubmit, onCancel }) {
+export default function PanneWizard({ mode, panne, stations, panneTypes, currentUser, onSubmit, onCancel, initial = null, lockStation = false, title: titleProp = "" }) {
+  const baseSteps = lockStation ? ["type", "detail", "regle"] : ["station", "type", "detail", "regle"];
   const [data, setData] = useState(() => {
-    if (mode === "create") return emptyData();
+    if (mode === "create") return { ...emptyData(), ...(initial || {}) };
     const d = fromPanne(panne);
     if (mode === "close") return { ...d, regle: true, date_fin: d.date_fin || toLocalInput(), intervenant: d.intervenant || currentUser || "" };
     return d;
   });
   const steps = useMemo(() => {
     if (mode === "close") return [...RESOLUTION_STEPS, "recap"];
-    const base = ["station", "type", "detail", "regle"];
-    return [...base, ...(data.regle ? RESOLUTION_STEPS : []), "recap"];
-  }, [mode, data.regle]);
-  const [step, setStep] = useState(mode === "edit" ? "recap" : steps[0]);
+    return [...baseSteps, ...(data.regle ? RESOLUTION_STEPS : []), "recap"];
+  }, [mode, data.regle, lockStation]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [step, setStep] = useState(() => {
+    if (mode === "edit") return "recap";
+    if (mode === "create" && initial) {
+      if (!lockStation && !data.station) return "station";
+      if (!data.panne) return "type";
+      if (!data.probleme.trim()) return "detail";
+      return "regle";
+    }
+    return steps[0];
+  });
   const [fromRecap, setFromRecap] = useState(false);
   const [query, setQuery] = useState("");
   const [showAllTypes, setShowAllTypes] = useState(false);
@@ -104,7 +118,7 @@ export default function PanneWizard({ mode, panne, stations, panneTypes, current
       setStep("recap");
       return;
     }
-    const list = mode === "close" ? steps : ["station", "type", "detail", "regle", ...(merged.regle ? RESOLUTION_STEPS : []), "recap"];
+    const list = mode === "close" ? steps : [...baseSteps, ...(merged.regle ? RESOLUTION_STEPS : []), "recap"];
     const i = list.indexOf(step);
     setStep(list[Math.min(i + 1, list.length - 1)]);
   };
@@ -173,7 +187,7 @@ export default function PanneWizard({ mode, panne, stations, panneTypes, current
     }
   };
 
-  const title = mode === "close" ? "Clôturer la panne" : mode === "edit" ? "Modifier la panne" : "Signaler une panne";
+  const title = titleProp || (mode === "close" ? "Clôturer la panne" : mode === "edit" ? "Modifier la panne" : "Signaler une panne");
   const stationLabel = data.station ? `${data.station.client} — ${data.station.lieu}` : "";
 
   return (
@@ -184,7 +198,7 @@ export default function PanneWizard({ mode, panne, stations, panneTypes, current
         </button>
         <div className={styles.wizardTitle}>
           {title}
-          {mode !== "create" && stationLabel ? <span className={styles.wizardSub}>{stationLabel} · {data.panne}</span> : null}
+          {(mode !== "create" || lockStation) && stationLabel ? <span className={styles.wizardSub}>{stationLabel} · {data.panne}</span> : null}
         </div>
         <button type="button" className={styles.iconButton} onClick={onCancel} aria-label="Fermer" disabled={saving}>
           <X size={18} />
@@ -377,7 +391,7 @@ export default function PanneWizard({ mode, panne, stations, panneTypes, current
           <div className={styles.recap}>
             {mode !== "close" ? (
               <>
-                <RecapLine label="Station" value={stationLabel} onEdit={() => goEdit("station")} />
+                <RecapLine label="Station" value={stationLabel} onEdit={lockStation ? null : () => goEdit("station")} />
                 <RecapLine label="Problème" value={data.panne} onEdit={() => goEdit("type")} />
                 <RecapLine label="Constat" value={data.probleme} onEdit={() => goEdit("detail")} />
                 <RecapLine label="Statut" value={data.regle ? "Réglée" : "En cours"} onEdit={() => goEdit("regle")} />
@@ -433,6 +447,15 @@ export default function PanneWizard({ mode, panne, stations, panneTypes, current
 }
 
 function RecapLine({ label, value, onEdit }) {
+  if (!onEdit) {
+    return (
+      <div className={styles.recapLine} style={{ cursor: "default" }}>
+        <span className={styles.recapLabel}>{label}</span>
+        <span className={styles.recapValue}>{value || "—"}</span>
+        <span />
+      </div>
+    );
+  }
   return (
     <button type="button" className={styles.recapLine} onClick={onEdit}>
       <span className={styles.recapLabel}>{label}</span>

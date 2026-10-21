@@ -9,6 +9,7 @@ import {
   Cpu,
   Activity,
   AlertTriangle,
+  Bell,
   BookOpen,
   Shield,
   Building2,
@@ -42,6 +43,31 @@ export default function SideNav({
   const effectiveClientId = clientId || routeClientId;
 
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
+  const [alertesNouvelles, setAlertesNouvelles] = useState(0);
+
+  // Badge « Alertes » (admins) : nombre d'alertes nouvelles, rafraîchi toutes les
+  // 60 s et après chaque action sur la page /alertes (événement « alertes:maj »).
+  useEffect(() => {
+    if (!isAuthenticated || !isAdmin) return undefined;
+    const fetchAlertes = async () => {
+      try {
+        const res = await authFetch(`${API_BASE}/alertes/compteurs?t=${Date.now()}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const n = Number(data?.nouvelles || 0);
+        setAlertesNouvelles(Number.isFinite(n) ? n : 0);
+      } catch (e) {
+        console.debug("Alertes: erreur fetch compteurs", e);
+      }
+    };
+    fetchAlertes();
+    const id = setInterval(fetchAlertes, 60000);
+    window.addEventListener("alertes:maj", fetchAlertes);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("alertes:maj", fetchAlertes);
+    };
+  }, [isAuthenticated, isAdmin, authFetch]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -152,7 +178,7 @@ export default function SideNav({
   // Sections du menu.
   // NB: la visibilité par rôle reprend EXACTEMENT les conditions existantes :
   //   - "/"            : tous
-  //   - "/admin", "/pannes", "/base-sav", "/export", "/view-as" : isAdmin
+  //   - "/admin", "/pannes", "/alertes", "/base-sav", "/export", "/view-as" : isAdmin
   //   - "/org-admin"   : isOrgAdmin
   //   - "/super-admin" : isSuperAdmin
   //   - "/chat"        : tous
@@ -165,7 +191,8 @@ export default function SideNav({
           ? [
               { icon: Activity, href: "/parc", label: "Remontée de données" },
               { icon: Cpu, href: "/admin", label: "Automates" },
-              { icon: AlertTriangle, href: "/pannes", label: "Pannes & alertes" },
+              { icon: AlertTriangle, href: "/pannes", label: "Pannes" },
+              { icon: Bell, href: "/alertes", label: "Alertes", badge: "alertes" },
               { icon: BookOpen, href: "/base-sav", label: "Base SAV" },
             ]
           : []),
@@ -174,7 +201,7 @@ export default function SideNav({
     {
       title: "Échanges",
       items: [
-        { icon: MessageCircle, href: "/chat", label: "Messagerie", badge: true },
+        { icon: MessageCircle, href: "/chat", label: "Messagerie", badge: "chat" },
         ...(isAdmin ? [{ icon: Download, href: "/export", label: "Exports" }] : []),
       ],
     },
@@ -207,7 +234,7 @@ export default function SideNav({
         onClick={() => setMobileOpen(true)}
       >
         <Menu size={22} />
-        {chatUnreadCount > 0 && <span className={styles.triggerBadge} />}
+        {(chatUnreadCount > 0 || alertesNouvelles > 0) && <span className={styles.triggerBadge} />}
       </button>
 
       {/* Fond sombre cliquable pour refermer le tiroir mobile */}
@@ -267,6 +294,7 @@ export default function SideNav({
               <div className={styles.links}>
                 {section.items.map(({ icon: Icon, href, label, badge }) => {
                   const active = pathname === href;
+                  const badgeCount = badge === "chat" ? chatUnreadCount : badge === "alertes" ? alertesNouvelles : 0;
                   return (
                     <Link
                       key={href}
@@ -278,9 +306,9 @@ export default function SideNav({
                     >
                       <span className={styles.iconWrap}>
                         <Icon size={22} className={styles.icon} />
-                        {badge && chatUnreadCount > 0 && (
+                        {badgeCount > 0 && (
                           <span className={styles.badge}>
-                            {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                            {badgeCount > 99 ? "99+" : badgeCount}
                           </span>
                         )}
                       </span>
