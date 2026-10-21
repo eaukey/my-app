@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Send, Check, Droplet, UserRound } from "lucide-react";
 import { useAuth, isAdmin as checkAdmin } from "../lib/auth";
+import { PanneDuMessage, ProposerFicheSav } from "./ChatSavOutils";
 import { getCachedAdminSenderIds, discoverAdminSenderIds, AGENT_SENDER_ID } from "./chatRoleUtils";
 import { API_BASE } from "../lib/apiBase";
 import { renderMarkdown } from "../lib/markdownLite";
-import { PanneDuMessage, ProposerFicheSav } from "./ChatSavOutils";
 import styles from "./ChatConversation.module.css";
 
 // Messagerie client <-> équipe Eaukey, avec l'assistant SAV dans le même fil.
