@@ -307,6 +307,9 @@
     transform: translateX(-100%);
     transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 0 32px rgba(0, 0, 0, 0.45);
+    /* Au-dessus du fond sombre (.backdrop, 55) : sinon chaque appui dans le
+       tiroir tombait sur le fond et refermait le menu. Sous le bouton (60). */
+    z-index: 58;
   }
   .mobileOpen {
     transform: translateX(0);
