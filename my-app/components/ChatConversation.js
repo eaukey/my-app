@@ -32,7 +32,8 @@ function drainFrames(buffer) {
   return [frames, rest];
 }
 
-export default function ChatConversation({ clientId }) {
+// enTete : contenu facultatif affiché sous l'en-tête (ex. adresses e-mail reconnues, admin).
+export default function ChatConversation({ clientId, enTete = null }) {
   const { user, isAuthenticated, authFetch } = useAuth();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -306,6 +307,7 @@ export default function ChatConversation({ clientId }) {
           </span>
         </div>
       </div>
+      {enTete}
 
       {/* Zone messages */}
       <div
@@ -368,6 +370,7 @@ export default function ChatConversation({ clientId }) {
                     {!msg.streaming && (
                       <span className={`text-xs text-[var(--text-muted)] flex items-center gap-1 mt-1 ${styles.meta || ''}`}>
                         {new Date(msg.created_at).toLocaleTimeString()}
+                        {msg.canal === "email" && <span className={styles.canalEmail || ""}>par e-mail</span>}
                         {/* Message non lu */}
                         {isMe && !msg.is_read && (
                           <div className="flex items-center gap-0.5">
