@@ -66,6 +66,14 @@ export default function SideNav({
     const fetchUnreadForAdmin = async () => {
       try {
         const ts = Date.now();
+        // Boîte de réception : nombre de fils à traiter (équipe demandée ou non lus).
+        const resBoite = await authFetch(`${API_BASE}/chat/boite/compteur?t=${ts}`);
+        if (resBoite.ok) {
+          const n = Number((await resBoite.json())?.a_traiter || 0);
+          setChatUnreadCount(Number.isFinite(n) ? n : 0);
+          return;
+        }
+        // Backend sans boîte de réception : total des messages clients non lus.
         const resClients = await authFetch(`${API_BASE}/clients?is_admin=true&t=${ts}`);
         if (!resClients.ok) throw new Error(`HTTP ${resClients.status}`);
         const clients = await resClients.json();
@@ -92,7 +100,11 @@ export default function SideNav({
 
     tick();
     intervalId = setInterval(tick, 30000);
-    return () => clearInterval(intervalId);
+    window.addEventListener("chat:boite-changed", tick);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("chat:boite-changed", tick);
+    };
   }, [isAuthenticated, isAdmin, effectiveClientId, pathname, authFetch]);
 
   // Reset optimiste du badge côté client quand la conversation s'ouvre
@@ -109,6 +121,16 @@ export default function SideNav({
     const handler = async (e) => {
       const openedClientId = e?.detail?.clientId;
       if (!openedClientId) return;
+      try {
+        // Boîte de réception : on relit le compteur une fois les messages marqués lus.
+        await new Promise((r) => setTimeout(r, 1500));
+        const rb = await authFetch(`${API_BASE}/chat/boite/compteur?t=${Date.now()}`);
+        if (rb.ok) {
+          const n = Number((await rb.json())?.a_traiter || 0);
+          if (Number.isFinite(n)) setChatUnreadCount(n);
+          return;
+        }
+      } catch {}
       try {
         const ts = Date.now();
         const r = await authFetch(`${API_BASE}/notifications/admin/${encodeURIComponent(openedClientId)}?t=${ts}`);

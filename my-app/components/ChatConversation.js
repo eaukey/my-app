@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Send, Check, Droplet, UserRound } from "lucide-react";
+import { Send, Check, CheckCheck, Droplet, UserRound } from "lucide-react";
 import { useAuth, isAdmin as checkAdmin } from "../lib/auth";
 import { getCachedAdminSenderIds, discoverAdminSenderIds, AGENT_SENDER_ID } from "./chatRoleUtils";
 import { API_BASE } from "../lib/apiBase";
@@ -143,6 +143,23 @@ export default function ChatConversation({ clientId }) {
 
     markClientMessagesAsRead();
   }, [isAuthenticated, isAdmin, clientId, authFetch]);
+
+  // Admin : « Marquer traité » (POST /chat/{client}/traite) ; sans la route, le bouton ne fait rien.
+  const [handled, setHandled] = useState(false);
+  const markHandled = async () => {
+    setHandled("busy");
+    try {
+      const r = await authFetch(`${API_BASE}/chat/${encodeURIComponent(clientId)}/traite`, { method: "POST" });
+      setHandled(r.ok);
+      if (r.ok) {
+        try {
+          window.dispatchEvent(new CustomEvent("chat:boite-changed"));
+        } catch {}
+      }
+    } catch {
+      setHandled(false);
+    }
+  };
 
   const postPlainMessage = async (txt) => {
     await authFetch(`${API_BASE}/messages/${clientId}`, {
@@ -297,6 +314,18 @@ export default function ChatConversation({ clientId }) {
           </p>
         </div>
         <div className={styles.headerMeta || ""}>
+          {isAdmin && (
+            <button
+              type="button"
+              className={styles.traiteBtn || ""}
+              onClick={markHandled}
+              disabled={handled === "busy"}
+              title="Marquer comme traité : lève la demande d'intervention et marque les messages lus"
+            >
+              <CheckCheck className="w-4 h-4" />
+              {handled === true ? "Traité" : "Marquer traité"}
+            </button>
+          )}
           <span className={styles.status || ""}>
             <span className={styles.statusDot || ""} />
             En ligne
