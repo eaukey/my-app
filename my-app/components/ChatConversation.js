@@ -5,6 +5,8 @@ import { useAuth, isAdmin as checkAdmin } from "../lib/auth";
 import { getCachedAdminSenderIds, discoverAdminSenderIds, AGENT_SENDER_ID } from "./chatRoleUtils";
 import { API_BASE } from "../lib/apiBase";
 import { renderMarkdown } from "../lib/markdownLite";
+import { useDictation, useSpeech } from "../lib/voice";
+import { MicButton, DictationStatus, ListenButton, AutoReadToggle } from "./VoiceControls";
 import styles from "./ChatConversation.module.css";
 
 // Messagerie client <-> équipe Eaukey, avec l'assistant SAV dans le même fil.
@@ -41,8 +43,15 @@ export default function ChatConversation({ clientId }) {
   const [notice, setNotice] = useState(null); // info affichée sous le fil (équipe en charge, erreur…)
   const busyRef = useRef(false); // pas de rafraîchissement pendant une réponse en cours
   const bottomRef = useRef(null);
+  const inputRef = useRef("");
+  inputRef.current = newMessage;
 
   const isAdmin = checkAdmin(user);
+
+  // Contrôle vocal (côté client uniquement) : dictée dans le champ, lecture des réponses.
+  const dictation = useDictation(() => inputRef.current, setNewMessage);
+  const speech = useSpeech();
+  const voice = !isAdmin;
 
   const fetchMessages = React.useCallback(async () => {
     if (busyRef.current) return;
@@ -234,6 +243,7 @@ export default function ChatConversation({ clientId }) {
             created_at: data.created_at || m.created_at,
             streaming: false,
           }));
+          if (voice && speech.autoReadRef.current && data.content) speech.speak(data.id ?? agentTempId, data.content);
         } else if (event === "humain") {
           finished = true;
           dropAgent();
@@ -255,6 +265,7 @@ export default function ChatConversation({ clientId }) {
   const handleSend = async () => {
     const txt = newMessage.trim();
     if (!txt || agentBusy) return;
+    dictation.abort();
     setNewMessage("");
     setNotice(null);
 
@@ -385,6 +396,10 @@ export default function ChatConversation({ clientId }) {
                       <p className="text-[var(--text-primary)] whitespace-pre-wrap">{msg.content}</p>
                     )}
 
+                    {voice && isAgent && !msg.streaming && (
+                      <ListenButton speech={speech} id={msg.id} text={msg.content} />
+                    )}
+
                     {isAgent && msg.escalade && (
                       <div className={styles.escalade || ""}>
                         <UserRound className="w-3 h-3" />
@@ -438,9 +453,12 @@ export default function ChatConversation({ clientId }) {
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder={isAdmin ? "Écrivez votre message…" : "Posez votre question…"}
+            placeholder={
+              isAdmin ? "Écrivez votre message…" : dictation.listening ? "Parlez, je vous écoute…" : "Posez votre question…"
+            }
             className={`flex-1 focus:outline-none bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-subtle)] rounded-xl px-3 py-2 ${styles.inputField || ""}`}
           />
+          {voice && <MicButton dictation={dictation} disabled={agentBusy} />}
           <button
             onClick={handleSend}
             disabled={!newMessage.trim() || agentBusy}
@@ -449,6 +467,8 @@ export default function ChatConversation({ clientId }) {
             <Send className="w-5 h-5" />
           </button>
         </div>
+        {voice && <DictationStatus dictation={dictation} />}
+        {voice && <AutoReadToggle speech={speech} />}
       </div>
     </div>
   );
