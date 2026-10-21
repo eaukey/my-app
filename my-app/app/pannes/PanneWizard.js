@@ -135,7 +135,8 @@ export default function PanneWizard({ mode, panne, stations, panneTypes, current
           return words.every((w) => hay.includes(w));
         })
       : stations;
-    return list.slice(0, 30);
+    // Toutes les stations : la liste défile (une limite à 30 masquait les suivantes).
+    return list;
   }, [query, stations]);
 
   const submit = async () => {
@@ -206,6 +207,11 @@ export default function PanneWizard({ mode, panne, stations, panneTypes, current
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+          </div>
+          <div className={styles.muted}>
+            {filteredStations.length === stations.length
+              ? `${stations.length} stations`
+              : `${filteredStations.length} station${filteredStations.length > 1 ? "s" : ""} sur ${stations.length}`}
           </div>
           <div className={styles.choiceList}>
             {filteredStations.length === 0 ? <div className={styles.muted}>Aucune station trouvée</div> : null}
