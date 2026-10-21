@@ -47,6 +47,27 @@ export default function ChatPage() {
     );
   }
 
-  // Client : en attente redirection
-  return <p>Chargement…</p>;
+  // Client rattaché à un client : redirection vers son fil en cours.
+  if (clientId) return <p>Chargement…</p>;
+
+  // Compte client pas (encore) rattaché à un client : le dire au lieu de charger sans fin.
+  // Le rattachement est lu à la connexion ; s'il vient d'être fait, une actualisation suffit.
+  return (
+    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
+      <div className="max-w-xl mx-auto px-6 py-16 space-y-4">
+        <h1 className="text-xl font-semibold">Votre compte n’est rattaché à aucun client</h1>
+        <p className="text-[var(--text-secondary)]">
+          La messagerie s’ouvre dès que l’équipe Eaukey a rattaché votre compte à votre société. Si c’est déjà
+          fait, actualisez la page.
+        </p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 rounded-xl border border-[var(--primary)] text-[var(--text-primary)]"
+        >
+          Actualiser
+        </button>
+      </div>
+    </div>
+  );
 }
