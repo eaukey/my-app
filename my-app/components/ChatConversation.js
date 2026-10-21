@@ -21,6 +21,31 @@ import styles from "./ChatConversation.module.css";
 
 const AGENT_NAME = "Assistant Eaukey";
 
+const SUGGESTIONS = [
+  "Le voyant UV est orange, que faire ?",
+  "La pression du filtre est élevée",
+  "Comment changer la lampe UV ?",
+];
+
+// Dates et heures à la française, quel que soit le réglage du navigateur.
+function jourLisible(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const auj = new Date();
+  const hier = new Date();
+  hier.setDate(auj.getDate() - 1);
+  if (d.toDateString() === auj.toDateString()) return "Aujourd'hui";
+  if (d.toDateString() === hier.toDateString()) return "Hier";
+  const opts = { weekday: "long", day: "numeric", month: "long" };
+  if (d.getFullYear() !== auj.getFullYear()) opts.year = "numeric";
+  return d.toLocaleDateString("fr-FR", opts);
+}
+
+function heureLisible(iso) {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
+
 function normalizeSender(senderId) {
   if (senderId === AGENT_SENDER_ID) return AGENT_SENDER_ID;
   if (senderId === 677) return 0; // admin historique connu
@@ -60,7 +85,7 @@ export default function ChatConversation({ clientId, enTete = null }) {
   const fetchMessages = React.useCallback(async () => {
     if (busyRef.current) return;
     try {
-      const res = await authFetch(`${API_BASE}/messages/${clientId}`);
+      const res = await authFetch(`${API_BASE}/messages/${encodeURIComponent(clientId)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
@@ -101,11 +126,9 @@ export default function ChatConversation({ clientId, enTete = null }) {
   }, [messages, notice]);
 
   const senderId = isAdmin ? 0 : 1;
-  const displayName =
-    user?.name || user?.email || (isAdmin ? "Support" : user?.client_id) || "Utilisateur";
+  const displayName = "Vous";
   const otherName = isAdmin ? clientId : "Équipe Eaukey";
-  const conversationLabel = isAdmin ? `Client ${clientId}` : "Support Eaukey";
-  const messageCount = messages.length;
+  const conversationLabel = isAdmin ? `Client ${clientId}` : "Assistance Eaukey";
 
   // Événement: conversation ouverte → mise à jour optimiste des badges
   useEffect(() => {
@@ -123,7 +146,7 @@ export default function ChatConversation({ clientId, enTete = null }) {
     const markAdminMessagesAsRead = async () => {
       try {
         await authFetch(
-          `${API_BASE}/messages_client/${clientId}/marquer_non_lu`,
+          `${API_BASE}/messages_client/${encodeURIComponent(clientId)}/marquer_non_lu`,
           {
             method: "POST",
           }
@@ -144,7 +167,7 @@ export default function ChatConversation({ clientId, enTete = null }) {
     const markClientMessagesAsRead = async () => {
       try {
         await authFetch(
-          `${API_BASE}/messages_admin/${clientId}/marquer_non_lu`,
+          `${API_BASE}/messages_admin/${encodeURIComponent(clientId)}/marquer_non_lu`,
           {
             method: "POST",
           }
@@ -175,7 +198,7 @@ export default function ChatConversation({ clientId, enTete = null }) {
   };
 
   const postPlainMessage = async (txt) => {
-    await authFetch(`${API_BASE}/messages/${clientId}`, {
+    await authFetch(`${API_BASE}/messages/${encodeURIComponent(clientId)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sender_id: senderId, content: txt }),
@@ -195,7 +218,7 @@ export default function ChatConversation({ clientId, enTete = null }) {
         created_at: new Date().toISOString() },
     ]);
 
-    const resp = await authFetch(`${API_BASE}/chat/${clientId}/agent`, {
+    const resp = await authFetch(`${API_BASE}/chat/${encodeURIComponent(clientId)}/agent`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: txt }),
@@ -312,21 +335,28 @@ export default function ChatConversation({ clientId, enTete = null }) {
   };
 
   if (!isAuthenticated) return null;
-  if (loading) return <p>Chargement…</p>;
+  if (loading) return <p className={styles.loading || ""}>Chargement de la conversation…</p>;
 
   return (
     <div
       className={`flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] ${styles.container || ""}`}
     >
       <div className={styles.header || ""}>
-        <div>
-          <p className={styles.kicker || ""}>Canal de support</p>
-          <h2 className={styles.title || ""}>{conversationLabel}</h2>
-          <p className={styles.subtitle || ""}>
-            {isAdmin
-              ? "L'assistant répond aux questions du client ; il vous signale les échanges qui demandent l'équipe. Il se met en retrait dès que vous écrivez."
-              : "L'assistant Eaukey vous répond tout de suite. Si besoin, l'équipe Eaukey prend le relais dans cette conversation."}
-          </p>
+        <div className={styles.headerMain || ""}>
+          {!isAdmin && (
+            <span className={styles.headerAvatar || ""} aria-hidden="true">
+              <Droplet className="w-5 h-5" />
+            </span>
+          )}
+          <div className={styles.headerText || ""}>
+            {isAdmin && <p className={styles.kicker || ""}>Conversation client</p>}
+            <h2 className={styles.title || ""}>{conversationLabel}</h2>
+            <p className={styles.subtitle || ""}>
+              {isAdmin
+                ? "L'assistant répond aux questions du client et vous signale les échanges qui demandent l'équipe. Il se met en retrait dès que vous écrivez."
+                : "L'assistant vous répond tout de suite. Si besoin, l'équipe Eaukey prend le relais ici."}
+            </p>
+          </div>
         </div>
         <div className={styles.headerMeta || ""}>
           {isAdmin && (
@@ -343,10 +373,7 @@ export default function ChatConversation({ clientId, enTete = null }) {
           )}
           <span className={styles.status || ""}>
             <span className={styles.statusDot || ""} />
-            En ligne
-          </span>
-          <span className={styles.badge || ""}>
-            {messageCount || "–"} {messageCount > 1 ? "messages" : "message"}
+            {isAdmin ? "Assistant actif" : "Assistant en ligne"}
           </span>
           {isAdmin && <ProposerFicheSav clientId={clientId} authFetch={authFetch} />}
         </div>
@@ -354,9 +381,29 @@ export default function ChatConversation({ clientId, enTete = null }) {
       {enTete}
 
       {/* Zone messages */}
-      <div
-        className={`flex-1 overflow-y-auto p-4 flex flex-col justify-end bg-[var(--bg-base)] ${styles.messages || ""}`}
-      >
+      <div className={`flex-1 overflow-y-auto ${styles.messages || ""}`}>
+        <div className={styles.thread || ""}>
+        {messages.length === 0 && !isAdmin && (
+          <div className={styles.welcome || ""}>
+            <span className={styles.welcomeIcon || ""} aria-hidden="true">
+              <Droplet className="w-6 h-6" />
+            </span>
+            <h3 className={styles.welcomeTitle || ""}>Bonjour, comment puis-je vous aider ?</h3>
+            <p className={styles.welcomeText || ""}>
+              Posez votre question sur votre station : entretien, voyant allumé, réglage, pièce à changer…
+            </p>
+            <div className={styles.suggestions || ""}>
+              {SUGGESTIONS.map((q) => (
+                <button key={q} type="button" className={styles.suggestion || ""} onClick={() => setNewMessage(q)}>
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {messages.length === 0 && isAdmin && (
+          <p className={styles.welcomeText || ""}>Aucun message pour l’instant.</p>
+        )}
         {/* Liste des messages */}
         {messages.map((msg, idx) => {
           const isAgent = msg.sender_id === AGENT_SENDER_ID;
@@ -369,17 +416,13 @@ export default function ChatConversation({ clientId, enTete = null }) {
 
           return (
             <React.Fragment key={msg.id}>
-              {showDate && (
-                <div className="text-center text-xs text-[var(--text-muted)] my-2">
-                  {new Date(msg.created_at).toLocaleDateString()}
-                </div>
-              )}
+              {showDate && <div className={styles.dayDivider || ""}>{jourLisible(msg.created_at)}</div>}
 
               <div className="flex mb-3">
                 {/* Bulle */}
                 <div className={`flex-1 flex ${isMe ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`p-3 rounded-xl max-w-[70%] shadow-sm ${styles.bubble || ''} ${
+                    className={`p-3 rounded-xl shadow-sm ${styles.bubble || ''} ${
                       isMe ? styles.me || '' : isAgent ? styles.agent || '' : styles.them || ''
                     }`}
                   >
@@ -431,7 +474,7 @@ export default function ChatConversation({ clientId, enTete = null }) {
 
                     {!msg.streaming && (
                       <span className={`text-xs text-[var(--text-muted)] flex items-center gap-1 mt-1 ${styles.meta || ''}`}>
-                        {new Date(msg.created_at).toLocaleTimeString()}
+                        {heureLisible(msg.created_at)}
                         {msg.canal === "email" && <span className={styles.canalEmail || ""}>par e-mail</span>}
                         {/* Message non lu */}
                         {isMe && !msg.is_read && (
@@ -462,6 +505,7 @@ export default function ChatConversation({ clientId, enTete = null }) {
           </div>
         )}
         <div ref={bottomRef}></div>
+        </div>
       </div>
 
       {/* Input */}

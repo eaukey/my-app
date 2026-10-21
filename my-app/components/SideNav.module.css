@@ -298,6 +298,88 @@
 }
 
 /* =========================
+   Pied du menu : profil + déconnexion
+   ========================= */
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.6rem 0.5rem calc(0.7rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border-subtle);
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 44px;
+  padding: 0 0.55rem;
+  overflow: hidden;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #cfe8e7;
+  background: rgba(65, 174, 173, 0.18);
+  border: 1px solid rgba(65, 174, 173, 0.45);
+}
+
+.profileText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+.expanded .profileText {
+  opacity: 1;
+}
+
+.profileName {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e3eef2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileRole {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logout {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+/* Rangé : avatar centré seul */
+.root:not(.expanded) .profile {
+  justify-content: center;
+  padding: 0;
+}
+.root:not(.expanded) .profileText {
+  display: none;
+}
+
+/* =========================
    Responsive
    ========================= */
 @media screen and (max-width: 768px) {
@@ -315,36 +397,48 @@
     transform: translateX(0);
   }
 
-  /* En tiroir, on affiche toujours titres + libellés */
-  .root .brandText,
-  .root .label {
+  /* En tiroir, on affiche toujours titres + libellés.
+     « .root.root » : même poids que les règles « .root:not(.expanded) … » du rail
+     replié, et placé après elles, donc prioritaire (sinon les libellés restaient
+     masqués sur mobile). */
+  .root.root .brandText,
+  .root.root .label {
     opacity: 1;
     transform: none;
     display: inline;
   }
-  .root .sectionTitle {
+  /* En tiroir, le profil est toujours détaillé */
+  .root.root .profile {
+    justify-content: flex-start;
+    padding: 0 0.55rem;
+  }
+  .root.root .profileText {
+    display: flex;
+    opacity: 1;
+  }
+  .root.root .sectionTitle {
     opacity: 0.72;
     height: auto;
     padding: 0 0.55rem 0.35rem;
     pointer-events: auto;
   }
-  .root .link {
+  .root.root .link {
     justify-content: flex-start;
     gap: 0.85rem;
     padding: 0 0.7rem;
   }
   /* En tiroir, en-tête en ligne : logo à gauche, croix à droite */
-  .root .header {
+  .root.root .header {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
     padding: 0.85rem 0.75rem;
   }
-  .root .brand {
+  .root.root .brand {
     justify-content: flex-start;
     flex: 1;
   }
-  .root .brandText {
+  .root.root .brandText {
     display: inline;
   }
 

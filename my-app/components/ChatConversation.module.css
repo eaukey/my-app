@@ -2,8 +2,9 @@
 .container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px);
-  min-height: 70vh;
+  /* Toute la hauteur de l'écran, moins les marges de la page (cf. app/chat/[conversationId]) */
+  height: calc(100dvh - 40px);
+  min-height: 480px;
   border: 1px solid var(--border-subtle);
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(12, 22, 38, 0.95), rgba(7, 13, 26, 0.98));
@@ -39,9 +40,122 @@
 
 .subtitle {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 13.5px;
+  margin-top: 4px;
+  line-height: 1.45;
+}
+
+.headerMain {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
+}
+
+.headerText {
+  min-width: 0;
+}
+
+.headerAvatar {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e3f4f3;
+  background: linear-gradient(135deg, rgba(65, 174, 173, 0.55), rgba(65, 174, 173, 0.25));
+  border: 1px solid rgba(65, 174, 173, 0.6);
+}
+
+.loading {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* Fil : colonne de lecture centrée, messages calés en bas quand ils sont peu nombreux */
+.thread {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 20px 20px 8px;
+}
+.thread > :first-child {
+  margin-top: auto;
+}
+
+.dayDivider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: capitalize;
+}
+.dayDivider::before,
+.dayDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* Accueil d'une conversation vide (client) */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  margin: auto 0;
+  padding: 24px 8px;
+}
+.welcomeIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e3f4f3;
+  background: linear-gradient(135deg, rgba(65, 174, 173, 0.55), rgba(65, 174, 173, 0.25));
+}
+.welcomeTitle {
+  font-size: 20px;
+  font-weight: 700;
+  text-wrap: balance;
+}
+.welcomeText {
+  color: var(--text-secondary);
+  max-width: 46ch;
+  margin: 0 auto;
+  text-align: center;
+}
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
   margin-top: 6px;
-  max-width: 520px;
+}
+.suggestion {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(65, 174, 173, 0.45);
+  background: rgba(65, 174, 173, 0.1);
+  color: var(--text-primary);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.suggestion:hover {
+  background: rgba(65, 174, 173, 0.2);
 }
 
 .headerMeta {
@@ -106,6 +220,8 @@
 
 .bubble {
   position: relative;
+  max-width: min(75%, 640px);
+  overflow-wrap: anywhere;
   backdrop-filter: blur(3px);
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
@@ -229,6 +345,13 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
+/* Saisie alignée sur la colonne des messages (.thread) */
+.inputBar > * {
+  max-width: 840px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .inputField {
   border: none;
   background: transparent;
@@ -265,10 +388,14 @@
 
 /* Styles mobile-only pour ChatConversation */
 @media screen and (max-width: 768px) {
-  .container { height: calc(100vh - 56px); max-height: none; border-radius: 0; border-left: none; border-right: none; }
-  .header { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .messages { padding: 0.5rem; }
-  .bubble { max-width: 85%; }
+  /* Sous le bouton du menu (pt-16 de la page) : toute la hauteur restante */
+  .container { height: calc(100dvh - 64px); min-height: 0; max-height: none; border-radius: 0; border-left: none; border-right: none; }
+  .header { flex-direction: column; align-items: stretch; gap: 10px; padding: 14px 16px; }
+  .headerMeta { justify-content: flex-start; }
+  .headerAvatar { width: 38px; height: 38px; border-radius: 12px; }
+  .title { font-size: 18px; }
+  .thread { padding: 12px 12px 6px; }
+  .bubble { max-width: 88%; }
   .meta { font-size: 0.7rem; }
   .inputBar { position: sticky; bottom: 0; background: var(--bg-elevated); padding: 0.5rem 0.75rem; padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)); }
   .inputField { font-size: 0.95rem; }

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
   MessageCircle,
@@ -19,6 +19,7 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
+  LogOut,
 } from "lucide-react";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./SideNav.module.css";
@@ -31,7 +32,8 @@ export default function SideNav({
   setMobileOpen = () => {},
 }) {
   const pathname = usePathname();
-  const { user, isAuthenticated, authFetch } = useAuth();
+  const { user, isAuthenticated, authFetch, logout } = useAuth();
+  const router = useRouter();
   const isAdmin = checkAdmin(user);
   const isSuperAdmin = checkSuperAdmin(user);
   const isOrgAdmin = checkOrgAdmin(user);
@@ -320,6 +322,39 @@ export default function SideNav({
             </div>
           ))}
         </div>
+
+        {/* Profil + déconnexion, toujours en bas du menu */}
+        {isAuthenticated && (
+          <div className={styles.footer}>
+            <div className={styles.profile} title={user?.email || ""}>
+              <span className={styles.avatar} aria-hidden="true">
+                {(user?.name || user?.email || "?").trim().charAt(0).toUpperCase()}
+              </span>
+              <span className={styles.profileText}>
+                <span className={styles.profileName}>{user?.name || user?.email}</span>
+                <span className={styles.profileRole}>
+                  {isSuperAdmin ? "Super admin" : isAdmin ? "Équipe Eaukey" : isOrgAdmin ? "Admin client" : "Client"}
+                  {!isAdmin && clientId ? ` · ${clientId}` : ""}
+                </span>
+              </span>
+            </div>
+            <button
+              type="button"
+              className={`${styles.link} ${styles.logout}`}
+              title="Se déconnecter"
+              onClick={() => {
+                setMobileOpen(false);
+                logout();
+                router.replace("/");
+              }}
+            >
+              <span className={styles.iconWrap}>
+                <LogOut size={22} className={styles.icon} />
+              </span>
+              <span className={styles.label}>Se déconnecter</span>
+            </button>
+          </div>
+        )}
       </nav>
     </>
   );

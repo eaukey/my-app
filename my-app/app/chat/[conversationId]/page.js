@@ -9,7 +9,15 @@ export default function ConversationPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
-  const { conversationId } = params;
+  // L'identifiant arrive encodé depuis l'URL (« TEST%20EAUKEY ») : on le décode une fois ici,
+  // sinon le titre l'affiche tel quel et les appels qui le ré-encodent visent un autre client.
+  const conversationId = (() => {
+    try {
+      return params?.conversationId ? decodeURIComponent(params.conversationId) : params?.conversationId;
+    } catch {
+      return params?.conversationId;
+    }
+  })();
 
   const isAdmin = checkAdmin(user);
   const clientId = user?.client_id || null;
@@ -33,8 +41,8 @@ export default function ConversationPage() {
   if (!conversationId) return <p>Client introuvable.</p>;
 
   return (
-    <div className="min-h-screen bg-[var(--bg-base)]">
-      <div className="w-full px-3 sm:px-5 lg:px-8 py-4 sm:py-6">
+    <div className="bg-[var(--bg-base)]">
+      <div className="w-full px-0 sm:px-5 lg:px-8 pt-16 sm:pt-5 pb-0 sm:pb-5">
         <ChatConversation
           clientId={conversationId}
           enTete={isAdmin ? <ChatContacts clientId={conversationId} /> : null}
