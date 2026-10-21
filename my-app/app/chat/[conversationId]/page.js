@@ -3,7 +3,6 @@ import { useAuth, isAdmin as checkAdmin } from "../../../lib/auth";
 import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import ChatConversation from "../../../components/ChatConversation";
-import ChatContacts from "../../../components/ChatContacts";
 
 export default function ConversationPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -45,7 +44,6 @@ export default function ConversationPage() {
       <div className="w-full px-0 sm:px-5 lg:px-8 pt-16 sm:pt-5 pb-0 sm:pb-5">
         <ChatConversation
           clientId={conversationId}
-          enTete={isAdmin ? <ChatContacts clientId={conversationId} /> : null}
         />
       </div>
     </div>
