@@ -2,7 +2,7 @@
 import { useAuth, isAdmin as checkAdmin } from "../../lib/auth";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import ConversationList from "../../components/ConversationList";
+import ChatInbox from "../../components/ChatInbox";
 
 export default function ChatPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -35,12 +35,12 @@ export default function ChatPage() {
             </span>
             <h1 className="text-2xl font-semibold">Conversations clients</h1>
             <p className="text-[var(--text-secondary)]">
-              Retrouvez en un coup d’œil les demandes en attente et accédez aux échanges.
+              Les demandes qui ont besoin de vous d’abord : l’assistant répond aux clients et vous signale quand l’équipe doit intervenir.
             </p>
           </div>
 
           <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 shadow-[var(--shadow-soft)] backdrop-blur">
-            <ConversationList />
+            <ChatInbox />
           </div>
         </div>
       </div>
