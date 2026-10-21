@@ -1,3 +1,6 @@
+// Réponses de l'assistant SAV dans la messagerie (même valeur que AGENT_SENDER_ID du backend).
+export const AGENT_SENDER_ID = -1;
+
 export function getCachedAdminSenderIds() {
   try {
     const raw = localStorage.getItem("adminSenderIds:v1");
@@ -52,7 +55,8 @@ export async function discoverAdminSenderIds(backendBaseUrl = API_BASE) {
 
     // Heuristique: un admin envoie à 2+ clients distincts et n'est pas déjà 0/1
     for (const [sid, cidSet] of senderIdToClientIds.entries()) {
-      if (sid !== 0 && sid !== 1 && cidSet.size >= 2) {
+      // L'assistant écrit à tous les clients : ce n'est pas un admin.
+      if (sid !== 0 && sid !== 1 && sid !== AGENT_SENDER_ID && cidSet.size >= 2) {
         adminIds.add(sid);
       }
     }

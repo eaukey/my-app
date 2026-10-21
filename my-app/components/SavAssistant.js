@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { MessageCircle, Droplet, X } from "lucide-react";
 import { API_BASE } from "../lib/apiBase";
 import { useAuth } from "../lib/auth";
@@ -32,6 +33,7 @@ export default function SavAssistant() {
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const listRef = useRef(null);
+  const pathname = usePathname();
 
   // Restaure le conversation_id persiste pour cet utilisateur.
   useEffect(() => {
@@ -188,6 +190,8 @@ export default function SavAssistant() {
   };
 
   if (!isAuthenticated) return null;
+  // Dans la messagerie, l'assistant répond déjà dans le fil : pas de widget en double.
+  if (pathname?.startsWith("/chat")) return null;
 
   if (!open) {
     return (
