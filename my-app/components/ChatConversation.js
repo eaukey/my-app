@@ -5,6 +5,7 @@ import { useAuth, isAdmin as checkAdmin } from "../lib/auth";
 import { getCachedAdminSenderIds, discoverAdminSenderIds, AGENT_SENDER_ID } from "./chatRoleUtils";
 import { API_BASE } from "../lib/apiBase";
 import { renderMarkdown } from "../lib/markdownLite";
+import { PanneDuMessage, ProposerFicheSav } from "./ChatSavOutils";
 import styles from "./ChatConversation.module.css";
 
 // Messagerie client <-> équipe Eaukey, avec l'assistant SAV dans le même fil.
@@ -12,7 +13,9 @@ import styles from "./ChatConversation.module.css";
 // enregistré, puis l'assistant répond en flux (SSE) et sa réponse est enregistrée
 // dans le fil (sender_id AGENT_SENDER_ID). L'assistant prévient l'équipe quand
 // un humain est nécessaire (message marqué `escalade`) et se tait quand un membre
-// de l'équipe a répondu récemment. Côté admin, l'envoi reste POST /messages.
+// de l'équipe a répondu récemment. Côté admin, l'envoi reste POST /messages ;
+// l'équipe voit aussi les pannes détectées par l'assistant et peut lui demander
+// un brouillon de fiche SAV (voir ChatSavOutils).
 
 const AGENT_NAME = "Assistant Eaukey";
 
@@ -305,6 +308,7 @@ export default function ChatConversation({ clientId, enTete = null }) {
           <span className={styles.badge || ""}>
             {messageCount || "–"} {messageCount > 1 ? "messages" : "message"}
           </span>
+          {isAdmin && <ProposerFicheSav clientId={clientId} authFetch={authFetch} />}
         </div>
       </div>
       {enTete}
@@ -365,6 +369,20 @@ export default function ChatConversation({ clientId, enTete = null }) {
                           ? `Intervention de l'équipe demandée${msg.escalade_motif ? ` : ${msg.escalade_motif}` : ""}`
                           : "L'équipe Eaukey est prévenue"}
                       </div>
+                    )}
+
+                    {isAgent && isAdmin && !msg.streaming && (
+                      <PanneDuMessage
+                        msg={msg}
+                        clientId={clientId}
+                        authFetch={authFetch}
+                        currentUser={user?.email || ""}
+                        onLinked={(id, panneId) =>
+                          setMessages((prev) =>
+                            prev.map((m) => (m.id === id ? { ...m, panne_id: panneId, panne_suggeree: null } : m))
+                          )
+                        }
+                      />
                     )}
 
                     {!msg.streaming && (

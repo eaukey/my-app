@@ -391,3 +391,93 @@
   .contactsBody { padding: 0 12px 10px; }
   .contactsInput { font-size: 16px; } /* évite le zoom automatique sur iOS */
 }
+
+/* Agent SAV (admin) : pannes détectées et brouillons de fiches (ChatSavOutils) */
+.panneBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  margin-left: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: rgba(217, 164, 65, 0.14);
+  border: 1px solid rgba(217, 164, 65, 0.5);
+  text-decoration: none;
+}
+.panneBadge:hover { border-color: var(--warning, #d9a441); }
+.panneSuggestion {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  color: var(--text-primary);
+  background: rgba(217, 164, 65, 0.1);
+  border: 1px dashed rgba(217, 164, 65, 0.6);
+}
+.panneSuggestionTitre {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.panneSuggestionTexte { color: var(--text-secondary); margin-bottom: 6px; overflow-wrap: anywhere; }
+.panneBouton,
+.ficheBouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-primary);
+  background: var(--bg-highlight);
+  border: 1px solid var(--border-strong);
+}
+.panneBouton:disabled,
+.ficheBouton:disabled { opacity: 0.6; cursor: default; }
+.panneBouton:not(:disabled):hover,
+.ficheBouton:not(:disabled):hover { border-color: var(--primary); }
+.panneErreur { display: block; margin: 4px 0; font-size: 12px; color: var(--danger, #e5484d); white-space: normal; }
+.ficheZone { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.ficheLien {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: rgba(65, 174, 173, 0.16);
+  border: 1px solid rgba(65, 174, 173, 0.45);
+  text-decoration: none;
+}
+.wizardOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 24px 16px;
+  background: rgba(3, 7, 15, 0.7);
+}
+.wizardBox {
+  width: 100%;
+  max-width: 640px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+}
+@media screen and (max-width: 768px) {
+  .headerMeta { flex-wrap: wrap; white-space: normal; }
+  .wizardOverlay { padding: 8px; }
+  .wizardBox { padding: 12px; }
+}

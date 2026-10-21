@@ -14,6 +14,10 @@ const TAB_OPTIONS = [
   { key: "all", label: "Toutes" },
 ];
 
+// Panne signalée par l'assistant SAV : non partagée tant qu'elle n'est pas résolue ;
+// à la clôture par un technicien, le partage est proposé coché (modifiable).
+const resolutionInitiale = (p) => (p.created_by === "assistant-sav" && !p.date_fin ? { ...p, partage_sav: true } : p);
+
 export default function PannesPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, authFetch } = useAuth();
@@ -204,7 +208,7 @@ export default function PannesPage() {
                   <span className={styles.cardWho}>{p.intervenant || p.created_by || ""}</span>
                   <div className={styles.actionGroup}>
                     {open || !hasResolution ? (
-                      <button type="button" className={styles.resolveButton} onClick={() => setWizard({ mode: "close", panne: p })}>
+                      <button type="button" className={styles.resolveButton} onClick={() => setWizard({ mode: "close", panne: resolutionInitiale(p) })}>
                         <CheckCircle2 size={16} />
                         <span>{open ? "Résolue" : "Compléter"}</span>
                       </button>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Pencil, Trash2, Archive, ArchiveRestore, X } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Archive, ArchiveRestore, X, Sparkles, Send } from "lucide-react";
 import { useAuth, isAdmin as checkAdmin } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
 import { fmt } from "../pannes/PanneWizard";
@@ -11,6 +11,8 @@ import styles from "../pannes/Pannes.module.css";
 // Base SAV : fiches de dépannage écrites par l'équipe SAV (admins).
 // Les fiches actives sont jointes automatiquement aux questions posées à
 // l'assistant SAV (backend POST /sav/message), sans nom de client ni de station.
+// Les brouillons proposés par l'assistant (bouton « Proposer une fiche SAV » d'une
+// conversation) ne sont jamais utilisés tant qu'un admin ne les a pas publiés.
 
 const TAB_OPTIONS = [
   { key: "actives", label: "Actives" },
@@ -34,6 +36,7 @@ function FicheForm({ initial, panneTypes, onSubmit, onCancel }) {
     setError("");
   };
   const isNew = !initial?.id;
+  const isDraft = !!initial?.brouillon;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -56,8 +59,12 @@ function FicheForm({ initial, panneTypes, onSubmit, onCancel }) {
     <form className={styles.wizard} onSubmit={submit}>
       <div className={styles.wizardHead}>
         <div className={styles.wizardTitle}>
-          {isNew ? "Nouvelle fiche" : "Modifier la fiche"}
-          <span className={styles.wizardSub}>Utilisée automatiquement par l&apos;assistant SAV</span>
+          {isNew ? "Nouvelle fiche" : isDraft ? "Relire le brouillon" : "Modifier la fiche"}
+          <span className={styles.wizardSub}>
+            {isDraft
+              ? "Proposé par l'assistant : pas encore utilisé. Vérifiez chaque étape, puis publiez-le."
+              : "Utilisée automatiquement par l'assistant SAV"}
+          </span>
         </div>
         <button type="button" className={styles.iconButton} onClick={onCancel} aria-label="Fermer" disabled={saving}>
           <X size={18} />
@@ -206,7 +213,13 @@ export default function BaseSavPage() {
   const save = async (payload) => {
     const id = form?.fiche?.id;
     await call(id ? `/sav/fiches/${id}` : "/sav/fiches", { method: id ? "PUT" : "POST", body: JSON.stringify(payload) });
-    setNotice(id ? "Fiche modifiée ✓" : "Fiche ajoutée ✓ — l'assistant SAV l'utilise dès maintenant");
+    setNotice(
+      form?.fiche?.brouillon
+        ? "Brouillon modifié ✓ — publiez-le pour que l'assistant l'utilise"
+        : id
+        ? "Fiche modifiée ✓"
+        : "Fiche ajoutée ✓ — l'assistant SAV l'utilise dès maintenant"
+    );
     setForm(null);
     if (!id) setActiveTab("actives");
     fetchFiches();
@@ -226,6 +239,21 @@ export default function BaseSavPage() {
     }
   };
 
+  const publish = async (f) => {
+    try {
+      const { titre, symptomes, solution, pieces, type_panne, mots_cles } = f;
+      await call(`/sav/fiches/${f.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ titre, symptomes, solution, pieces, type_panne, mots_cles, archivee: false, brouillon: false }),
+      });
+      setNotice("Fiche publiée ✓ — l'assistant SAV l'utilise dès maintenant");
+      setActiveTab("actives");
+      fetchFiches();
+    } catch (e) {
+      setError(e.message || "Erreur lors de la publication");
+    }
+  };
+
   const handleDelete = async (f) => {
     if (!window.confirm(`Supprimer définitivement la fiche « ${f.titre} » ?`)) return;
     try {
@@ -238,12 +266,16 @@ export default function BaseSavPage() {
   };
 
   const counts = useMemo(
-    () => ({ actives: fiches.filter((f) => !f.archivee).length, archivees: fiches.filter((f) => f.archivee).length }),
+    () => ({
+      actives: fiches.filter((f) => !f.brouillon && !f.archivee).length,
+      archivees: fiches.filter((f) => !f.brouillon && f.archivee).length,
+    }),
     [fiches]
   );
+  const brouillons = useMemo(() => fiches.filter((f) => f.brouillon), [fiches]);
 
   const filtered = useMemo(() => {
-    const base = fiches.filter((f) => (activeTab === "archivees" ? f.archivee : !f.archivee));
+    const base = fiches.filter((f) => !f.brouillon && (activeTab === "archivees" ? f.archivee : !f.archivee));
     const term = searchTerm.toLowerCase().trim();
     if (!term) return base;
     return base.filter((f) =>
@@ -263,6 +295,66 @@ export default function BaseSavPage() {
     <div className={styles.container}>
       {notice ? <div className={styles.notice}>{notice}</div> : null}
       {error ? <div className={styles.error}>{error}</div> : null}
+
+      {brouillons.length > 0 ? (
+        <div className={styles.section} data-testid="brouillons">
+          <div className={styles.cardTitle} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <Sparkles size={18} />
+            Brouillons proposés par l&apos;assistant ({brouillons.length})
+          </div>
+          <div className={styles.muted} style={{ fontStyle: "normal", marginBottom: 12 }}>
+            Rédigés par l&apos;assistant à partir d&apos;une conversation. Ils ne sont pas utilisés tant que vous ne les avez pas
+            relus et publiés.
+          </div>
+          <div className={styles.cards}>
+            {brouillons.map((f) => (
+              <div key={f.id} className={`${styles.card} ${styles.cardOpen}`}>
+                <div className={styles.cardTitle}>{f.titre}</div>
+                <div className={styles.cardMeta}>
+                  <span className={`${styles.pill} ${styles.pillOpen}`}>Brouillon</span>
+                  {f.type_panne ? <span className={styles.pill}>{f.type_panne}</span> : null}
+                </div>
+                {f.symptomes ? <div className={styles.cardBody}>{f.symptomes}</div> : null}
+                <div className={styles.resolution}>
+                  <div style={{ whiteSpace: "pre-wrap" }}>
+                    <strong>Solution :</strong> {f.solution}
+                  </div>
+                  {f.pieces ? (
+                    <div>
+                      <strong>Pièces :</strong> {f.pieces}
+                    </div>
+                  ) : null}
+                </div>
+                <div className={styles.cardFoot} style={{ flexWrap: "wrap" }}>
+                  <span className={styles.cardWho}>
+                    Proposé par l&apos;assistant · {fmt(f.created_at)}
+                    {f.updated_by ? ` · relu par ${f.updated_by}` : ""}
+                  </span>
+                  <div className={styles.actionGroup}>
+                    <button type="button" className={`${styles.button} ${styles.buttonGhost}`} onClick={() => setForm({ fiche: f })}>
+                      <Pencil size={16} />
+                      <span>Relire</span>
+                    </button>
+                    <button type="button" className={styles.button} onClick={() => publish(f)}>
+                      <Send size={16} />
+                      <span>Publier</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.iconButton} ${styles.dangerGhost}`}
+                      onClick={() => handleDelete(f)}
+                      aria-label="Supprimer"
+                      data-tooltip="Supprimer"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {form ? (
         <div className={styles.section}>
