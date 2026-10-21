@@ -7,6 +7,8 @@ import { MessageCircle, Droplet, X } from "lucide-react";
 import { API_BASE } from "../lib/apiBase";
 import { useAuth } from "../lib/auth";
 import { renderMarkdown } from "../lib/markdownLite";
+import { useDictation, useSpeech } from "../lib/voice";
+import { MicButton, DictationStatus, ListenButton, AutoReadToggle } from "./VoiceControls";
 import styles from "./SavAssistant.module.css";
 
 // Assistant SAV (agent Wardian, read-only) — widget flottant.
@@ -33,7 +35,22 @@ export default function SavAssistant() {
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const listRef = useRef(null);
+  const inputRef = useRef("");
+  inputRef.current = input;
   const pathname = usePathname();
+
+  // Contrôle vocal : dictée dans le champ, lecture des réponses.
+  const dictation = useDictation(() => inputRef.current, setInput);
+  const speech = useSpeech();
+  const { abort: abortDictation } = dictation;
+  const { stop: stopSpeech } = speech;
+
+  // Widget fermé : on coupe le micro et la voix.
+  useEffect(() => {
+    if (open) return;
+    abortDictation();
+    stopSpeech();
+  }, [open, abortDictation, stopSpeech]);
 
   // Restaure le conversation_id persiste pour cet utilisateur.
   useEffect(() => {
@@ -72,11 +89,15 @@ export default function SavAssistant() {
     const text = input.trim();
     if (!text || loading) return;
 
+    dictation.abort();
     setInput("");
-    setMessages((m) => [...m, { role: "user", text }, { role: "assistant", text: "" }]);
+    const replyId = `a-${Date.now()}`;
+    setMessages((m) => [...m, { role: "user", text }, { role: "assistant", text: "", id: replyId }]);
     setLoading(true);
+    let full = ""; // réponse complète, pour la lecture automatique
 
-    const applyDelta = (delta) =>
+    const applyDelta = (delta) => {
+      full += delta;
       setMessages((m) => {
         const next = [...m];
         for (let i = next.length - 1; i >= 0; i--) {
@@ -87,6 +108,7 @@ export default function SavAssistant() {
         }
         return next;
       });
+    };
 
     const fail = (msg) =>
       setMessages((m) => {
@@ -174,13 +196,14 @@ export default function SavAssistant() {
           }
           return next;
         });
+        if (full.trim() && speech.autoReadRef.current) speech.speak(replyId, full);
       }
     } catch (e) {
       fail("Connexion a l'assistant impossible. Verifiez votre reseau et reessayez.");
     } finally {
       setLoading(false);
     }
-  }, [input, loading, authFetch, conversationId, persistConv, dropConv]);
+  }, [input, loading, authFetch, conversationId, persistConv, dropConv, dictation, speech]);
 
   const onKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -256,8 +279,9 @@ export default function SavAssistant() {
             ) : null;
           }
           return (
-            <div key={i} className={`${styles.msg} ${styles.assistant} ${styles.md}`}>
-              {renderMarkdown(m.text)}
+            <div key={i} className={`${styles.msg} ${styles.assistant}`}>
+              <div className={styles.md}>{renderMarkdown(m.text)}</div>
+              {!(isLast && loading) && <ListenButton speech={speech} id={m.id ?? `m-${i}`} text={m.text} />}
             </div>
           );
         })}
@@ -268,16 +292,19 @@ export default function SavAssistant() {
           <textarea
             className={styles.textarea}
             rows={1}
-            placeholder="Votre question…"
+            placeholder={dictation.listening ? "Parlez, je vous écoute…" : "Votre question…"}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
             disabled={loading}
           />
+          <MicButton dictation={dictation} disabled={loading} compact />
           <button className={styles.sendBtn} onClick={send} disabled={loading || !input.trim()}>
             {loading ? "…" : "Envoyer"}
           </button>
         </div>
+        <DictationStatus dictation={dictation} />
+        <AutoReadToggle speech={speech} />
         <div className={styles.escape}>
           {"Besoin d'un humain ? "}
           <Link href="/chat">Contacter le support</Link>
