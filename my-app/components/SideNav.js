@@ -20,6 +20,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   LogOut,
+  FileText,
 } from "lucide-react";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./SideNav.module.css";
@@ -180,7 +181,7 @@ export default function SideNav({
   // Sections du menu.
   // NB: la visibilité par rôle reprend EXACTEMENT les conditions existantes :
   //   - "/"            : tous
-  //   - "/admin", "/pannes", "/alertes", "/base-sav", "/export", "/view-as" : isAdmin
+  //   - "/admin", "/pannes", "/alertes", "/base-sav", "/rapports", "/export", "/view-as" : isAdmin
   //   - "/org-admin"   : isOrgAdmin
   //   - "/super-admin" : isSuperAdmin
   //   - "/chat"        : tous
@@ -196,6 +197,7 @@ export default function SideNav({
               { icon: AlertTriangle, href: "/pannes", label: "Pannes" },
               { icon: Bell, href: "/alertes", label: "Alertes", badge: "alertes" },
               { icon: BookOpen, href: "/base-sav", label: "Base SAV" },
+              { icon: FileText, href: "/rapports", label: "Rapports mensuels" },
             ]
           : []),
       ],
