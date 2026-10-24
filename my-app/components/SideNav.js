@@ -21,6 +21,7 @@ import {
   PanelLeftOpen,
   LogOut,
   FileText,
+  Camera,
 } from "lucide-react";
 import { API_BASE } from "../lib/apiBase";
 import styles from "./SideNav.module.css";
@@ -183,7 +184,7 @@ export default function SideNav({
   //   - "/"            : tous
   //   - "/admin", "/pannes", "/alertes", "/base-sav", "/rapports", "/export", "/view-as" : isAdmin
   //   - "/org-admin"   : isOrgAdmin
-  //   - "/super-admin" : isSuperAdmin
+  //   - "/super-admin", "/a-verifier" : isSuperAdmin
   //   - "/chat"        : tous
   const sections = [
     {
@@ -200,6 +201,7 @@ export default function SideNav({
               { icon: FileText, href: "/rapports", label: "Rapports mensuels" },
             ]
           : []),
+        ...(isSuperAdmin ? [{ icon: Camera, href: "/a-verifier", label: "Photos à vérifier" }] : []),
       ],
     },
     {
