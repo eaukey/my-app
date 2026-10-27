@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Printer } from "lucide-react";
+import { ClipboardCheck, FileText, Printer } from "lucide-react";
 import { useAuth, isAdmin as checkAdmin } from "../../lib/auth";
 import { API_BASE } from "../../lib/apiBase";
 import base from "../pannes/Pannes.module.css";
@@ -14,6 +14,8 @@ import styles from "./Rapports.module.css";
 // La liste des clients vient de GET /rapport/mensuel/clients (clients avec des données
 // ce mois-là). Le HTML est récupéré avec le jeton puis affiché dans un cadre (srcDoc) :
 // la route exige l'en-tête Authorization, une simple URL ne suffirait pas.
+
+const LIBELLES = { pret: "Prêt", a_relire: "À relire", pas_d_envoi: "Pas d’envoi" };
 
 const PREMIER_MOIS = "2026-07"; // premier mois complet de mesures_aggregate (depuis le 23/06/2026)
 
@@ -43,6 +45,8 @@ export default function RapportsPage() {
   const [html, setHtml] = useState("");
   const [chargement, setChargement] = useState(false);
   const [error, setError] = useState("");
+  const [lot, setLot] = useState(null); // statut de chaque client (GET /rapport/mensuel/lot)
+  const [chargementLot, setChargementLot] = useState(false);
   const cadre = useRef(null);
 
   // Clients ayant des données pour le mois choisi
@@ -51,6 +55,7 @@ export default function RapportsPage() {
     let annule = false;
     setClients(null);
     setHtml("");
+    setLot(null);
     (async () => {
       try {
         const res = await authFetch(`${API_BASE}/rapport/mensuel/clients?mois=${moisChoisi}`);
@@ -94,6 +99,20 @@ export default function RapportsPage() {
     if (client) charger();
   }, [client, charger]);
 
+  const preparerEnvoi = async () => {
+    setChargementLot(true);
+    try {
+      const res = await authFetch(`${API_BASE}/rapport/mensuel/lot?mois=${moisChoisi}`);
+      if (!res.ok) throw new Error(await res.text());
+      setLot(await res.json());
+      setError("");
+    } catch (e) {
+      setError(e.message || "Erreur lors de la préparation de l’envoi");
+    } finally {
+      setChargementLot(false);
+    }
+  };
+
   const imprimer = () => {
     try {
       cadre.current?.contentWindow?.focus();
@@ -117,9 +136,9 @@ export default function RapportsPage() {
           <div>
             <h1 className={base.title}>Rapports mensuels</h1>
             <p className={styles.intro}>
-              Le rapport de performance d’un client pour un mois : eau recyclée, économies, énergie, désinfection,
-              interventions et évolution par rapport au mois précédent. Imprimez-le ou enregistrez-le en PDF pour
-              l’envoyer au client.
+              Le rapport de performance d’un client pour un mois. Il ne montre que ce que les compteurs mesurent de
+              façon fiable et signale à l’équipe ce qui est à vérifier (bandeau en haut, jamais imprimé). « Préparer
+              l’envoi du mois » donne le statut de chaque client : prêt, à relire ou sans rapport possible.
             </p>
           </div>
         </div>
@@ -154,6 +173,10 @@ export default function RapportsPage() {
             </select>
           </label>
           <div className={styles.boutons}>
+            <button type="button" className={base.button} onClick={preparerEnvoi} disabled={!moisChoisi || chargementLot}>
+              <ClipboardCheck size={18} />
+              <span>{chargementLot ? "Analyse des clients…" : "Préparer l’envoi du mois"}</span>
+            </button>
             <button type="button" className={base.button} onClick={imprimer} disabled={!html || chargement}>
               <Printer size={18} />
               <span>Imprimer / PDF</span>
@@ -162,6 +185,32 @@ export default function RapportsPage() {
         </div>
 
         {error ? <p className={base.error}>{error}</p> : null}
+
+        {lot ? (
+          <div className={styles.lot}>
+            <div className={styles.resume}>
+              <span className={`${styles.chip} ${styles.pret}`}>{lot.resume.pret} prêt{lot.resume.pret > 1 ? "s" : ""}</span>
+              <span className={`${styles.chip} ${styles.a_relire}`}>{lot.resume.a_relire} à relire</span>
+              <span className={`${styles.chip} ${styles.pas_d_envoi}`}>{lot.resume.pas_d_envoi} sans rapport possible</span>
+            </div>
+            <ul className={styles.liste}>
+              {lot.clients.map((c) => (
+                <li key={c.client}>
+                  <button type="button" className={styles.ligne} onClick={() => setClient(c.client)} aria-current={c.client === client}>
+                    <span className={`${styles.chip} ${styles[c.statut]}`}>{LIBELLES[c.statut]}</span>
+                    <span className={styles.nomClient}>{c.client}</span>
+                    <span className={styles.detail}>
+                      {c.eau_recyclee_m3 != null
+                        ? `${Math.round(c.eau_recyclee_m3).toLocaleString("fr-FR")} m³ · ${String(c.taux_recyclage_pct).replace(".", ",")} %`
+                        : c.raisons[0] || "eau recyclée non mesurée"}
+                      {c.alertes.length ? ` · ${c.alertes.length} alerte${c.alertes.length > 1 ? "s" : ""}` : ""}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </section>
 
       <section className={`${base.section} ${styles.apercu}`}>

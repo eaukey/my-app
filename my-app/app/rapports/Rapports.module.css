@@ -2,13 +2,30 @@
 .intro { color: var(--text-secondary); font-size: 14px; max-width: 72ch; margin: 0 0 12px; }
 .label { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
 .filtres { display: grid; grid-template-columns: minmax(180px, 240px) minmax(220px, 1fr) auto; gap: 12px; align-items: end; }
-.boutons { display: flex; gap: 8px; }
+.boutons { display: flex; gap: 8px; flex-wrap: wrap; }
 .apercu { padding: 0; overflow: hidden; }
 .apercu > p { padding: 16px; }
-.cadre { display: block; width: 100%; height: calc(100dvh - 260px); min-height: 520px; border: none; background: #fff; }
+.cadre { display: block; width: 100%; height: calc(100dvh - 260px); min-height: 520px; border: none; background: #0a2425; }
 .vide { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px 16px; color: var(--text-secondary); text-align: center; }
 
+
+.lot { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+.resume { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.pret { background: var(--success-ghost, #e3f5ea); color: var(--success, #1e7a4c); }
+.a_relire { background: var(--warning-ghost, #fdf1d8); color: var(--warning, #8a5a00); }
+.pas_d_envoi { background: var(--critical-ghost, #fbe4e4); color: var(--critical, #a12f2f); }
+.liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
+.ligne { width: 100%; display: grid; grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; align-items: center; text-align: left;
+  padding: 8px 10px; border: 1px solid var(--border-subtle); border-radius: 8px; background: transparent; color: var(--text-primary); font: inherit; font-size: 14px; cursor: pointer; }
+.ligne:hover, .ligne[aria-current="true"] { background: var(--bg-input); }
+.ligne:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.nomClient { font-weight: 600; overflow-wrap: anywhere; }
+.detail { color: var(--text-secondary); font-size: 13px; }
+
 @media screen and (max-width: 768px) {
+  .ligne { grid-template-columns: auto minmax(0, 1fr); }
+  .detail { grid-column: 1 / -1; }
   .filtres { grid-template-columns: 1fr; }
   .boutons > button { width: 100%; }
   .cadre { height: 75dvh; min-height: 420px; }
